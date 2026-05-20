@@ -124,6 +124,17 @@ td[role="presentation"] {
   button {
     display: none;
   }
+
+  .boxes-number {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .boxes-number::-webkit-outer-spin-button,
+  .boxes-number::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
 
 .custom-option__option {

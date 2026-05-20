@@ -88,6 +88,7 @@ export default function Calendar({ user }: CalendarProps) {
           desiredDate: e.desired_date,
           code: e.exam_code,
           print: e.print,
+          boxes: e.boxes,
         }
       })
       setExams(filteredData);
@@ -230,6 +231,7 @@ export default function Calendar({ user }: CalendarProps) {
     calendarEvent.setExtendedProp('folderName', folderName);
     calendarEvent.setExtendedProp('printSchedule', clickedExam.start);
     calendarEvent.setExtendedProp('print', clickedExam.print);
+    calendarEvent.setExtendedProp('boxes', clickedExam.boxes);
     setSelectedEvent(calendarEvent);
 
     const dialog = document.getElementById("modal") as HTMLDialogElement | null;
@@ -281,7 +283,7 @@ export default function Calendar({ user }: CalendarProps) {
       fcColor: string;
       needsAdmin: boolean;
     }[]) {
-    const examsPart = Array.isArray(examsArr) ? examsArr.map(e => `${e.id}:${e.status}:${e.start}:${e.end}`).join("|") : "";
+    const examsPart = Array.isArray(examsArr) ? examsArr.map(e => `${e.id}:${e.status}:${e.start}:${e.end}:${e.boxes}`).join("|") : "";
     const filtersPart = (filtersArr || []).map(f => f.value).join(",");
     const statusPart = (examStatusArr || []).map(s => `${s.value}:${s.fcColor}`).join(",");
 
@@ -376,7 +378,7 @@ export default function Calendar({ user }: CalendarProps) {
               classNames: [
                 isBreathingPrint ? "fc-event-breathing-pink" : ""
               ].filter(Boolean),
-              extendedProps: { ...(ev.extendedProps || {}), status: ev.status, remark: ev.remark, reproRemark: ev.reproRemark, examDate: ev.examDate },
+              extendedProps: { ...(ev.extendedProps || {}), status: ev.status, remark: ev.remark, reproRemark: ev.reproRemark, examDate: ev.examDate, boxes: ev.boxes },
               startEditable: isMovable,
             };
           });
