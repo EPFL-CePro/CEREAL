@@ -1,7 +1,7 @@
 "use client"
 import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useRef, useState } from "react";
-import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes } from "../lib/database";
+import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal } from "../lib/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { PrintButton } from "./print/ReactToPrint";
 import { examNotAdminStatus } from "../lib/examStatus";
@@ -33,6 +33,8 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const [reproRemark, setReproRemark] = useState(event?.extendedProps?.reproRemark)
     const [selectStatus, setSelectStatus] = useState(event?.extendedProps?.status)
     const [boxes, setBoxes] = useState(event?.extendedProps?.boxes)
+    const [priceUnit, setPriceUnit] = useState(event?.extendedProps?.priceUnit)
+    const [priceTotal, setPriceTotal] = useState(event?.extendedProps?.priceTotal)
     const modalRef = useRef<HTMLFormElement | null>(null);
 
     async function save() {
@@ -67,6 +69,40 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     extendedProps: {
                         ...(exam.extendedProps || {}),
                         boxes: nextBoxes,
+                    },
+                }
+                : exam)
+            : currentExams
+        );
+    }
+
+    function updatePriceUnitState(examId: string, nextPriceUnit: string) {
+        setPriceUnit(nextPriceUnit);
+        setExams((currentExams: EventSourceInput | undefined) => Array.isArray(currentExams)
+            ? currentExams.map((exam: EventInput) => exam.id == examId
+                ? {
+                    ...exam,
+                    priceUnit: nextPriceUnit,
+                    extendedProps: {
+                        ...(exam.extendedProps || {}),
+                        priceUnit: nextPriceUnit,
+                    },
+                }
+                : exam)
+            : currentExams
+        );
+    }
+
+    function updatePriceTotalState(examId: string, nextPriceTotal: string) {
+        setPriceTotal(nextPriceTotal);
+        setExams((currentExams: EventSourceInput | undefined) => Array.isArray(currentExams)
+            ? currentExams.map((exam: EventInput) => exam.id == examId
+                ? {
+                    ...exam,
+                    priceTotal: nextPriceTotal,
+                    extendedProps: {
+                        ...(exam.extendedProps || {}),
+                        priceTotal: nextPriceTotal,
                     },
                 }
                 : exam)
@@ -226,7 +262,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                         <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                             <label className="font-semibold w-full" htmlFor="boxesNumber">Number of boxes</label>
-                            <input className="boxes-number basis-full xl:basis-auto" type="number" name="boxesNumber" value={boxes || "0"} onChange={(e) => {
+                            <input className="boxes-number input-number basis-full xl:basis-auto" type="number" name="boxesNumber" value={boxes || "0"} onChange={(e) => {
                                 const examId = event?.id;
                                 if(!examId) return;
 
@@ -234,6 +270,31 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                                 updateBoxesState(examId, nextBoxes)
                                 updateCrepBoxes(examId, nextBoxes)
                             }}/>
+                        </div>
+                        <div className="date-input flex flex-col flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
+                            <label className="font-semibold w-full" htmlFor="price">Price</label>
+                            <div className="flex flex-row gap-2">
+                                <label className="text-nowrap" htmlFor="priceUnit">Unit :</label>
+                                <input className="price-unit input-number basis-full xl:basis-auto w-20" type="number" name="priceUnit"  value={priceUnit || "0"} onChange={(e) => {
+                                    const examId = event?.id;
+                                    if(!examId) return;
+
+                                    const nextPriceUnit = e.target.value;
+                                    updatePriceUnitState(examId, nextPriceUnit)
+                                    updateCrepPriceUnit(examId, nextPriceUnit)
+                                }}/>
+                            </div>
+                            <div className="flex flex-row gap-2">
+                                <label className="text-nowrap" htmlFor="priceTotal">Total :</label>
+                                <input className="price-total input-number basis-full xl:basis-auto w-20" type="number" name="priceTotal"  value={priceTotal || "0"} onChange={(e) => {
+                                    const examId = event?.id;
+                                    if(!examId) return;
+
+                                    const nextPriceTotal = e.target.value;
+                                    updatePriceTotalState(examId, nextPriceTotal)
+                                    updateCrepPriceTotal(examId, nextPriceTotal)
+                                }}/>
+                            </div>
                         </div>
                     </div>
                     <textarea className="remarks min-h-32 resize-y rounded-lg border border-gray-300 p-3" rows={6} name="remarks" id="remarks" placeholder="Add any remarks"
