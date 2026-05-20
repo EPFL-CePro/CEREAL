@@ -774,3 +774,41 @@ export async function updateCrepBoxes(examId: string, boxes: string) {
         connection.end()
     })
 }
+
+export async function updateCrepPriceUnit(examId: string, priceUnit: string) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('UPDATE crep SET price_unit = ? WHERE id = ?;', [priceUnit, examId], (err, rows) => {
+            if (err) throw err
+            resolve(JSON.stringify(rows));
+        })
+        connection.end()
+    })
+}
+
+export async function updateCrepPriceTotal(examId: string, priceTotal: string) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('UPDATE crep SET price_total = ? WHERE id = ?;', [priceTotal, examId], (err, rows) => {
+            if (err) throw err
+            resolve(JSON.stringify(rows));
+        })
+        connection.end()
+    })
+}

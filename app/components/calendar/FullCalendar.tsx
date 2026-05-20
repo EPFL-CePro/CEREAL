@@ -89,6 +89,8 @@ export default function Calendar({ user }: CalendarProps) {
           code: e.exam_code,
           print: e.print,
           boxes: e.boxes,
+          priceUnit: e.price_unit,
+          priceTotal: e.price_total,
         }
       })
       setExams(filteredData);
@@ -232,6 +234,8 @@ export default function Calendar({ user }: CalendarProps) {
     calendarEvent.setExtendedProp('printSchedule', clickedExam.start);
     calendarEvent.setExtendedProp('print', clickedExam.print);
     calendarEvent.setExtendedProp('boxes', clickedExam.boxes);
+    calendarEvent.setExtendedProp('priceUnit', clickedExam.priceUnit);
+    calendarEvent.setExtendedProp('priceTotal', clickedExam.priceTotal);
     setSelectedEvent(calendarEvent);
 
     const dialog = document.getElementById("modal") as HTMLDialogElement | null;
