@@ -1,7 +1,7 @@
 "use client"
 import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useRef, useState } from "react";
-import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam } from "../lib/database";
+import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes } from "../lib/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { PrintButton } from "./print/ReactToPrint";
 import { examNotAdminStatus } from "../lib/examStatus";
@@ -32,6 +32,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const [remark, setRemark] = useState(event?.extendedProps?.remark)
     const [reproRemark, setReproRemark] = useState(event?.extendedProps?.reproRemark)
     const [selectStatus, setSelectStatus] = useState(event?.extendedProps?.status)
+    const [boxes, setBoxes] = useState(event?.extendedProps?.boxes)
     const modalRef = useRef<HTMLFormElement | null>(null);
 
     async function save() {
@@ -41,6 +42,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 e.remark = remark
                 e.status = selectStatus
                 e.reproRemark = reproRemark
+                e.boxes = boxes
             }
             return e;
         }) : [];
@@ -53,6 +55,23 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         await updateExamStatusById(event?.id || '', selectStatus)
         setSelectStatus(selectStatus)
         setExams(updatedExams)
+    }
+
+    function updateBoxesState(examId: string, nextBoxes: string) {
+        setBoxes(nextBoxes);
+        setExams((currentExams: EventSourceInput | undefined) => Array.isArray(currentExams)
+            ? currentExams.map((exam: EventInput) => exam.id == examId
+                ? {
+                    ...exam,
+                    boxes: nextBoxes,
+                    extendedProps: {
+                        ...(exam.extendedProps || {}),
+                        boxes: nextBoxes,
+                    },
+                }
+                : exam)
+            : currentExams
+        );
     }
 
     async function handleDeleteExam(examId?: string) {
@@ -204,6 +223,19 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             </div>
                         </div>
                     </div>
+                    <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
+                        <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
+                            <label className="font-semibold w-full" htmlFor="boxesNumber">Number of boxes</label>
+                            <input className="boxes-number basis-full xl:basis-auto" type="number" name="boxesNumber" value={boxes || "0"} onChange={(e) => {
+                                const examId = event?.id;
+                                if(!examId) return;
+
+                                const nextBoxes = e.target.value;
+                                updateBoxesState(examId, nextBoxes)
+                                updateCrepBoxes(examId, nextBoxes)
+                            }}/>
+                        </div>
+                    </div>
                     <textarea className="remarks min-h-32 resize-y rounded-lg border border-gray-300 p-3" rows={6} name="remarks" id="remarks" placeholder="Add any remarks"
                         value={remark || ""}
                         onChange={(e) => setRemark(e.target.value)}
@@ -268,6 +300,12 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         }
 
                         if (shouldNotifyFinished) {
+                            if(parseInt(boxes) <= 0) {
+                                if (!window.confirm("You are changing the status to `finished`, but the number of boxes for this exam is still set to 0. Are you sure you want to proceed?")) {
+                                    setSelectStatus(previousStatus);
+                                    return;
+                                }
+                            }
                             // proceed only if confirmed, else prevent modal close and save
                             if (!window.confirm("You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
@@ -315,6 +353,7 @@ CePro team
 Hello,
 
 The exam ${event?.extendedProps?.description} has been finished printing and is ready to be picked up at the Repro.
+Number of boxes : ${boxes}
 
 Click on this link to find where the Repro is located : https://plan.epfl.ch/?room=%253DBP%200243
 
