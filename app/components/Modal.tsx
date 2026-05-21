@@ -28,6 +28,40 @@ interface ModalProps {
     setExams: Dispatch<SetStateAction<EventSourceInput | undefined>>;
 }
 
+interface AuthorizedPersonsAndFilesProps {
+    authorizedPersons?: AuthorizedPersons[];
+    files?: string[];
+    className?: string;
+    labelSuffix?: string;
+}
+
+function AuthorizedPersonsAndFiles({ authorizedPersons = [], files = [], className = "", labelSuffix = "" }: AuthorizedPersonsAndFilesProps) {
+    return (
+        <div className={`flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start ${className}`}>
+            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
+                <label className="font-semibold w-full" htmlFor={`authorizedPersons${labelSuffix}`}>Authorized persons</label>
+                <ul className={`${authorizedPersons.length > 0 && 'ml-6'} list-disc`}>
+                    {authorizedPersons.length > 0 ?
+                        authorizedPersons.map((user) => (
+                            <li key={user.id}>{user.email}</li>
+                        )) : 'None'
+                    }
+                </ul>
+            </div>
+            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
+                <label className="font-semibold w-full" htmlFor={`files${labelSuffix}`}>Files</label>
+                <ul className={`${files.length > 0 && 'ml-6'} list-disc`}>
+                    {files.length > 0 ?
+                        files.map((file) => (
+                            <li key={file}>{file}</li>
+                        )) : 'None'
+                    }
+                </ul>
+            </div>
+        </div>
+    );
+}
+
 export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) {
     const [remark, setRemark] = useState(event?.extendedProps?.remark)
     const [reproRemark, setReproRemark] = useState(event?.extendedProps?.reproRemark)
@@ -236,28 +270,11 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                                 <input className="contact basis-full xl:basis-auto w-full" type="text" name="contact" disabled defaultValue={`${event?.extendedProps?.contact.firstname} ${event?.extendedProps?.contact.lastname} (${event?.extendedProps?.contact.email})`} />
                             </div>
                         </div>
-                        <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
-                                <label className="font-semibold w-full" htmlFor="authorizedPersons">Authorized persons</label>
-                                <ul className={`${event?.extendedProps?.authorizedPersons.length > 0 && 'ml-6'} list-disc`}>
-                                    {event?.extendedProps?.authorizedPersons.length > 0 ?
-                                        event?.extendedProps?.authorizedPersons.map((user: { email: string, id: string, name: string }) => (
-                                            <li key={user.id}>{user.email}</li>
-                                        )) : 'None'
-                                    }
-                                </ul>
-                            </div>
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
-                                <label className="font-semibold w-full" htmlFor="files">Files</label>
-                                <ul className={`${event?.extendedProps?.files.length > 0 && 'ml-6'} list-disc`}>
-                                    {event?.extendedProps?.files.length > 0 ?
-                                        event?.extendedProps?.files.map((file: string) => (
-                                            <li key={file}>{file}</li>
-                                        )) : 'None'
-                                    }
-                                </ul>
-                            </div>
-                        </div>
+                        <AuthorizedPersonsAndFiles
+                            authorizedPersons={event?.extendedProps?.authorizedPersons}
+                            files={event?.extendedProps?.files}
+                            className="print:hidden"
+                        />
                     </div>
                     <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                         <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
@@ -297,6 +314,16 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             </div>
                         </div>
                     </div>
+                    <div className="print-first-page-signature hidden print:flex print:justify-between print:w-full print:px-16 print:pb-6">
+                        <div className="flex flex-col gap-8">
+                            <p className="text-lg font-bold">Delivered on</p>
+                            <span>{".".repeat(40)}</span>
+                        </div>
+                        <div className="flex flex-col gap-8">
+                            <p className="text-lg font-bold">Signature</p>
+                            <span>{".".repeat(40)}</span>
+                        </div>
+                    </div>
                     <textarea className="remarks min-h-32 resize-y rounded-lg border border-gray-300 p-3" rows={6} name="remarks" id="remarks" placeholder="Add any remarks"
                         value={remark || ""}
                         onChange={(e) => setRemark(e.target.value)}
@@ -310,16 +337,12 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     </textarea>
                 </div>
             </div>
-            <div className="hidden print:flex fixed bottom-0 justify-between w-full px-24 pb-24">
-                <div className="flex flex-col gap-8">
-                    <p className="text-lg font-bold">Delivered on</p>
-                    <span>{".".repeat(40)}</span>
-                </div>
-                <div className="flex flex-col gap-8">
-                    <p className="text-lg font-bold">Signature</p>
-                    <span>{".".repeat(40)}</span>
-                </div>
-            </div>
+            <AuthorizedPersonsAndFiles
+                authorizedPersons={event?.extendedProps?.authorizedPersons}
+                files={event?.extendedProps?.files}
+                className="print-authorized-files hidden px-8 py-6"
+                labelSuffix="Print"
+            />
             <div id="modal-toolbar" className="shrink-0 border-t border-black/5 px-5 py-4 md:px-8 md:py-6 flex flex-row justify-between flex-wrap xxl:flex-nowrap gap-y-2 bg-background">
                 <div className="flex flex-row gap-4 flex-wrap md:flex-nowrap gap-y-2 ">
                     {/* ToDo : use a component */}
