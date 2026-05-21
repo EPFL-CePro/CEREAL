@@ -125,6 +125,20 @@ td[role="presentation"] {
     display: none;
   }
 
+  .print-authorized-files {
+    display: flex;
+    break-before: page;
+    page-break-before: always;
+    padding-top: 60px;
+  }
+
+  .print-first-page-signature {
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: calc(100vh - 8rem);
+  }
+
   .input-number {
     appearance: textfield;
     -moz-appearance: textfield;
