@@ -440,6 +440,7 @@ The exam ${event?.extendedProps?.description} has been finished printing and is 
 Number of boxes : ${boxes}
 
 Click on this link to find where the Repro is located : https://plan.epfl.ch/?room=%253DBP%200243
+Click on this link to see the Repro's opening hours : https://www.epfl.ch/campus/services/repro/fr/contacts/#ancre2
 
 Best,
 CePro team
