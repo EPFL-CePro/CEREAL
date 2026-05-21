@@ -360,7 +360,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             </select>
                         </>
                     )}
-                    <PrintButton ref={modalRef} />
+                    <PrintButton ref={modalRef} documentTitle={event?.extendedProps?.folderName} />
                 </div>
                 <div className="flex flex-row gap-4">
                     <button className="btn btn-secondary">Cancel</button>
