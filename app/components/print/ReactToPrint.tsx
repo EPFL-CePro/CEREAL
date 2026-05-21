@@ -2,11 +2,12 @@ import { useReactToPrint } from "react-to-print";
 
 interface PrintButtonProps {
     ref: React.RefObject<HTMLFormElement | null>;
+    documentTitle: string;
 }
 
-export function PrintButton({ ref }: PrintButtonProps) {
+export function PrintButton({ ref, documentTitle }: PrintButtonProps) {
     const reactToPrintFn = useReactToPrint({
-        documentTitle: ref.current?.getElementsByClassName("exam-title")[0]?.textContent || "Document",
+        documentTitle,
         contentRef: ref,
     });
 
