@@ -7,7 +7,7 @@ export default async function middleware(req: NextRequest) {
 
 	if (!session?.user) {
 		const authUrl = new URL('/api/auth', req.url);
-		authUrl.searchParams.set('callbackUrl', req.url);
+		authUrl.searchParams.set('callbackUrl', `${req.nextUrl.pathname}${req.nextUrl.search}`);
 		return NextResponse.redirect(authUrl);
 	}
 
