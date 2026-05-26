@@ -662,13 +662,15 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               ease-in-out
             "
             onClick={async () => {
-              await deleteExam(row.original.id);
-              setExams((currentExams) =>
-                currentExams.filter((exam) => exam.id !== row.original.id)
-              )
-              setSelectedExam((currentExam) =>
-                currentExam?.id === row.original.id ? null : currentExam
-              )
+              if(window.confirm("Are you sure that you want to delete this exam ? This action is irreversible.")) {
+                await deleteExam(row.original.id);
+                setExams((currentExams) =>
+                  currentExams.filter((exam) => exam.id !== row.original.id)
+                )
+                setSelectedExam((currentExam) =>
+                  currentExam?.id === row.original.id ? null : currentExam
+                )
+              }
             }}
           >
             Delete
