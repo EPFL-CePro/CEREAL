@@ -1,6 +1,6 @@
 {
   "name": "cepro-repro-exams-planning",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
