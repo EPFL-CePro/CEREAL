@@ -56,6 +56,20 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const compactInputClassName =
     'h-9 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600'
 
+  const updateExamInState = React.useCallback(
+    (examId: string, updates: Partial<Exam>) => {
+      setExams((currentExams) =>
+        currentExams.map((exam) =>
+          exam.id === examId ? { ...exam, ...updates } : exam
+        )
+      )
+      setSelectedExam((currentExam) =>
+        currentExam?.id === examId ? { ...currentExam, ...updates } : currentExam
+      )
+    },
+    []
+  )
+
   React.useEffect(() => {
     let isActive = true
     setIsLoadingTable(true)
@@ -146,6 +160,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
 
           debounceRef.current = setTimeout(async () => {
             await updateExamRemark(id, value)
+            updateExamInState(id, { remark: value })
           }, 700);
         }}
       />
@@ -187,6 +202,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamServiceLevel(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  service_level_id: Number(e.target.value),
+                })
               }}
             >
               {allServiceLevels.map((serviceLevel) => (
@@ -238,6 +256,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamService(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  service_id: Number(e.target.value),
+                })
               }}
             >
               {allServices.map((service) => (
@@ -289,6 +310,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamType(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  exam_type_id: Number(e.target.value),
+                })
               }}
             >
               {allExamTypes.map((examType) => (
@@ -340,6 +364,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamStatus(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  exam_status_id: Number(e.target.value),
+                })
               }}
             >
               {allExamStatus.map((examStatus) => (
@@ -392,6 +419,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             className={`${compactInputClassName} w-[8.5rem]`}
             onChange={async (e) => {
               await updateExamDate(row.original.id, e.target.value)
+              updateExamInState(row.original.id, {
+                exam_date: e.target.value || null,
+              })
             }}
           />
         </div>
@@ -444,6 +474,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             className={`${compactInputClassName} w-[5.5rem]`}
             onChange={async (e) => {
               await updateExamStudentsNumber(row.original.id, e.target.value)
+              updateExamInState(row.original.id, {
+                nb_students: e.target.value ? Number(e.target.value) : null,
+              })
             }}
           />
         </div>
@@ -466,6 +499,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             className={`${compactInputClassName} w-[5.5rem]`}
             onChange={async (e) => {
               await updateExamPagesNumber(row.original.id, e.target.value)
+              updateExamInState(row.original.id, {
+                nb_pages: e.target.value ? Number(e.target.value) : null,
+              })
             }}
           />
         </div>
@@ -538,6 +574,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               className="h-9 max-w-[11rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
               onChange={async (e) => {
                 await updateExamResponsible(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  responsible_id: e.target.value ? Number(e.target.value) : null,
+                })
               }}
             >
               {allCeproAdminsIT.map((adminIT) => (
@@ -624,6 +663,12 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             "
             onClick={async () => {
               await deleteExam(row.original.id);
+              setExams((currentExams) =>
+                currentExams.filter((exam) => exam.id !== row.original.id)
+              )
+              setSelectedExam((currentExam) =>
+                currentExam?.id === row.original.id ? null : currentExam
+              )
             }}
           >
             Delete
