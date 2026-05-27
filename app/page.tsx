@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Footer } from "./components/Footer";
 
 export const metadata = {
   title: "CEREAL",
@@ -70,6 +71,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <Footer />
       </div>
     </main>
   );
