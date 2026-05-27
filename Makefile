@@ -1,5 +1,5 @@
 env:
-	cp /keybase/team/cepro_crep/secrets-dev.env .env
+	cp /keybase/team/cepro_cereal/secrets-dev.env .env
 
 up:
 	docker compose -f docker-compose-dev.yml up
