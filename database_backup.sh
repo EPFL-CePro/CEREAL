@@ -20,7 +20,7 @@ while IFS='=' read -r key value; do
   export "$key=$value"
 done < "$ENV_FILE"
 
-CONTAINER="${MYSQL_CONTAINER:-crep-app-db}"
+CONTAINER="${MYSQL_CONTAINER:-cereal-app-db}"
 DB="${MYSQL_DATABASE:?MYSQL_DATABASE is required in ${ENV_FILE}}"
 USER="${MYSQL_BACKUP_USER:-root}"
 if [[ -n "${MYSQL_BACKUP_PASSWORD:-}" ]]; then

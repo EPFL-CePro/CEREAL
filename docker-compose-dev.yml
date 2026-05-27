@@ -1,10 +1,10 @@
 services:
-  crep-app-db:
+  cereal-app-db:
     env_file:
       - path: .env
         required: true
     image: mysql
-    container_name: crep-app-db
+    container_name: cereal-app-db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: secret
@@ -18,9 +18,9 @@ services:
     volumes:
       - ./db:/docker-entrypoint-initdb.d
     networks:
-      - crep-app-network
-  crep-app:
-    container_name: crep-app
+      - cereal-app-network
+  cereal-app:
+    container_name: cereal-app
     image: node:20
     ports:
       - '3000:3000'
@@ -31,7 +31,7 @@ services:
     tty: true
     command: /bin/sh -c "cd /app && npm install && npm run dev"
     depends_on:
-      crep-app-db:
+      cereal-app-db:
         condition: service_healthy
     environment:
       - NODE_ENV=development
@@ -39,21 +39,21 @@ services:
     env_file:
       - .env
     networks:
-      - crep-app-network
-  crep-app-pma:
+      - cereal-app-network
+  cereal-app-pma:
     image: phpmyadmin
-    container_name: crep-app-pma
+    container_name: cereal-app-pma
     restart: unless-stopped
     environment:
       - PMA_HOST=${MYSQL_HOST}
     depends_on:
-      crep-app-db:
+      cereal-app-db:
         condition: service_healthy
     ports:
       - 8088:80
     networks:
-      - crep-app-network
+      - cereal-app-network
 
 networks:
-  crep-app-network:
-    name: crep-app-network
+  cereal-app-network:
+    name: cereal-app-network
