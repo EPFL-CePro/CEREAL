@@ -1,5 +1,5 @@
 "use client"
-import { getAllCrepExams, getAllExamsBetweenDates, getAllExamsByStatus } from "@/app/lib/database";
+import { getAllCrepExams, getAllExamsBetweenDates, getAllExamsByStatus } from "@/app/lib/crep/database";
 import { getAllowedExamStatus } from "@/app/lib/examStatus";
 import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";

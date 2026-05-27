@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
-import RegisterForm from "../components/forms/register"
+import RegisterForm from "../../components/crep/register"
 
 export const metadata = {
-    title: "Register your exam",
+    title: "CREP - Register",
 }
 
 export default async function Page() {

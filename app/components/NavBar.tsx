@@ -2,7 +2,7 @@
 import { User } from "next-auth";
 import { SignIn } from "./auth/SignInButton";
 import { SignOut } from "./auth/SignOutButton";
-import { Export } from "./exportData/Export";
+import { Export } from "./crep/exportData/Export";
 import Notifications from "./Notifications";
 
 interface NavBarProps {

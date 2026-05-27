@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect, JSX } from "react";
-import { getLogs, markAsRead } from "../lib/database";
+import { getLogs, markAsRead } from "../lib/crep/database";
 import { User } from "next-auth";
 
 type Log = {

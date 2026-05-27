@@ -1,6 +1,6 @@
 // app/api/upload-exam-files/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { uploadExamFiles } from "@/app/lib/upload";
+import { uploadExamFiles } from "@/app/lib/crep/upload";
 import { auth } from "@/auth";
 
 // ensure Node.js runtime (needed for fs / NAS)

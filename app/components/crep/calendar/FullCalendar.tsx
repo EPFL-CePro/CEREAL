@@ -6,17 +6,17 @@ import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction'; // handles event clicks
 import { useEffect, useRef, useState, useMemo, Dispatch } from "react";
 import { EventDropArg, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
-import { getAllCrepExams, getAllNonAdminExams, updateExamDateById } from "@/app/lib/database";
+import { getAllCrepExams, getAllNonAdminExams, updateExamDateById } from "@/app/lib/crep/database";
 import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateTimeInputValue, formatDateYYYYMMDD } from "@/app/lib/dateTime";
-import { Modal } from "../Modal";
+import { Modal } from "../../Modal";
 import { User } from "next-auth";
 import { getAllowedExamStatus } from "@/app/lib/examStatus";
-import { Filters } from "../Filters";
+import { Filters } from "../../Filters";
 import { QueryResult } from "mysql2";
-import { Legend } from "../Legend";
+import { Legend } from "../../Legend";
 import { EventApi } from "@fullcalendar/core";
 import { useSearchParams } from "next/navigation";
-import { getPrintingDurationInMinutes } from "@/app/lib/printingDuration";
+import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 
 interface CalendarProps {
   user: AppUser

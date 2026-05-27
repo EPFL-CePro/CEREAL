@@ -11,7 +11,7 @@ export default async function middleware(req: NextRequest) {
 		return NextResponse.redirect(authUrl);
 	}
 
-	if (pathname === '/register' || pathname.startsWith('/register/')) {
+	if (pathname === '/crep/register' || pathname.startsWith('/crep/register/')) {
     	return NextResponse.next();
   	}
 
