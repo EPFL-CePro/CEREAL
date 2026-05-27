@@ -1,5 +1,5 @@
 export const metadata = {
-    title: "403 CREP error page",
+    title: "403 CEREAL error page",
 }
 
 export default function Page() {

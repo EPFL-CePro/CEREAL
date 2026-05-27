@@ -16,8 +16,8 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CREP",
-  description: "CePro Repro Exams Planning, tool to manage exams planning, maintained by CePro, used by Repro @ EPFL.",
+  title: "CEREAL",
+  description: "CEREAL (CePro Examens Regroupement Encadrement Administration Logistique), a tool for everything that concerns managing exams at CePro @EPFL.",
 };
 
 export default function RootLayout({

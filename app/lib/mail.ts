@@ -3,7 +3,7 @@
 import nodemailer from 'nodemailer';
 
 function getMailSubjectPrefix() {
-    return process.env.CREP_ENV === 'test' ? 'TEST - ' : '';
+    return process.env.CEREAL_ENV === 'test' ? 'TEST - ' : '';
 }
 
 export async function sendMail(to: string, subject: string, content: string, cc: string, replyTo?: string) {

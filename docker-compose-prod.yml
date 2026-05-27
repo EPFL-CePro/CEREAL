@@ -1,10 +1,10 @@
 services:
-  crep-app:
-    container_name: crep-app
+  cereal-app:
+    container_name: cereal-app
     build:
       context: .
       dockerfile: Dockerfile
-    image: crep-app
+    image: cereal-app
     ports:
       - "3000:3000"
     environment:
