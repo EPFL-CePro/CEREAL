@@ -1,7 +1,11 @@
-import Calendar from "./components/calendar/FullCalendar";
-import { auth } from "../auth"
-import { NavBar } from "./components/NavBar";
-import { Footer } from "./components/Footer";
+import Calendar from "../components/crep/calendar/FullCalendar";
+import { auth } from "../../auth";
+import { NavBar } from "../components/NavBar";
+import { Footer } from "../components/Footer";
+
+export const metadata = {
+    title: "CREP - Calendar",
+}
 
 export default async function Home() {
   const session = await auth();

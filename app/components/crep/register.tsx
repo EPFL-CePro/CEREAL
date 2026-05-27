@@ -1,18 +1,18 @@
 "use client";
 // This form allows users to register their exams into the system.
 import { useForm, SubmitHandler } from "react-hook-form"
-import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } from "@/app/lib/database";
+import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } from "@/app/lib/crep/database";
 import { useState } from "react";
-import ReactSelect from "./ReactSelect";
+import ReactSelect from "../forms/ReactSelect";
 import { fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
 import { sendMail } from "@/app/lib/mail";
 import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dateTime";
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
-import { RegisterModal } from "./RegisterModal";
+import { RegisterModal } from "../forms/RegisterModal";
 import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
-import { getPrintingDurationInMinutes } from "@/app/lib/printingDuration";
+import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 
 interface RegisterProps {
     user: AppUser
