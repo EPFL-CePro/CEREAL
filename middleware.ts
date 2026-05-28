@@ -15,6 +15,10 @@ export default async function middleware(req: NextRequest) {
     	return NextResponse.next();
   	}
 
+	if (pathname === '/crep/exams' || pathname.startsWith('/crep/exams/')) {
+    	return NextResponse.next();
+  	}
+
 	const groups = session.user.groups || [];
 	// `_AppGrpU` after the group name is needed because of what is returned by EPFL's Entra...
 	const authorizedGroups = ['CREP-access_AppGrpU', 'CREP-admin_AppGrpU'];
@@ -30,5 +34,5 @@ export default async function middleware(req: NextRequest) {
 
 // All routes require login, except /api/auth, that is used to login... (and some static Next.js things)
 export const config = {
-  matcher: ["/((?!api/auth|api/upload-exam-files|403|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/upload-exam-files|api/crep/files|403|_next/static|_next/image|favicon.ico).*)"],
 }
