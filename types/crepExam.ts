@@ -16,4 +16,6 @@ export type CrepExam = {
     registered_by: string;
     need_scan: boolean;
     financial_center: string;
+    desired_date: Date;
+    files: string;
 }

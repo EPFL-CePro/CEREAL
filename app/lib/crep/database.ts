@@ -338,6 +338,68 @@ export async function updateCrepPriceTotal(examId: string, priceTotal: string) {
     })
 }
 
+export async function getCrepExamsByContactEmail(email: string): Promise<CrepExam[]> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query(
+            "SELECT * FROM crep WHERE JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ? ORDER BY desired_date DESC;",
+            [email],
+            (err, rows) => {
+                if (err) throw err
+                resolve(rows as CrepExam[]);
+            }
+        )
+        connection.end()
+    })
+}
+
+export async function getCrepExamById(id: string): Promise<CrepExam | null> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('SELECT * FROM crep WHERE id = ? LIMIT 1;', [id], (err, rows) => {
+            if (err) throw err
+            const arr = rows as CrepExam[];
+            resolve(arr.length > 0 ? arr[0] : null);
+        })
+        connection.end()
+    })
+}
+
+export async function updateCrepExamFiles(id: string, filesJson: string): Promise<void> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('UPDATE crep SET files = ? WHERE id = ?;', [filesJson, id], (err) => {
+            if (err) throw err
+            resolve();
+        })
+        connection.end()
+    })
+}
+
 export async function getLogs(sciper: string) {
   const connection = mysql.createConnection({
     host: process.env.MYSQL_HOST,
