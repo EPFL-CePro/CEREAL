@@ -70,7 +70,7 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
     } else {
         currentYear = date.getFullYear().toString() + '-' + (date.getFullYear() +1).toString();
     }
-    const url = `${getOasisBaseUrl()}/enseignant-cours/modules/${currentYear}`;
+    const url = `${getOasisBaseUrl()}/enseignant-cours/${currentYear}`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
@@ -93,9 +93,9 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
     }
     const courses = data as OasisCourse[];
 
-    const filteredCourses = courses.filter(cours => cours.coursSeanceCode == 'LIP_COURS');
+    // const filteredCourses = courses.filter(cours => cours.coursSeanceCode == 'LIP_COURS');
 
-    return filteredCourses.map(c => ({
+    return courses.map(c => ({
       value: `${c.coursNomFr} (${c.enseignantPrenom} ${c.enseignantNom})`,
       label: `${c.coursCode ? c.coursCode : 'Unspecified Code'} - ${c.coursNomFr} (${c.enseignantPrenom} ${c.enseignantNom})`,
       exam: {
