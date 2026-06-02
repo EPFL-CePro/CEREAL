@@ -61,9 +61,12 @@ export async function fetchMultiplePersonsBySciper(scipersWithCommas: string): P
 
 export async function fetchCourses(academicYear?: string): Promise<SelectOption[]> {
     const date = new Date();
+    const month = date.getMonth();
     let currentYear;
     if(academicYear) {
         currentYear = academicYear;
+    } else if(month >= 1 && month <= 8) {
+        currentYear = (date.getFullYear() - 1).toString() + '-' + date.getFullYear().toString();
     } else {
         currentYear = date.getFullYear().toString() + '-' + (date.getFullYear() +1).toString();
     }
