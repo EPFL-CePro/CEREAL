@@ -718,6 +718,7 @@ ${data.remark && `- Additional remarks: ${data.remark}`}`,
                     )}
                     <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
                 </button>
+                {Object.keys(errors).length > 0 && <span className="text-red-500">The form contains error(s), please see message(s) above to correct every error(s).</span>}
             </form >
         </div >
 
