@@ -3,7 +3,7 @@
 // border-blue-500 border-yellow-500 border-green-500 border-red-500 border-violet-400
 export const examStatus = [
     { value: 'registered', label: 'Registered', color: 'blue-500', hexColor: '#3b82f6', fcColor: 'oklch(62.3% 0.214 259.815)', needsAdmin: true },
-    { value: 'registered-warning', label: 'Registered-Warning', color: 'orange-500', hexColor: '#e38402', fcColor: 'oklch(0.7 0.1599 62.49)', needsAdmin: true },
+    { value: 'registered-warning', label: 'Registered-Warning', color: 'yellow-800', hexColor: '#784e14', fcColor: 'oklch(0.4608 0.0901 69.77)', needsAdmin: true },
     { value: 'registered-error', label: 'Registered-Error', color: 'red-500', hexColor: '#ef4444', fcColor: '#fb2c36', needsAdmin: true },
     { value: 'toPrint', label: 'To Print', color: 'yellow-500', hexColor: '#eab308', fcColor: 'oklch(79.5% 0.184 86.047)', needsAdmin: false },
     { value: 'printing', label: 'Printing', color: 'green-500', hexColor: '#22c55e', fcColor: 'oklch(72.3% 0.219 149.579)', needsAdmin: false },
