@@ -211,6 +211,11 @@ export default function App({ user }: RegisterProps) {
             }
         }
 
+        if(data.paperFormat == "A3" && data.nbPages % 4 != 0) {
+            setError("nbPages", { type: "validate", message: "When printing in A3, number of pages per document must be a multiple of 4." });
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -548,6 +553,7 @@ ${data.remark && `- Additional remarks: ${data.remark}`}`,
                         <div className="flex flex-col w-2/4 gap-3">
                             <label>Pages per document <RedAsterisk /></label>
                             <input className="text-right border border-slate-300 rounded-md p-2" type="number" min={1} {...register("nbPages", { required: true, min: 1 })} />
+                            {errors.nbPages && <span className="text-red-600">{errors.nbPages.message}</span>}
                         </div>
                     </div>
                     <div>
