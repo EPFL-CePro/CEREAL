@@ -1,7 +1,7 @@
 "use client"
 import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useRef, useState } from "react";
-import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal } from "../lib/crep/database";
+import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal, updateCrepExamFields } from "../lib/crep/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { PrintButton } from "./print/ReactToPrint";
 import { examNotAdminStatus } from "../lib/examStatus";
@@ -69,6 +69,15 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const [boxes, setBoxes] = useState(event?.extendedProps?.boxes)
     const [priceUnit, setPriceUnit] = useState(event?.extendedProps?.priceUnit)
     const [priceTotal, setPriceTotal] = useState(event?.extendedProps?.priceTotal)
+    const [desiredDate, setDesiredDate] = useState(formatDateOnlyValue(event?.extendedProps?.desiredDate as string | Date | null | undefined))
+    const [examDate, setExamDate] = useState(formatDateOnlyValue(event?.extendedProps?.examDate as string | Date | null | undefined))
+    const [financialCenter, setFinancialCenter] = useState(event?.extendedProps?.financialCenter ?? "")
+    const [copiesNumber, setCopiesNumber] = useState(event?.extendedProps?.copiesNumber ?? "")
+    const [pagesPerCopy, setPagesPerCopy] = useState(event?.extendedProps?.pagesPerCopy ?? "")
+    const [paperFormat, setPaperFormat] = useState(event?.extendedProps?.paperFormat ?? "A3")
+    const [paperColor, setPaperColor] = useState(event?.extendedProps?.paperColor ?? "greyscale")
+    const [printSide, setPrintSide] = useState(event?.extendedProps?.print ?? "recto-verso")
+    const [needScan, setNeedScan] = useState<boolean>(!!event?.extendedProps?.needScan)
     const modalRef = useRef<HTMLFormElement | null>(null);
 
     async function save() {
@@ -79,6 +88,17 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 e.status = selectStatus
                 e.reproRemark = reproRemark
                 e.boxes = boxes
+                if (user.isAdmin) {
+                    e.desiredDate = desiredDate ? new Date(desiredDate) : desiredDate
+                    e.examDate = examDate ? new Date(examDate) : examDate
+                    e.financialCenter = financialCenter
+                    e.copiesNumber = copiesNumber
+                    e.pagesPerCopy = pagesPerCopy
+                    e.paperFormat = paperFormat
+                    e.paperColor = paperColor
+                    e.print = printSide
+                    e.needScan = needScan
+                }
             }
             return e;
         }) : [];
@@ -90,6 +110,21 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
         await updateExamStatusById(event?.id || '', selectStatus)
         setSelectStatus(selectStatus)
+
+        if (user.isAdmin) {
+            await updateCrepExamFields(event?.id || '', {
+                desired_date: desiredDate,
+                exam_date: examDate,
+                financial_center: financialCenter,
+                exam_students: copiesNumber,
+                exam_pages: pagesPerCopy,
+                paper_format: paperFormat,
+                paper_color: paperColor,
+                print: printSide,
+                need_scan: needScan,
+            })
+        }
+
         setExams(updatedExams)
     }
 
@@ -211,11 +246,11 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="desiredDate">Desired delivery date</label>
-                                <input className="exam-date basis-full xl:basis-auto" type="date" name="desiredDate" disabled defaultValue={formatDateOnlyValue(event?.extendedProps?.desiredDate as string | Date | null | undefined)} />
+                                <input className="exam-date basis-full xl:basis-auto" type="date" name="desiredDate" disabled={!user.isAdmin} value={desiredDate} onChange={(e) => setDesiredDate(e.target.value)} />
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="examDate">Exam date</label>
-                                <input className="exam-date basis-full xl:basis-auto" type="date" name="examDate" disabled defaultValue={formatDateOnlyValue(event?.extendedProps?.examDate as string | Date | null | undefined)} />
+                                <input className="exam-date basis-full xl:basis-auto" type="date" name="examDate" disabled={!user.isAdmin} value={examDate} onChange={(e) => setExamDate(e.target.value)} />
                             </div>
                         </div>
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
@@ -233,7 +268,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="financial">Financial center</label>
-                                <input className="financial-center basis-full xl:basis-auto" type="text" name="financial" disabled defaultValue={event?.extendedProps?.financialCenter} />
+                                <input className="financial-center basis-full xl:basis-auto" type="text" name="financial" disabled={!user.isAdmin} value={financialCenter} onChange={(e) => setFinancialCenter(e.target.value)} />
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="folderName">Folder name</label>
@@ -243,27 +278,54 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="copiesNumber">Number of copies</label>
-                                <input className="copies-number basis-full xl:basis-auto" type="text" name="copiesNumber" disabled defaultValue={event?.extendedProps?.copiesNumber} />
+                                <input className="copies-number basis-full xl:basis-auto" type={user.isAdmin ? "number" : "text"} min={1} name="copiesNumber" disabled={!user.isAdmin} value={copiesNumber} onChange={(e) => setCopiesNumber(e.target.value)} />
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="pagesPerCopy">Pages per copy</label>
-                                <input className="pages-copy basis-full xl:basis-auto" type="text" name="pagesPerCopy" disabled defaultValue={event?.extendedProps?.pagesPerCopy} />
+                                <input className="pages-copy basis-full xl:basis-auto" type={user.isAdmin ? "number" : "text"} min={1} name="pagesPerCopy" disabled={!user.isAdmin} value={pagesPerCopy} onChange={(e) => setPagesPerCopy(e.target.value)} />
                             </div>
                         </div>
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="paperFormat">Bindings</label>
-                                <input className="paper-format basis-full xl:basis-auto" type="text" name="paperFormat" disabled defaultValue={event?.extendedProps?.paperFormat && event?.extendedProps?.paperFormat == 'A3' ? 'Saddle stitch (A3)' : 'Stapple (A4)'} />
+                                {user.isAdmin ? (
+                                    <select className="paper-format basis-full xl:basis-auto" name="paperFormat" value={paperFormat} onChange={(e) => setPaperFormat(e.target.value)}>
+                                        <option value="A3">Saddle stitch (A3)</option>
+                                        <option value="A4">Stapple (A4)</option>
+                                    </select>
+                                ) : (
+                                    <input className="paper-format basis-full xl:basis-auto" type="text" name="paperFormat" disabled defaultValue={event?.extendedProps?.paperFormat && event?.extendedProps?.paperFormat == 'A3' ? 'Saddle stitch (A3)' : 'Stapple (A4)'} />
+                                )}
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="paperColor">Print</label>
-                                <input className="paper-color basis-full xl:basis-auto" type="text" name="paperColor" disabled defaultValue={`${event?.extendedProps?.paperColor}, ${event?.extendedProps?.print}`} />
+                                {user.isAdmin ? (
+                                    <div className="flex flex-row flex-wrap gap-2 basis-full xl:basis-auto">
+                                        <select className="paper-color" name="paperColor" value={paperColor} onChange={(e) => setPaperColor(e.target.value)}>
+                                            <option value="greyscale">Greyscale</option>
+                                            <option value="color">Color</option>
+                                        </select>
+                                        <select className="print-side" name="print" value={printSide} onChange={(e) => setPrintSide(e.target.value)}>
+                                            <option value="recto">Recto</option>
+                                            <option value="recto-verso">Recto-verso</option>
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <input className="paper-color basis-full xl:basis-auto" type="text" name="paperColor" disabled defaultValue={`${event?.extendedProps?.paperColor}, ${event?.extendedProps?.print}`} />
+                                )}
                             </div>
                         </div>
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="needScan">Needs to be scanned</label>
-                                <input className="need-scan basis-full xl:basis-auto" type="text" name="needScan" disabled defaultValue={event?.extendedProps?.needScan ? 'Yes' : 'No'} />
+                                {user.isAdmin ? (
+                                    <select className="need-scan basis-full xl:basis-auto" name="needScan" value={needScan ? 'true' : 'false'} onChange={(e) => setNeedScan(e.target.value === 'true')}>
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                ) : (
+                                    <input className="need-scan basis-full xl:basis-auto" type="text" name="needScan" disabled defaultValue={event?.extendedProps?.needScan ? 'Yes' : 'No'} />
+                                )}
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="contact">Contact</label>
@@ -367,6 +429,12 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     {/* on save, check if the status change into a status that requires admin privileges and confirm with the user */}
                     <button className="btn btn-primary" onClick={async (e) => {
                         e.preventDefault();
+
+                        // Enforcing the A3 rule that pages per copy must be multiple of 4, as when submitting the form.
+                        if (user.isAdmin && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
+                            window.alert("When printing in A3, the number of pages per copy must be a multiple of 4.");
+                            return;
+                        }
 
                         const previousStatus = event?.extendedProps?.status;
                         const statusChanged = previousStatus !== selectStatus;
