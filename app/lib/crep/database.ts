@@ -338,6 +338,39 @@ export async function updateCrepPriceTotal(examId: string, priceTotal: string) {
     })
 }
 
+export async function updateCrepExamFields(
+    examId: string,
+    fields: Record<string, string | number | boolean>
+) {
+    const allowedColumns = [
+        'desired_date', 'exam_date', 'financial_center',
+        'exam_students', 'exam_pages', 'paper_format',
+        'paper_color', 'print', 'need_scan',
+    ];
+    const entries = Object.entries(fields).filter(([col]) => allowedColumns.includes(col));
+    if (entries.length === 0) return;
+
+    const setClause = entries.map(([col]) => `${col} = ?`).join(', ');
+    const params = [...entries.map(([, value]) => value), examId];
+
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query(`UPDATE crep SET ${setClause} WHERE id = ?;`, params, (err, rows) => {
+            if (err) throw err
+            resolve(JSON.stringify(rows));
+        })
+        connection.end()
+    })
+}
+
 export async function getCrepExamsByContactEmail(email: string): Promise<CrepExam[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
