@@ -452,11 +452,10 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         }
 
                         if (shouldNotifyFinished) {
-                            if(parseInt(boxes) <= 0) {
-                                if (!window.confirm("You are changing the status to `finished`, but the number of boxes for this exam is still set to 0. Are you sure you want to proceed?")) {
-                                    setSelectStatus(previousStatus);
-                                    return;
-                                }
+                            if(parseInt(boxes) <= 0 || parseInt(priceUnit) <= 0 || parseInt(priceTotal) <= 0) {
+                                window.alert("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
+                                setSelectStatus(previousStatus);
+                                return;
                             }
                             // proceed only if confirmed, else prevent modal close and save
                             if (!window.confirm("You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?")) {
