@@ -19,12 +19,7 @@ export default async function middleware(req: NextRequest) {
     	return NextResponse.next();
   	}
 
-	const groups = session.user.groups || [];
-	// `_AppGrpU` after the group name is needed because of what is returned by EPFL's Entra...
-	const authorizedGroups = ['CREP-access_AppGrpU', 'CREP-admin_AppGrpU'];
-	const isInAllowedGroup = groups.some((group:string) => authorizedGroups.includes(group));
-
-	if(!isInAllowedGroup) {
+	if(!session.user.hasCrepAccess) {
 		return NextResponse.redirect(new URL("/403", req.url));
 	}
 

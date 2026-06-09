@@ -2,7 +2,55 @@ import NextAuth, { Account } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 
-const decodeJWT = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+const AUTHORIZED_GROUPS = ['CREP-access_AppGrpU', 'CREP-admin_AppGrpU'];
+const ADMIN_GROUP = 'CREP-admin_AppGrpU';
+
+const decodeJWT = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+
+const getGroups = (groups: unknown): string[] => Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : [];
+
+const createSessionToken = (token: JWT, idToken: Record<string, unknown>, accessToken: Record<string, unknown>, expiresAt?: number) => {
+	const groups = getGroups(idToken.groups);
+
+	return {
+		name: `${idToken.given_name ?? ''} ${idToken.family_name ?? ''}`.trim(),
+		email: typeof idToken.email === 'string' ? idToken.email : token.email,
+		picture: token.picture || '',
+		expires_at: expiresAt,
+		oid: typeof idToken.oid === 'string' ? idToken.oid : '',
+		tid: typeof accessToken.tid === 'string' ? accessToken.tid : '',
+		uniqueid: typeof idToken.uniqueid === 'string' ? idToken.uniqueid : '',
+		username: typeof idToken.gaspar === 'string' ? idToken.gaspar : '',
+		hasCrepAccess: groups.some((group) => AUTHORIZED_GROUPS.includes(group)),
+		isAdmin: groups.includes(ADMIN_GROUP),
+	};
+};
+
+const sanitizeExistingToken = (token: JWT) => {
+	const groups = getGroups(token.groups);
+	let expiresAt = typeof token.expires_at === 'number' ? token.expires_at : undefined;
+	let tid = typeof token.tid === 'string' ? token.tid : '';
+
+	if ((!expiresAt || !tid) && typeof token.access_token === 'string') {
+		const accessToken = decodeJWT(token.access_token);
+		expiresAt = expiresAt || accessToken.exp;
+		tid = tid || accessToken.tid || '';
+	}
+
+	return {
+		name: token.name || '',
+		email: token.email || '',
+		picture: token.picture || '',
+		expires_at: expiresAt,
+		oid: token.oid || '',
+		tid,
+		uniqueid: token.uniqueid || '',
+		username: token.username || '',
+		hasCrepAccess: token.hasCrepAccess ?? groups.some((group) => AUTHORIZED_GROUPS.includes(group)),
+		isAdmin: token.isAdmin ?? groups.includes(ADMIN_GROUP),
+		error: token.error,
+	};
+};
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
 	providers: [
@@ -25,30 +73,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					const accessToken = decodeJWT(account.access_token);
 					const idToken = decodeJWT(account.id_token);
 
-					return {
-						...token,
-						access_token: account.access_token,
-						expires_at: account.expires_at,
-						oid: idToken.oid || '',
-						tid: accessToken.tid || '',
-						email: idToken.email,
-						picture: token.picture || '',
-						uniqueid: idToken.uniqueid,
-						username: idToken.gaspar || '',
-						name: `${idToken.given_name ?? ''} ${idToken.family_name ?? ''}`.trim(),
-						groups: idToken.groups || [],
-					};
+					return createSessionToken(token, idToken, accessToken, account.expires_at);
 				}
 
-				const accessToken = decodeJWT(token.access_token as string);
-				if (Date.now() < accessToken.exp * 1000) {
-					return token;
+				const sanitizedToken = sanitizeExistingToken(token);
+
+				if (!sanitizedToken.expires_at || Date.now() < sanitizedToken.expires_at * 1000) {
+					return sanitizedToken;
 				}
 
-				return { ...token, error: 'TokenExpired' };
+				return { ...sanitizedToken, error: 'TokenExpired' };
 			} catch (error) {
 				console.error('Error processing tokens:', error);
-				return { ...token, error: 'TokenProcessingError' };
+				return {
+					name: token.name || '',
+					email: token.email || '',
+					picture: token.picture || '',
+					hasCrepAccess: false,
+					isAdmin: false,
+					error: 'TokenProcessingError',
+				};
 			}
 		},
 		session: async ({ session, token }) => {
@@ -62,8 +106,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					username: token?.username || '',
 					oid: token.oid || '',
 					tid: token.tid || '',
-					isAdmin: (token.groups as Array<string>).includes('CREP-admin_AppGrpU') || false,
-					groups: token.groups as string[],
+					hasCrepAccess: Boolean(token.hasCrepAccess),
+					isAdmin: Boolean(token.isAdmin),
 				},
 			};
 		},
