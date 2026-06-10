@@ -666,6 +666,8 @@ ${data.remark && `- Additional remarks: ${data.remark}`}`,
                     The Repro will ask for the Camipro of the person that came to pick up the exam.<br />
                     The Repro has the right to not give the exam to the person if they are not selected in this list.
                 </div>
+                <span className="text-xs">👤 = Individual person</span>
+                <span className="text-xs">👥 = Group of people</span>
                 <ReactSelect control={control} label={"authorized persons"} name={"authorizedPersons"} isMultiChoice={true} instanceId={3} />
                 <label>Additional remarks</label>
                 <textarea
