@@ -176,7 +176,7 @@ Hello,
 Your subscription to our exam services has been successfully registered:
 
 - Course: ${data.course.exam.code}
-- Teacher: ${data.course.exam.teacherFirstname} ${data.course.exam.teacherName} (${data.course.exam.teacherSciper})
+- Teacher${data.course.exam.teachers.length > 1 ? 's' : ''}: ${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}${t.sciper ? ` (${t.sciper})` : ''}`).join(', ')}
 - Contact: ${contact.email}
 - Type${data.examType.filter((examType) => examType.checked).length > 1 ? 's' : ''} of exam: ${data.examType.filter((examType) => examType.checked).map((examType) => examType.name).join(', ')}
 - Service: ${service[0].description}
@@ -292,7 +292,7 @@ CePro
                 encType="multipart/form-data">
                 {/* register your input into the hook by invoking the "register" function */}
                 <label>Your email address</label>
-                <ReactSelect control={control} label={"registeredBy"} name={"registeredBy"} isMultiChoice={false} instanceId={2} user={user} disabled={true}/>
+                <ReactSelect control={control} label={"registeredBy"} name={"contact"} isMultiChoice={false} instanceId={2} user={user} disabled={true}/>
                 <label>Academic Year <RedAsterisk /></label>
                 <Controller
                     name="academicYear"
