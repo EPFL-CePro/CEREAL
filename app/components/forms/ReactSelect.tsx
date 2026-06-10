@@ -5,11 +5,11 @@ import Select from "react-select";
 import type { OptionProps, GroupBase, OptionsOrGroups, Theme, StylesConfig } from "react-select";
 import CustomOption from "./CustomOption";
 import { Control, Controller, ControllerRenderProps, Path } from "react-hook-form";
-import { fetchCourses, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
+import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
 import { User } from "next-auth";
 import { Inputs } from "@/types/inputs";
 
-export type SelectOption = { value: number | string; label: string; person?: { id: number; firstname?: string; lastname?: string; email?: string; sciper?: string } };
+export type SelectOption = { value: number | string; label: string; person?: { id: number; firstname?: string; lastname?: string; email?: string; sciper?: string }; group?: { id: string; name: string } };
 
 function isSelectOption(value: unknown): value is SelectOption {
     return Boolean(
@@ -77,16 +77,19 @@ function SelectField({
     const [courseLoading, setCourseLoading] = useState(false);
 
     const formatOption = useCallback((option: SelectOption) => {
+        if (option.group) {
+            return <div>👥 {option.group.name}</div>;
+        }
         const p = option.person;
         if (p) {
             return (
                 <div>
-                    {p.firstname} {p.lastname} {p.email ? `- ${p.email}` : null}
+                    {name === "authorizedPersons" ? "👤 " : null}{p.firstname} {p.lastname} {p.email ? `- ${p.email}` : null}
                 </div>
             );
         }
         return option.label;
-    }, []);
+    }, [name]);
 
     const theme = useCallback((themeArg: Theme): Theme => {
         return {
@@ -147,7 +150,12 @@ function SelectField({
                 clearTimeout(timeoutRef.current as number);
                 timeoutRef.current = setTimeout(async () => {
                     try {
-                        const items = await fetchPersons(inputValue);
+                        // The authorized persons select also searches EPFL groups
+                        const [persons, groups] = await Promise.all([
+                            fetchPersons(inputValue),
+                            name === "authorizedPersons" ? fetchGroups(inputValue) : Promise.resolve([]),
+                        ]);
+                        const items = [...persons, ...groups];
                         resolve(items);
                         if (callback) callback(items);
                     } catch (e) {
@@ -324,15 +332,37 @@ function SelectField({
                     >,
             }}
             placeholder={`Select ${label}...`}
-            onChange={(selectedOption) => {
+            onChange={async (selectedOption) => {
                 if (isMultiChoice) {
-                    const arr = Array.isArray(selectedOption)
-                        ? selectedOption.map((s) => Number(s.value))
+                    const opts = Array.isArray(selectedOption)
+                        ? (selectedOption as SelectOption[])
                         : [];
-                    field.onChange(arr);
-                    setSelected(
-                        Array.isArray(selectedOption) ? selectedOption : []
-                    );
+
+                    // Replace selected groups by their individual members
+                    const expanded: SelectOption[] = [];
+                    for (const opt of opts) {
+                        if (opt.group) {
+                            try {
+                                expanded.push(...await fetchGroupPersons(opt.group.id));
+                            } catch (e) {
+                                console.error("Failed to fetch group members", e);
+                            }
+                        } else {
+                            expanded.push(opt);
+                        }
+                    }
+
+                    // Deduplicate by sciper (member selected individually or present in several groups)
+                    const seen = new Set<string>();
+                    const deduped = expanded.filter((o) => {
+                        const key = String(o.value);
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+
+                    field.onChange(deduped.map((s) => Number(s.value)));
+                    setSelected(deduped);
                 } else {
                     const val = selectedOption
                         ? Number((selectedOption as SelectOption).value)

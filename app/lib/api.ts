@@ -36,6 +36,48 @@ export async function fetchPersons(query: string): Promise<SelectOption[]> {
     })).filter((o: SelectOption) => !!o.value && !!o.person?.email);
 }
 
+export async function fetchGroups(query: string): Promise<SelectOption[]> {
+    const url = `https://api.epfl.ch/v1/groups?name=${encodeURIComponent(query)}`;
+    const headers = new Headers();
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Access-Control-Allow-Headers', '*');
+    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    const res = await fetch(url, {method: 'GET', headers});
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.groups) return [];
+    return data.groups.map((g: { id: string, name: string }) => ({
+        value: g.id,
+        label: g.name,
+        group: {
+            id: g.id,
+            name: g.name,
+        }
+    }));
+}
+
+export async function fetchGroupPersons(groupId: string): Promise<SelectOption[]> {
+    const url = `https://api.epfl.ch/v1/groups/${encodeURIComponent(groupId)}/persons?pagesize=0`;
+    const headers = new Headers();
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Access-Control-Allow-Headers', '*');
+    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    const res = await fetch(url, {method: 'GET', headers});
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!data.persons) return [];
+    return data.persons.map((p: { id: string, display: string, email: string, type?: string }) => ({
+        value: Number(p.id),
+        label: p.display,
+        person: {
+            id: Number(p.id),
+            firstname: p.display,
+            email: p.email,
+            sciper: p.id,
+        }
+    })).filter((o: SelectOption) => !!o.value && !isNaN(Number(o.value)) && !!o.person?.email);
+}
+
 export async function fetchPersonBySciper(sciper: string): Promise<EPFLUser> {
     const url = `https://api.epfl.ch/v1/persons/${sciper}`;
     const headers = new Headers();
