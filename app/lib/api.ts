@@ -112,7 +112,7 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
     } else {
         currentYear = date.getFullYear().toString() + '-' + (date.getFullYear() +1).toString();
     }
-    const url = `${getOasisBaseUrl()}/enseignant-cours/${currentYear}`;
+    const url = `${getOasisBaseUrl()}/enseignant-cours/${currentYear}?type=Enseignement`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
@@ -131,21 +131,55 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
         enseignantPrenom: string;
         enseignantNom: string;
         enseignantSciper?: string;
+        enseignantRole?: string;
         coursSeanceCode: string;
     }
     const courses = data as OasisCourse[];
 
     // const filteredCourses = courses.filter(cours => cours.coursSeanceCode == 'LIP_COURS');
 
-    return courses.map(c => ({
-      value: `${c.coursNomFr} (${c.enseignantPrenom} ${c.enseignantNom})`,
-      label: `${c.coursCode ? c.coursCode : 'Unspecified Code'} - ${c.coursNomFr} (${c.enseignantPrenom} ${c.enseignantNom})`,
+    // The API returns one row per teacher-course relation: group rows by course so
+    // that a course taught by several teachers only appears once in the select.
+    interface GroupedCourse {
+        code: string;
+        title: string;
+        teachers: { firstname: string; name: string; sciper?: string }[];
+    }
+    const grouped = new Map<string, GroupedCourse>();
+    for (const c of courses) {
+        if (c.enseignantRole && c.enseignantRole !== 'Enseignement') continue;
+
+        const key = `${c.coursCode ?? ''}|${c.coursNomFr}`;
+        let course = grouped.get(key);
+        if (!course) {
+            course = {
+                code: c.coursCode ? c.coursCode : 'Unspecified Code',
+                title: c.coursNomFr,
+                teachers: [],
+            };
+            grouped.set(key, course);
+        }
+        const alreadyListed = course.teachers.some(t =>
+            c.enseignantSciper
+                ? t.sciper === c.enseignantSciper
+                : t.firstname === c.enseignantPrenom && t.name === c.enseignantNom
+        );
+        if (!alreadyListed) {
+            course.teachers.push({
+                firstname: c.enseignantPrenom,
+                name: c.enseignantNom,
+                sciper: c.enseignantSciper,
+            });
+        }
+    }
+
+    return Array.from(grouped.entries()).map(([key, course]) => ({
+      value: key,
+      label: `${course.code} - ${course.title} (${course.teachers.map(t => `${t.firstname} ${t.name}`).join(', ')})`,
       exam: {
-          code: c.coursCode ? c.coursCode : 'Unspecified Code',
-          title: c.coursNomFr,
-          teacherName: c.enseignantNom,
-          teacherFirstname: c.enseignantPrenom,
-          teacherSciper: c.enseignantSciper,
+          code: course.code,
+          title: course.title,
+          teachers: course.teachers,
       }
     }))
 }

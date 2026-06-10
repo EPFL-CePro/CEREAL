@@ -5,13 +5,11 @@ import { FormattedSection } from "./section";
 type SelectOption = { 
     value: string | number;
     label: string;
-    exam: { 
+    exam: {
         code: string;
-        teacherFirstname: string;
-        teacherName: string;
-        teacherSciper: string;
         title: string;
-    } 
+        teachers: { firstname: string; name: string; sciper?: string }[];
+    }
 };
 
 export type Inputs = {
