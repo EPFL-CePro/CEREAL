@@ -15,6 +15,7 @@ import {
 } from "../lib/dateTime";
 import { sendMail } from "../lib/mail";
 import { AuthorizedPersons } from "@/types/user";
+import { limitTextToLines } from "../lib/remarks";
 
 interface AppUser extends User {
     isAdmin?: boolean;
@@ -63,7 +64,7 @@ function AuthorizedPersonsAndFiles({ authorizedPersons = [], files = [], classNa
 }
 
 export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) {
-    const [remark, setRemark] = useState(event?.extendedProps?.remark)
+    const [remark, setRemark] = useState(limitTextToLines(event?.extendedProps?.remark ?? ""))
     const [reproRemark, setReproRemark] = useState(event?.extendedProps?.reproRemark)
     const [selectStatus, setSelectStatus] = useState(event?.extendedProps?.status)
     const [boxes, setBoxes] = useState(event?.extendedProps?.boxes)
@@ -386,11 +387,14 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             <span>{".".repeat(40)}</span>
                         </div>
                     </div>
-                    <textarea className="remarks min-h-32 resize-y rounded-lg border border-gray-300 p-3" rows={6} name="remarks" id="remarks" placeholder="Add any remarks"
+                    <textarea className="remarks min-h-32 resize-y rounded-lg border border-gray-300 p-3 print:hidden" rows={6} name="remarks" id="remarks" placeholder="Add any remarks"
                         value={remark || ""}
-                        onChange={(e) => setRemark(e.target.value)}
+                        onChange={(e) => setRemark(limitTextToLines(e.target.value))}
                     >
                     </textarea>
+                    <div className="remarks hidden min-h-32 whitespace-pre-wrap break-words rounded-lg border border-gray-300 p-3 print:block">
+                        {remark}
+                    </div>
                     <label className="font-semibold w-full print:hidden" htmlFor="description">Repro&apos;s remark</label>
                     <textarea className="remarks min-h-32 resize-y rounded-lg border border-gray-300 p-3 print:hidden" rows={6} name="remarks" id="remarks" placeholder="Add any remarks"
                         value={reproRemark || ""}

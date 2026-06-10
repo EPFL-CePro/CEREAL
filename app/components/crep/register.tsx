@@ -13,6 +13,7 @@ import { RegisterModal } from "../forms/RegisterModal";
 import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
 import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
+import { limitTextToLines } from "@/app/lib/remarks";
 
 interface RegisterProps {
     user: AppUser
@@ -487,6 +488,8 @@ ${data.remark && `- Additional remarks: ${data.remark}`}`,
         }
     }
 
+    const remarkField = register("remark");
+
     return (
         /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
         <div className="flex flex-col items-center m-24">
@@ -665,7 +668,15 @@ ${data.remark && `- Additional remarks: ${data.remark}`}`,
                 </div>
                 <ReactSelect control={control} label={"authorized persons"} name={"authorizedPersons"} isMultiChoice={true} instanceId={3} />
                 <label>Additional remarks</label>
-                <textarea {...register("remark")} placeholder="Additional remarks (optional)" />
+                <textarea
+                    {...remarkField}
+                    placeholder="Additional remarks (optional)"
+                    onChange={(e) => {
+                        e.target.value = limitTextToLines(e.target.value);
+                        remarkField.onChange(e);
+                        setValue("remark", e.target.value, { shouldDirty: true, shouldValidate: true });
+                    }}
+                />
 
                 <label>Attach exam file(s) to print <RedAsterisk /></label>
                 <div className="relative w-full">
