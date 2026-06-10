@@ -452,7 +452,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         }
 
                         if (shouldNotifyFinished) {
-                            if(parseInt(boxes) <= 0 || parseInt(priceUnit) <= 0 || parseInt(priceTotal) <= 0) {
+                            if(parseInt(boxes) <= 0 || parseFloat(priceUnit) <= 0 || parseFloat(priceTotal) <= 0) {
                                 window.alert("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
                                 setSelectStatus(previousStatus);
                                 return;
