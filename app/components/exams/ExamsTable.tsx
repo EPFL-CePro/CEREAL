@@ -21,9 +21,10 @@ import { Service } from '@/types/service'
 import { ExamType } from '@/types/examType'
 import { ExamStatus } from '@/types/examStatus'
 import { FormattedSection } from '@/types/section'
-import { fetchCeproAdminsIT, fetchPersonBySciper } from '@/app/lib/api'
+import { fetchCeproAdminsIT, fetchPersonBySciper, fetchTeachersByCourseCode } from '@/app/lib/api'
 import { EPFLUser } from '@/types/user'
 import { GroupUser } from '@/types/groupUser'
+import { Teacher } from '@/types/teacher'
 
 interface ExamsTableProps {
   academicYear: string
@@ -50,6 +51,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [isLoadingContact, setIsLoadingContact] = React.useState(false)
   const [isLoadingTable, setIsLoadingTable] = React.useState(true)
   const [allCeproAdminsIT, setAllCeproAdminsIT] = React.useState<GroupUser[]>([])
+  const [teachersByCourse, setTeachersByCourse] = React.useState<Record<string, Teacher[]>>({})
   const latestContactRequest = React.useRef<string | null>(null)
   const compactSelectClassName =
     'h-9 max-w-[9rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600'
@@ -85,6 +87,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           sections,
           allAcademicYears,
           ceproAdminsIT,
+          teachers,
         ] = await Promise.all([
           getExamsByAcademicYear(academicYear) as Promise<Exam[]>,
           getAllServiceLevels(),
@@ -94,6 +97,11 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           getAllSections(),
           getAllAcademicYears() as Promise<FormattedAcademicYear[]>,
           fetchCeproAdminsIT() as Promise<GroupUser[]>,
+          // The table can still render even if Oasis is down
+          fetchTeachersByCourseCode(academicYear).catch((error) => {
+            console.error('Failed to fetch teachers from Oasis', error)
+            return {} as Record<string, Teacher[]>
+          }),
         ])
 
         if (!isActive) return
@@ -106,6 +114,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         setAllSections(sections)
         setAcademicYears(allAcademicYears.reverse()) // Reversing so that the most recent academic year is at the top of the select
         setAllCeproAdminsIT(ceproAdminsIT)
+        setTeachersByCourse(teachers)
       } finally {
         if (isActive) {
           setIsLoadingTable(false)
@@ -191,6 +200,30 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           </div>
         </div>
       ),
+    },
+    {
+      id: 'teachers',
+      header: 'Teachers',
+      // Joined string so that the default text filtering and sorting apply
+      accessorFn: (row) =>
+        (teachersByCourse[row.code] ?? [])
+          .map((t) => `${t.firstname} ${t.name}`)
+          .join(`,`),
+      cell: ({ row }) => {
+        const teachers = teachersByCourse[row.original.code] ?? []
+        if (!teachers.length) {
+          return <div className="min-w-0 max-w-[14rem] text-sm text-slate-700">—</div>
+        }
+        return (
+          <div className="min-w-0 max-w-[14rem] text-sm text-slate-700">
+            {teachers.map((t) => (
+              <div key={`${t.sciper ?? `${t.firstname} ${t.name}`}`}>
+                {t.firstname} {t.name}
+              </div>
+            ))}
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'service_level_id',
@@ -712,9 +745,15 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
 
       const remark = row.original.remark?.toLowerCase() ?? ''
 
+      const teachersDisplay = (teachersByCourse[row.original.code] ?? [])
+        .map((t) => `${t.firstname} ${t.name}`)
+        .join(', ')
+        .toLowerCase()
+
       return (
         row.original.name.toLowerCase().includes(search) ||
         row.original.code.toLowerCase().includes(search) ||
+        teachersDisplay.includes(search) ||
         (allServiceLevels.find((element:ServiceLevel) => element.id == row.original.service_level_id)?.name.toLowerCase().includes(search) || false) ||
         (allServices.find((element:Service) => element.id == row.original.service_id)?.code.toLowerCase().includes(search) || false) ||
         (allExamTypes.find((element:ExamType) => element.id == row.original.exam_type_id)?.code.toLowerCase().includes(search) || false) ||

@@ -2,6 +2,7 @@
 import { EPFLUser } from "@/types/user";
 import { SelectOption } from "../components/forms/ReactSelect";
 import { GroupUser } from "@/types/groupUser";
+import { Teacher } from "@/types/teacher";
 
 function getOasisBaseUrl(): string {
     if (process.env.OASIS_BASE_URL) {
@@ -101,6 +102,49 @@ export async function fetchMultiplePersonsBySciper(scipersWithCommas: string): P
     return data.persons;
 }
 
+interface OasisTeacherCourse {
+    coursNomFr: string;
+    coursCode?: string;
+    enseignantPrenom: string;
+    enseignantNom: string;
+    enseignantSciper?: string;
+    enseignantRole?: string;
+    coursSeanceCode?: string;
+}
+
+// Oasis returns one row per teacher-course relation.
+async function fetchOasisTeacherCourses(academicYear: string): Promise<OasisTeacherCourse[]> {
+    const url = `${getOasisBaseUrl()}/enseignant-cours/${academicYear}?type=Enseignement`;
+    const headers = new Headers();
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Access-Control-Allow-Headers', '*');
+
+    const bearerToken = process.env.OASIS_BEARER;
+    if (bearerToken) {
+        headers.set('Authorization', `Bearer ${bearerToken}`);
+    }
+
+    const res = await fetch(url, {method: 'GET', headers});
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data as OasisTeacherCourse[];
+}
+
+function addTeacherOnce(teachers: Teacher[], row: OasisTeacherCourse) {
+    const alreadyListed = teachers.some(t =>
+        row.enseignantSciper
+            ? t.sciper === row.enseignantSciper
+            : t.firstname === row.enseignantPrenom && t.name === row.enseignantNom
+    );
+    if (!alreadyListed) {
+        teachers.push({
+            firstname: row.enseignantPrenom,
+            name: row.enseignantNom,
+            sciper: row.enseignantSciper,
+        });
+    }
+}
+
 export async function fetchCourses(academicYear?: string): Promise<SelectOption[]> {
     const date = new Date();
     const month = date.getMonth();
@@ -112,38 +156,15 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
     } else {
         currentYear = date.getFullYear().toString() + '-' + (date.getFullYear() +1).toString();
     }
-    const url = `${getOasisBaseUrl()}/enseignant-cours/${currentYear}?type=Enseignement`;
-    const headers = new Headers();
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('Access-Control-Allow-Headers', '*');
-
-    const bearerToken = process.env.OASIS_BEARER;
-    if (bearerToken) {
-        headers.set('Authorization', `Bearer ${bearerToken}`);
-    }
-
-    const res = await fetch(url, {method: 'GET', headers});
-    const data = await res.json();
-
-    interface OasisCourse {
-        coursNomFr: string;
-        coursCode: string;
-        enseignantPrenom: string;
-        enseignantNom: string;
-        enseignantSciper?: string;
-        enseignantRole?: string;
-        coursSeanceCode: string;
-    }
-    const courses = data as OasisCourse[];
+    const courses = await fetchOasisTeacherCourses(currentYear);
 
     // const filteredCourses = courses.filter(cours => cours.coursSeanceCode == 'LIP_COURS');
 
-    // The API returns one row per teacher-course relation: group rows by course so
-    // that a course taught by several teachers only appears once in the select.
+    // Group rows by course so that a course taught by several teachers only appears once in the select.
     interface GroupedCourse {
         code: string;
         title: string;
-        teachers: { firstname: string; name: string; sciper?: string }[];
+        teachers: Teacher[];
     }
     const grouped = new Map<string, GroupedCourse>();
     for (const c of courses) {
@@ -159,18 +180,7 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
             };
             grouped.set(key, course);
         }
-        const alreadyListed = course.teachers.some(t =>
-            c.enseignantSciper
-                ? t.sciper === c.enseignantSciper
-                : t.firstname === c.enseignantPrenom && t.name === c.enseignantNom
-        );
-        if (!alreadyListed) {
-            course.teachers.push({
-                firstname: c.enseignantPrenom,
-                name: c.enseignantNom,
-                sciper: c.enseignantSciper,
-            });
-        }
+        addTeacherOnce(course.teachers, c);
     }
 
     return Array.from(grouped.entries()).map(([key, course]) => ({
@@ -182,6 +192,22 @@ export async function fetchCourses(academicYear?: string): Promise<SelectOption[
           teachers: course.teachers,
       }
     }))
+}
+
+// Fetch all courses, group teachers for each course
+export async function fetchTeachersByCourseCode(academicYear: string): Promise<Record<string, Teacher[]>> {
+    const rows = await fetchOasisTeacherCourses(academicYear);
+
+    const teachersByCourse: Record<string, Teacher[]> = {};
+    for (const row of rows) {
+        if (!row.coursCode) continue;
+        if (row.enseignantRole && row.enseignantRole !== 'Enseignement') continue;
+
+        const teachers = teachersByCourse[row.coursCode] ?? (teachersByCourse[row.coursCode] = []);
+        addTeacherOnce(teachers, row);
+    }
+
+    return teachersByCourse;
 }
 
 export async function fetchCeproAdminsIT(): Promise<GroupUser[]> {
