@@ -437,14 +437,15 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
                         setIsSubmitting(true);
 
+                        const previousStatus = event?.extendedProps?.status;
                         // Enforcing the A3 rule that pages per copy must be multiple of 4, as when submitting the form.
                         if (user.isAdmin && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
                             window.alert("When printing in A3, the number of pages per copy must be a multiple of 4.");
+                            setSelectStatus(previousStatus);
                             setIsSubmitting(false);
                             return;
                         }
 
-                        const previousStatus = event?.extendedProps?.status;
                         const statusChanged = previousStatus !== selectStatus;
                         const shouldNotifyRepro = statusChanged && ['registered', 'registered-warning', 'registered-error'].includes(previousStatus) && selectStatus == 'toPrint';
                         const shouldNotifyFinished = statusChanged && selectStatus == 'finished';
