@@ -245,8 +245,8 @@ export default function App({ user }: RegisterProps) {
                 lastname: contact.lastname,
             }
 
-            const exam_name = data.course.value.toString();
-            const exam_code = data.course.label.split(' - ')[0] || '';
+            const exam_name = `${data.course.exam.title} (${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}`).join(', ')})`;
+            const exam_code = data.course.exam.code;
             const contact_name = contact?.lastname;
 
             function getEndDateOfPrinting(exam: Exam): Date {
