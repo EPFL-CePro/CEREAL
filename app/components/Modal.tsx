@@ -80,6 +80,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const [printSide, setPrintSide] = useState(event?.extendedProps?.print ?? "recto-verso")
     const [needScan, setNeedScan] = useState<boolean>(!!event?.extendedProps?.needScan)
     const modalRef = useRef<HTMLFormElement | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function save() {
         // save remark, save status, and update the exams state
@@ -431,8 +432,10 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 <div className="flex flex-row gap-4">
                     <button className="btn btn-secondary">Cancel</button>
                     {/* on save, check if the status change into a status that requires admin privileges and confirm with the user */}
-                    <button className="btn btn-primary" onClick={async (e) => {
+                    <button className="btn btn-primary disabled:cursor-wait disabled:opacity-80" disabled={isSubmitting} onClick={async (e) => {
                         e.preventDefault();
+
+                        setIsSubmitting(true);
 
                         // Enforcing the A3 rule that pages per copy must be multiple of 4, as when submitting the form.
                         if (user.isAdmin && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
@@ -523,8 +526,18 @@ CePro team
                         }
 
                         await save();
+
+                        setIsSubmitting(false);
                         (document.getElementById("modal") as HTMLDialogElement | null)?.close();
-                    }}>Save</button>
+                    }}>
+                        {isSubmitting && (
+                            <span
+                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                                aria-hidden="true"
+                            />
+                        )}
+                        <span>{isSubmitting ? "Saving..." : "Save"}</span>
+                    </button>
                 </div>
             </div>
         </form >
