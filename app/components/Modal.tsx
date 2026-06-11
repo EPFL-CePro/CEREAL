@@ -440,6 +440,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         // Enforcing the A3 rule that pages per copy must be multiple of 4, as when submitting the form.
                         if (user.isAdmin && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
                             window.alert("When printing in A3, the number of pages per copy must be a multiple of 4.");
+                            setIsSubmitting(false);
                             return;
                         }
 
@@ -454,6 +455,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             // proceed only if confirmed, else prevent modal close and save
                             if (!window.confirm("You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
+                                setIsSubmitting(false);
                                 return;
                             }
                         }
@@ -462,11 +464,13 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             if(parseInt(boxes) <= 0 || parseFloat(priceUnit) <= 0 || parseFloat(priceTotal) <= 0) {
                                 window.alert("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
                                 setSelectStatus(previousStatus);
+                                setIsSubmitting(false);
                                 return;
                             }
                             // proceed only if confirmed, else prevent modal close and save
                             if (!window.confirm("You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
+                                setIsSubmitting(false);
                                 return;
                             }
                         }
@@ -475,6 +479,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             // proceed only if confirmed, else prevent modal close and save
                             if (!window.confirm("You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
+                                setIsSubmitting(false);
                                 return;
                             }
                         }
