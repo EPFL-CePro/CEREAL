@@ -113,6 +113,11 @@ export default function App({ user }: RegisterProps) {
             return;
         }
 
+        if(!data.service) {
+            openModal("Service Selection Error", "Please select a service.");
+            return;
+        }
+
         if (!data.contact) {
             openModal("Contact Selection Error", "Please select a contact.");
             return;
