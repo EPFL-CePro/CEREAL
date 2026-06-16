@@ -603,15 +603,18 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       cell: ({ row }) => (
         <div>
           <select
-              defaultValue={allCeproAdminsIT.find((element:GroupUser) => Number(element.id) == Number(row.original.responsible_id))?.id}
+              defaultValue={row.original.responsible_id?.toString() ?? 'None'}
               className="h-9 max-w-[11rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
               onChange={async (e) => {
-                await updateExamResponsible(row.original.id, e.target.value)
+                const responsibleId = e.target.value ? Number(e.target.value) : null
+
+                await updateExamResponsible(row.original.id, responsibleId)
                 updateExamInState(row.original.id, {
-                  responsible_id: e.target.value ? Number(e.target.value) : null,
+                  responsible_id: responsibleId,
                 })
               }}
             >
+              <option value="None">None</option>
               {allCeproAdminsIT.map((adminIT) => (
                 <option key={adminIT.id} value={adminIT.id}>
                   {adminIT.display}
@@ -631,7 +634,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             )
             ?.display.toLowerCase() ?? ''
 
-        return adminITDisplay.includes(search)
+        return adminITDisplay.includes(search) || (!adminITDisplay && 'none'.includes(search))
       },
       sortingFn: (firstRow, secondRow, columnId) => {
         const adminITDisplayA =
@@ -742,6 +745,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             (element: GroupUser) => Number(element.id) == Number(row.original.responsible_id)
           )
           ?.display.toLowerCase() ?? ''
+      const hasNoResponsible = row.original.responsible_id == null
 
       const remark = row.original.remark?.toLowerCase() ?? ''
 
@@ -764,7 +768,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         !isNaN(Number(search)) && row.original.nb_pages == Number(search) ||
         remark.includes(search) ||
         (allSections.find((element:FormattedSection) => element.section.id == row.original.section_id)?.section.code.toLowerCase().includes(search) || false) ||
-        responsibleDisplay.includes(search)
+        responsibleDisplay.includes(search) ||
+        (hasNoResponsible && 'none'.includes(search))
       )
     },
     getCoreRowModel: getCoreRowModel(),

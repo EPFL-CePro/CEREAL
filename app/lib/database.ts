@@ -393,7 +393,7 @@ export async function updateExamRemark(examId: string, remark: string) {
     })
 }
 
-export async function updateExamResponsible(examId: string, responsibleId: string) {
+export async function updateExamResponsible(examId: string, responsibleId: number | null) {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
         user: process.env.MYSQL_USER,
