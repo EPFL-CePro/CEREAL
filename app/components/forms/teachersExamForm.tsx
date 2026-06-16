@@ -124,7 +124,7 @@ export default function App({ user }: RegisterProps) {
         }
 
         for (let index = 0; index < data.examType.length; index++) {
-            const examType = data.examType[0]
+            const examType = data.examType[index]
             if(!examType.checked) continue;
 
             if(!examType.dontKnowYet && !examType.date) {
