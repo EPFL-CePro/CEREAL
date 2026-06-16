@@ -12,6 +12,7 @@ import { Modal } from "../../Modal";
 import { User } from "next-auth";
 import { getAllowedExamStatus } from "@/app/lib/examStatus";
 import { Filters } from "../../Filters";
+import { ExamSearch } from "./ExamSearch";
 import { QueryResult } from "mysql2";
 import { Legend } from "../../Legend";
 import { EventApi } from "@fullcalendar/core";
@@ -243,6 +244,23 @@ export default function Calendar({ user }: CalendarProps) {
     setModalOpen(true);
   }
 
+  function handleSearchSelect(exam: EventInput) {
+    const api = calRef.current?.getApi();
+    if (!api || !exam.start) return;
+
+    const printDate = new Date(exam.start as string);
+    if (Number.isNaN(printDate.getTime())) return;
+
+    // Jump the calendar to the week of the selected exam, then open its modal.
+    api.gotoDate(printDate);
+
+    window.requestAnimationFrame(() => {
+      const calendarEvent = api.getEventById(String(exam.id));
+      if (!calendarEvent || !Array.isArray(exams)) return;
+      openExamModal(calendarEvent, exams as EventInput[]);
+    });
+  }
+
   useEffect(() => {
     if (!openExamParam || hasOpenedExamFromQueryRef.current || !Array.isArray(exams)) return;
 
@@ -303,12 +321,20 @@ export default function Calendar({ user }: CalendarProps) {
             <Legend />
           </div>
         </div>
-        <div className=" flex-min-2 md:min-w-80 w-full md:w-auto">
-          <Filters
-            examStatus={availableStatus}
-            user={user}
-            setFilters={setFilters as Dispatch<unknown>}
-          />
+        <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-start">
+          <div className="flex-min-2 md:min-w-64 w-full md:w-auto">
+            <ExamSearch
+              exams={Array.isArray(exams) ? (exams as EventInput[]) : []}
+              onSelect={handleSearchSelect}
+            />
+          </div>
+          <div className="flex-min-2 md:min-w-80 w-full md:w-auto">
+            <Filters
+              examStatus={availableStatus}
+              user={user}
+              setFilters={setFilters as Dispatch<unknown>}
+            />
+          </div>
         </div>
       </div>
       <FullCalendar
