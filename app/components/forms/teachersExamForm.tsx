@@ -327,6 +327,7 @@ CePro
                             value={1}
                             className="text-right"
                             type="radio"
+                            defaultChecked={true}
                             {...register("examSemester")}
                         />
                         <label className="!text-sm" htmlFor="semester-1">Semester 1</label>
