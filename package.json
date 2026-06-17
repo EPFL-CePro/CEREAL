@@ -1,6 +1,6 @@
 {
   "name": "cepro-examens-regroupement-encadrement-administration-logistique",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
