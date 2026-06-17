@@ -456,6 +456,7 @@ Next time, please register to the printing service earlier to make sur that the 
 - Desired delivery date: ${data.desiredDate}
 - Contact: ${contact?.firstname} ${contact?.lastname} (${contact?.email})
 ${authorizedPersons.length > 0 ? `- Authorized persons: ${authorizedPersons.map(user => `${user.email}`).join(', ')}` : ''}
+- Files: ${filesNamesArray.join(', ')}
 ${data.remark && `- Additional remarks: ${data.remark}`}`,
                     'cepro-exams@epfl.ch'
                 );
