@@ -181,7 +181,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         );
     }
 
-    async function handleDeleteExam(examId?: string) {
+    async function handleDeleteExam(examId: string) {
         if(!examId) return;
 
         if (!window.confirm("This will delete the exam from the database. Are you sure you want to proceed ?")) {
@@ -416,7 +416,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     {/* Displays a dropdown if user has admin privileges */}
                     {user.isAdmin && (
                         <>                        
-                            <button type="button" className="btn btn-primary" onClick={() => handleDeleteExam(event?.id)}>Delete</button>
+                            <button type="button" className="btn btn-primary" onClick={() => handleDeleteExam(event?.id || '')}>Delete</button>
                             <select name="from" className="dropdown btn btn-secondary" id="from"
                                 value={selectStatus}
                                 onChange={(e) => setSelectStatus(e.target.value)}
