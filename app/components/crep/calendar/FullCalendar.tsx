@@ -222,7 +222,7 @@ export default function Calendar({ user }: CalendarProps) {
     if (!clickedExam?.contact) return;
 
     const contact = JSON.parse(clickedExam.contact);
-    const folderName = `${clickedExam.code}_${contact.lastname}_${formatDateYYYYMMDD(clickedExam.desiredDate)}`;
+    const folderName = `${clickedExam.id}_${clickedExam.code}_${contact.lastname}_${formatDateYYYYMMDD(clickedExam.desiredDate)}`;
 
     calendarEvent.setExtendedProp('status', clickedExam.status);
     calendarEvent.setExtendedProp('remark', clickedExam.remark);

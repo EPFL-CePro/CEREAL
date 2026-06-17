@@ -410,7 +410,7 @@ export default function App({ user }: RegisterProps) {
             }
 
             // send files to backend API
-            const folder_name = exam_code + '_' + contact_name + '_' + data.desiredDate;
+            const folder_name = `${insertedExam}_${exam_code}_${contact_name}_${data.desiredDate}`;
             const formData = new FormData();
             formData.append("folder_name", folder_name);
 

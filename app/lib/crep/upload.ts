@@ -9,7 +9,7 @@ const examsFilesBasePath = process.env.EXAM_FILES_UPLOAD_FOLDER;
 export function getExamFolderName(exam: CrepExam): string {
     const contact = JSON.parse(exam.contact) as { lastname: string };
     const desired = formatDateOnlyValue(exam.desired_date);
-    return `${exam.exam_code}_${contact.lastname}_${desired}`;
+    return `${exam.id}_${exam.exam_code}_${contact.lastname}_${desired}`;
 }
 
 export async function deleteExamFile(folderName: string, filename: string): Promise<void> {
