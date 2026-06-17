@@ -34,11 +34,18 @@ function getEndDateOfPrinting(printDate: Date, nbStudents: number): Date {
   );
 }
 
+function isSameCalendarDay(date: Date, targetDate: Date) {
+  return date.getFullYear() === targetDate.getFullYear() &&
+    date.getMonth() === targetDate.getMonth() &&
+    date.getDate() === targetDate.getDate();
+}
+
 export default function Calendar({ user }: CalendarProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventApi>();
 
   const searchParams = useSearchParams();
+  const openExamIdParam = searchParams.get('openExamId');
   const openExamParam = searchParams.get('openExam');
   const dayParam = searchParams.get('day');
   const hasOpenedExamFromQueryRef = useRef(false);
@@ -262,7 +269,25 @@ export default function Calendar({ user }: CalendarProps) {
   }
 
   useEffect(() => {
-    if (!openExamParam || hasOpenedExamFromQueryRef.current || !Array.isArray(exams)) return;
+    if ((!openExamIdParam && !openExamParam) || hasOpenedExamFromQueryRef.current || !Array.isArray(exams)) return;
+
+    const examToOpenById = openExamIdParam
+      ? exams.find((exam: EventInput) => String(exam.id) === openExamIdParam && !!exam.start)
+      : undefined;
+
+    if (examToOpenById) {
+      const frameId = window.requestAnimationFrame(() => {
+        const calendarEvent = calRef.current?.getApi().getEventById(String(examToOpenById.id));
+        if (!calendarEvent) return;
+
+        openExamModal(calendarEvent, exams as EventInput[]);
+        hasOpenedExamFromQueryRef.current = true;
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    if (!openExamParam) return;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -277,7 +302,7 @@ export default function Calendar({ user }: CalendarProps) {
 
         const printDay = new Date(printStartDate);
         printDay.setHours(0, 0, 0, 0);
-        return printDay >= today;
+        return targetDayDate ? isSameCalendarDay(printDay, targetDayDate) : printDay >= today;
       })
       .sort((a, b) => a.printStartDate.getTime() - b.printStartDate.getTime())[0]?.exam;
 
@@ -292,7 +317,7 @@ export default function Calendar({ user }: CalendarProps) {
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [exams, openExamParam]);
+  }, [exams, openExamIdParam, openExamParam, targetDayDate]);
 
   function makeEventsKey(
     examsArr: EventSourceInput,

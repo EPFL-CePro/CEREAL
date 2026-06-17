@@ -488,7 +488,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         if (shouldNotifyRepro) {
                             if (process.env.NODE_ENV !== "development") {
                                 const datePrintSchedule = new Date(event?.extendedProps?.printSchedule)
-                                const examURL = `https://cereal.epfl.ch/crep/?openExam=${event?.extendedProps?.code}&day=${formatDateYYYYMMDD(datePrintSchedule)}`;
+                                const examURL = `https://cereal.epfl.ch/crep/?openExamId=${event?.id}&day=${formatDateYYYYMMDD(datePrintSchedule)}`;
                                 await sendMail(
                                     'examen.repro@epfl.ch',
                                     `Exam ${event?.extendedProps?.code} is ready to be printed`,
