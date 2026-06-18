@@ -181,14 +181,32 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         );
     }
 
-    async function handleDeleteExam(examId: string) {
+    async function handleDeleteExam(examId: string, folderName: string, selectStatus:string) {
         if(!examId) return;
 
-        if (!window.confirm("This will delete the exam from the database. Are you sure you want to proceed ?")) {
+        const shouldDeleteFolder = ["registered", "registered-warning", "registered-error", "toPrint"].includes(selectStatus)
+
+        if (!window.confirm(`This will delete the exam from the database. ${shouldDeleteFolder ? "The exam folder will also be deleted." : ""} Are you sure you want to proceed ?`)) {
             return;
         }
 
         await deleteCrepExam(examId);
+
+        if(shouldDeleteFolder) {
+            const formData = new FormData();
+            formData.append("folder_name", folderName || '');
+
+            const res = await fetch("/api/delete-exam-folder", {
+                method: "DELETE",
+                body: formData,
+            });
+            if (!res.ok) {
+                console.error(await res.text());
+                window.alert("An error occurred while deleting the exam folder. Please try again.");
+                return;
+            }
+        }
+
         event?.remove();
         setExams((currentExams: EventInput) => Array.isArray(currentExams)
             ? currentExams.filter((exam: EventInput) => String(exam.id) !== String(examId))
@@ -416,7 +434,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     {/* Displays a dropdown if user has admin privileges */}
                     {user.isAdmin && (
                         <>                        
-                            <button type="button" className="btn btn-primary" onClick={() => handleDeleteExam(event?.id || '')}>Delete</button>
+                            <button type="button" className="btn btn-primary" onClick={() => handleDeleteExam(event?.id || '', event?.extendedProps?.folderName, selectStatus)}>Delete</button>
                             <select name="from" className="dropdown btn btn-secondary" id="from"
                                 value={selectStatus}
                                 onChange={(e) => setSelectStatus(e.target.value)}
