@@ -53,7 +53,7 @@ export default function WhoWasLateChart({
             Late registry
           </h1>
           <p className="mt-3 text-sm leading-6 text-gray-600">
-            An exam is considered "late" when the date of entry in the database is less than
+            An exam is considered &quot;late&quot; when the date of entry in the database is less than
             8 business days before the desired delivery date.
           </p>
         </div>
