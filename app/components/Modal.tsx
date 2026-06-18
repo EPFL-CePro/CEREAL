@@ -181,6 +181,15 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         );
     }
 
+    function removeExamFromCalendar(examId: string) {
+        event?.remove();
+        setExams((currentExams: EventInput) => Array.isArray(currentExams)
+            ? currentExams.filter((exam: EventInput) => String(exam.id) !== String(examId))
+            : currentExams
+        );
+        (document.getElementById("modal") as HTMLDialogElement | null)?.close();
+    }
+
     async function handleDeleteExam(examId: string, folderName: string, selectStatus:string) {
         if(!examId) return;
 
@@ -189,8 +198,6 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         if (!window.confirm(`This will delete the exam from the database. ${shouldDeleteFolder ? "The exam folder will also be deleted." : ""} Are you sure you want to proceed ?`)) {
             return;
         }
-
-        await deleteCrepExam(examId);
 
         if(shouldDeleteFolder) {
             const formData = new FormData();
@@ -201,18 +208,25 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 body: formData,
             });
             if (!res.ok) {
-                console.error(await res.text());
+                const error = await res.json().catch(() => null);
+                if (res.status === 404 && error?.code === "FOLDER_NOT_FOUND") {
+                    if (!window.confirm("The folder of this exam can not be found, do you want to delete the exam only from the database ?")) {
+                        return;
+                    }
+
+                    await deleteCrepExam(examId);
+                    removeExamFromCalendar(examId);
+                    return;
+                }
+
+                console.error(error);
                 window.alert("An error occurred while deleting the exam folder. Please try again.");
                 return;
             }
         }
 
-        event?.remove();
-        setExams((currentExams: EventInput) => Array.isArray(currentExams)
-            ? currentExams.filter((exam: EventInput) => String(exam.id) !== String(examId))
-            : currentExams
-        );
-        (document.getElementById("modal") as HTMLDialogElement | null)?.close();
+        await deleteCrepExam(examId);
+        removeExamFromCalendar(examId);
     }
 
     // Get color of selected exam
