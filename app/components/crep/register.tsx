@@ -14,6 +14,7 @@ import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
 import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { limitTextToLines } from "@/app/lib/remarks";
+import { businessDaysBetween } from "@/app/lib/businessDays";
 
 interface RegisterProps {
     user: AppUser
@@ -48,27 +49,6 @@ interface Gap {
     between: [Exam, Exam]; // before exam, end exam
     gapMinutes: number; // gap between the two exams in minutes
 };
-
-function businessDaysBetween(startDate: string, endDate: string) {
-    let start = new Date(startDate);
-    let end = new Date(endDate);
-    let count = 0;
-
-    if (start > end) {
-        [start, end] = [end, start];
-    }
-
-    while (start < end) {
-        const day = start.getDay();
-        // 0 = sunday, 6 = saturday
-        if (day !== 0 && day !== 6) {
-            count++;
-        }
-        start.setDate(start.getDate() + 1);
-    }
-
-    return count;
-}
 
 
 export default function App({ user }: RegisterProps) {
