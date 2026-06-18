@@ -4,6 +4,7 @@ import mysql, { ResultSetHeader } from 'mysql2';
 import { examBlockingPrintStatus, examNotAdminStatus } from '../examStatus';
 import { CrepExam } from '@/types/crepExam';
 import { formatDateTimeForDatabase } from '../dateTime';
+import { getAcademicYearDateRange } from '@/app/lib/academicYear';
 
 export async function getAllCrepExams() {
     const connection = mysql.createConnection({
@@ -20,6 +21,32 @@ export async function getAllCrepExams() {
             if (err) throw err
             resolve(rows);
         })
+        connection.end()
+    })
+}
+
+export async function getCrepExamsByAcademicYear(academicYear: string): Promise<CrepExam[]> {
+    const range = getAcademicYearDateRange(academicYear);
+    if (!range) return [];
+
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query(
+            'SELECT * FROM crep WHERE exam_date >= ? AND exam_date < ?;',
+            [formatDateTimeForDatabase(range.start), formatDateTimeForDatabase(range.end)],
+            (err:mysql.QueryError | null, rows) => {
+                if (err) throw err
+                resolve(rows as CrepExam[]);
+            }
+        )
         connection.end()
     })
 }

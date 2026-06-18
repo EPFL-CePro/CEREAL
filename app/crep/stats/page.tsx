@@ -1,9 +1,16 @@
 import { auth } from "@/auth";
+import AcademicYearSelect from "@/app/components/crep/stats/AcademicYearSelect";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
-import { getAllCrepExams } from "@/app/lib/crep/database";
+import { getCrepExamsByAcademicYear } from "@/app/lib/crep/database";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
 import { CrepExam } from "@/types/crepExam";
 import { businessDaysBetween } from "@/app/lib/businessDays";
+import {
+    getAcademicYearOptions,
+    getCurrentAcademicYear,
+    isSelectableAcademicYear,
+} from "@/app/lib/academicYear";
+import { redirect } from "next/navigation";
 
 export const metadata = {
     title: "CREP - Stats",
@@ -17,11 +24,24 @@ function parseDate(value: Date | string | null | undefined) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export default async function Page() {
+export default async function Page({
+    searchParams,
+}: {
+    searchParams: Promise<{ academicYear?: string }>
+}) {
     const session = await auth();
     if (!session?.user) return;
 
-    const exams = await getAllCrepExams() as CrepExam[];
+    const currentAcademicYear = getCurrentAcademicYear();
+    const academicYears = getAcademicYearOptions(currentAcademicYear);
+    const { academicYear } = await searchParams;
+    const selectedAcademicYear = academicYear ?? currentAcademicYear;
+
+    if (!isSelectableAcademicYear(selectedAcademicYear, currentAcademicYear)) {
+        redirect(`/crep/stats?academicYear=${currentAcademicYear}`);
+    }
+
+    const exams = await getCrepExamsByAcademicYear(selectedAcademicYear) as CrepExam[];
     const timingStats = exams.reduce(
         (stats, exam) => {
             const registeredDate = parseDate(exam.created_on);
@@ -47,6 +67,12 @@ export default async function Page() {
 
     return (
         <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+                <AcademicYearSelect
+                    academicYears={academicYears}
+                    selectedAcademicYear={selectedAcademicYear}
+                />
+            </div>
             <WhoWasLateChart
                 total={exams.length}
                 onTime={timingStats.onTime}
