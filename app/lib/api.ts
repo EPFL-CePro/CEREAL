@@ -3,6 +3,7 @@ import { EPFLUser } from "@/types/user";
 import { CourseSelectOption, SelectOption } from "@/types/selectOption";
 import { GroupUser } from "@/types/groupUser";
 import { Teacher } from "@/types/teacher";
+import { getCurrentAcademicYear } from "@/app/lib/academicYear";
 
 function getOasisBaseUrl(): string {
     if (process.env.OASIS_BASE_URL) {
@@ -146,16 +147,7 @@ function addTeacherOnce(teachers: Teacher[], row: OasisTeacherCourse) {
 }
 
 export async function fetchCourses(academicYear?: string): Promise<CourseSelectOption[]> {
-    const date = new Date();
-    const month = date.getMonth();
-    let currentYear;
-    if(academicYear) {
-        currentYear = academicYear;
-    } else if(month >= 1 && month <= 8) {
-        currentYear = (date.getFullYear() - 1).toString() + '-' + date.getFullYear().toString();
-    } else {
-        currentYear = date.getFullYear().toString() + '-' + (date.getFullYear() +1).toString();
-    }
+    const currentYear = academicYear ?? getCurrentAcademicYear();
     const courses = await fetchOasisTeacherCourses(currentYear);
 
     // const filteredCourses = courses.filter(cours => cours.coursSeanceCode == 'LIP_COURS');
