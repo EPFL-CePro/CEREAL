@@ -32,6 +32,19 @@ export async function DELETE(req: NextRequest) {
     });
   } catch (err) {
     console.error(err);
+
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      err.code === "ENOENT"
+    ) {
+      return NextResponse.json(
+        { error: "Exam folder not found", code: "FOLDER_NOT_FOUND" },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to delete exam folder" },
       { status: 500 }
