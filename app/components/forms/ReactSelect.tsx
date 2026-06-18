@@ -8,8 +8,7 @@ import { Control, Controller, ControllerRenderProps, Path } from "react-hook-for
 import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
 import { User } from "next-auth";
 import { Inputs } from "@/types/inputs";
-
-export type SelectOption = { value: number | string; label: string; person?: { id: number; firstname?: string; lastname?: string; email?: string; sciper?: string }; group?: { id: string; name: string } };
+import { SelectOption } from "@/types/selectOption";
 
 function isSelectOption(value: unknown): value is SelectOption {
     return Boolean(

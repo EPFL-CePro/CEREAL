@@ -1,16 +1,7 @@
 import { FormattedAcademicYear } from "./academicYear";
 import { ExamType } from "./examType";
 import { FormattedSection } from "./section";
-
-type SelectOption = { 
-    value: string | number;
-    label: string;
-    exam: {
-        code: string;
-        title: string;
-        teachers: { firstname: string; name: string; sciper?: string }[];
-    }
-};
+import { CourseSelectOption } from "./selectOption";
 
 export type Inputs = {
     examDate: string
@@ -21,7 +12,7 @@ export type Inputs = {
     authorizedPersons: string
     paperFormat: string
     paperColor: string
-    course: SelectOption | null
+    course: CourseSelectOption | null
     remark?: string
     name: string
     needScan: boolean

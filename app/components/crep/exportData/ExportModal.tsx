@@ -1,4 +1,5 @@
 "use client"
+import { fetchCourses } from "@/app/lib/api";
 import { getAllCrepExams, getAllExamsBetweenDates, getAllExamsByStatus } from "@/app/lib/crep/database";
 import { getAllowedExamStatus } from "@/app/lib/examStatus";
 import { User } from "next-auth";
@@ -12,6 +13,9 @@ interface AppUser extends User {
 
 interface Exam {
     id: number;
+    contact: string;
+    created_on: Date;
+    desired_date: Date;
     exam_code: string;
     exam_date: Date;
     exam_name: string;
@@ -72,10 +76,13 @@ export function ExportModal({ setModalOpen, user }: ExportModalProps) {
             new Map([...betweenDatesExams, ...checkedStatusExams].map(e => [e.id, e])).values()
         );
         if(uniqueExams.length == 0) return;
+        const allCoursesWithTeachers = await fetchCourses();
         const checkedExamsCSV =
-`Date,Titre,Tirage,Nbre de pages
+`ID,Code,Nom,Enseignants,Contact,Date examen,Date désirée,Date enregistrement,Nombre de copies,Nombre de pages
 ${uniqueExams.map((exam:Exam) => {
-    return `${exam.exam_date.toLocaleDateString('fr')},${exam.exam_name},${exam.exam_students},${exam.exam_pages}`
+    const examFromOasis = allCoursesWithTeachers.find(e => e.exam.code === exam.exam_code);
+    const contact = JSON.parse(exam.contact);
+    return `${exam.id},${examFromOasis?.exam.code},${examFromOasis?.exam.title},${examFromOasis?.exam.teachers.map(teacher => `${teacher.firstname} ${teacher.name}`).join('; ')},${contact.email},${exam.exam_date.toLocaleDateString('fr')},${exam.desired_date.toLocaleDateString('fr')},${exam.created_on.toLocaleDateString('fr')},${exam.exam_students},${exam.exam_pages}`
 }).join(`\n`)}
 `
         const blob = new Blob([checkedExamsCSV]);
