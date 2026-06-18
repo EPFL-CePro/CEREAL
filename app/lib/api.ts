@@ -1,6 +1,6 @@
 'use server';
 import { EPFLUser } from "@/types/user";
-import { SelectOption } from "../components/forms/ReactSelect";
+import { CourseSelectOption, SelectOption } from "@/types/selectOption";
 import { GroupUser } from "@/types/groupUser";
 import { Teacher } from "@/types/teacher";
 
@@ -145,7 +145,7 @@ function addTeacherOnce(teachers: Teacher[], row: OasisTeacherCourse) {
     }
 }
 
-export async function fetchCourses(academicYear?: string): Promise<SelectOption[]> {
+export async function fetchCourses(academicYear?: string): Promise<CourseSelectOption[]> {
     const date = new Date();
     const month = date.getMonth();
     let currentYear;
