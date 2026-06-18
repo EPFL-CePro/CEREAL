@@ -1,5 +1,5 @@
 // app/lib/upload-exam-files.ts
-import {mkdir, unlink, writeFile} from "fs/promises";
+import {mkdir, rm, unlink, writeFile} from "fs/promises";
 import path from "path";
 import { CrepExam } from "@/types/crepExam";
 import { formatDateOnlyValue } from "../dateTime";
@@ -56,4 +56,18 @@ export async function uploadExamFiles(
     console.log("saved pathes:",savedPaths.toString());
 
     return savedPaths;
+}
+
+export async function deleteExamFolder(
+    folder_name: string
+): Promise<void>  {
+    if (!examsFilesBasePath) {
+        throw new Error("EXAM_FILES_UPLOAD_FOLDER is not set in environment variables");
+    }
+    const examDir = path.join(examsFilesBasePath, folder_name);
+    console.log("Exam Dir :", examDir.toString());
+
+    await rm(examDir, {recursive: true});
+    console.log("folder deleted!");
+
 }
