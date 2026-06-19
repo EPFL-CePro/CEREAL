@@ -3,8 +3,6 @@ import mysql from 'mysql2';
 import type { ResultSetHeader } from 'mysql2';
 import { Service } from '@/types/service';
 import { ExamType } from '@/types/examType';
-import { AcademicYear, FormattedAcademicYear } from '@/types/academicYear';
-import { FormattedSection, Section } from '@/types/section';
 import { Exam, NewExam } from '@/types/exam';
 import { ServiceLevel } from '@/types/serviceLevel';
 import { ExamStatus } from '@/types/examStatus';
@@ -88,7 +86,7 @@ export async function insertExam(exam: NewExam): Promise<number> {
     });
 }
 
-export async function getAllAcademicYears():Promise <FormattedAcademicYear[]> {
+export async function getAcademicYearsFromExams(): Promise<string[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
         user: process.env.MYSQL_USER,
@@ -97,21 +95,15 @@ export async function getAllAcademicYears():Promise <FormattedAcademicYear[]> {
     })
 
     connection.connect()
-    
+
     return new Promise(function(resolve) {
-        connection.query('SELECT * FROM academic_year;', (err:mysql.QueryError | null, rows:AcademicYear[]) => {
-            if (err) throw err
-            const formattedResult = rows.map(academicYear => ({
-                value: academicYear.id,
-                label: academicYear.code,
-                academicYear: {
-                    id: academicYear.id,
-                    code: academicYear.code,
-                    name: academicYear.name,
-                }
-            }))
-            resolve(formattedResult as FormattedAcademicYear[]);
-        })
+        connection.query(
+            'SELECT DISTINCT academic_year_id FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" ORDER BY academic_year_id ASC;',
+            (err, rows: { academic_year_id: string }[]) => {
+                if (err) throw err
+                resolve(rows.map((row) => row.academic_year_id));
+            }
+        )
         connection.end()
     })
 }

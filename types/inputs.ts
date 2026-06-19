@@ -1,4 +1,3 @@
-import { FormattedAcademicYear } from "./academicYear";
 import { ExamType } from "./examType";
 import { FormattedSection } from "./section";
 import { CourseSelectOption } from "./selectOption";
@@ -21,7 +20,6 @@ export type Inputs = {
     registeredBy?: string
     service: string
     examType: ExamType[]
-    academicYear: FormattedAcademicYear
     examSemester: string
     section: FormattedSection
     print: string
