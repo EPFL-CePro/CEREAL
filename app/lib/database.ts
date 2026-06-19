@@ -58,7 +58,7 @@ export async function insertExam(exam: NewExam): Promise<number> {
     connection.connect();
 
     return new Promise((resolve, reject) => {
-        const sql = `INSERT INTO exam (code, name, service_level_id, service_id, exam_type_id, exam_status_id, exam_date, academic_year_id, exam_semester, nb_students, nb_pages, total_pages, remark, section_id, responsible_id, contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+        const sql = `INSERT INTO exam (code, name, service_level_id, service_id, exam_type_id, exam_status_id, exam_date, academic_year_id, exam_semester, nb_students, nb_pages, total_pages, remark, responsible_id, contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
 
         const params = [
             exam.code,
@@ -76,7 +76,6 @@ export async function insertExam(exam: NewExam): Promise<number> {
             // exam.deadline_prep,
             // exam.deadline_repro,
             exam.remark || null,
-            exam.section_id,
             exam.responsible_id,
             exam.contact,
         ];
