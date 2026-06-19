@@ -12,9 +12,8 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-import { deleteExam, getAllAcademicYears, getAllExamStatus, getAllExamTypes, getAllServiceLevels, getAllServices, getExamsByAcademicYear, updateExamDate, updateExamPagesNumber, updateExamRemark, updateExamResponsible, updateExamService, updateExamServiceLevel, updateExamStatus, updateExamStudentsNumber, updateExamType } from '@/app/lib/database'
+import { deleteExam, getAcademicYearsFromExams, getAllExamStatus, getAllExamTypes, getAllServiceLevels, getAllServices, getExamsByAcademicYear, updateExamDate, updateExamPagesNumber, updateExamRemark, updateExamResponsible, updateExamService, updateExamServiceLevel, updateExamStatus, updateExamStudentsNumber, updateExamType } from '@/app/lib/database'
 import { Exam } from '@/types/exam'
-import { FormattedAcademicYear } from '@/types/academicYear'
 import { useRouter } from 'next/navigation'
 import { ServiceLevel } from '@/types/serviceLevel'
 import { Service } from '@/types/service'
@@ -35,7 +34,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [exams, setExams] = React.useState<Exam[]>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [academicYears, setAcademicYears] = React.useState<FormattedAcademicYear[]>([])
+  const [academicYears, setAcademicYears] = React.useState<string[]>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -91,7 +90,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           getAllServices(),
           getAllExamTypes(),
           getAllExamStatus(),
-          getAllAcademicYears() as Promise<FormattedAcademicYear[]>,
+          getAcademicYearsFromExams(),
           fetchCeproAdminsIT() as Promise<GroupUser[]>,
           // The table can still render even if Oasis is down
           fetchTeachersByCourseCode(academicYear).catch((error) => {
@@ -836,9 +835,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                           router.push(`/exams/${e.target.value}`)
                         }}
                       >
-                        {academicYears.map((academic) => (
-                          <option key={academic.label} value={academic.label}>
-                            {academic.label}
+                        {academicYears.map((academicYear) => (
+                          <option key={academicYear} value={academicYear}>
+                            {academicYear}
                           </option>
                         ))}
                       </select>
