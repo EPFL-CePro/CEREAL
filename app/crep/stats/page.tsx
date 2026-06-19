@@ -2,8 +2,10 @@ import { auth } from "@/auth";
 import AcademicYearSelect from "@/app/components/crep/stats/AcademicYearSelect";
 import DeliveryDelayHistogram, { DeliveryDelayBucket } from "@/app/components/crep/stats/DeliveryDelayHistogram";
 import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable";
+import PrintingDurationHistogram, { PrintingDurationBucket } from "@/app/components/crep/stats/PrintingDurationHistogram";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
 import { getCrepExamsByAcademicYear } from "@/app/lib/crep/database";
+import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
 import { CrepExam } from "@/types/crepExam";
 import { businessDaysBetween } from "@/app/lib/businessDays";
@@ -57,6 +59,24 @@ function getPrintStats(exams: CrepExam[]) {
     };
 }
 
+function getPrintingDurationBuckets(exams: CrepExam[]): PrintingDurationBucket[] {
+    const buckets = [
+        { label: "0-1h", maxMinutes: 60, count: 0 },
+        { label: "1-2h", maxMinutes: 120, count: 0 },
+        { label: "2-3h", maxMinutes: 180, count: 0 },
+        { label: "3-4h", maxMinutes: 240, count: 0 },
+        { label: "+ 4h", maxMinutes: Infinity, count: 0 },
+    ];
+
+    exams.forEach((exam) => {
+        const duration = getPrintingDurationInMinutes(exam.exam_students);
+        const bucket = buckets.find(({ maxMinutes }) => duration <= maxMinutes);
+        if (bucket) bucket.count++;
+    });
+
+    return buckets.map(({ label, count }) => ({ label, count }));
+}
+
 export default async function Page({
     searchParams,
 }: {
@@ -76,6 +96,7 @@ export default async function Page({
 
     const exams = await getCrepExamsByAcademicYear(selectedAcademicYear) as CrepExam[];
     const printStats = getPrintStats(exams);
+    const printingDurationBuckets = getPrintingDurationBuckets(exams);
     const timingStats = exams.reduce(
         (stats, exam) => {
             const registeredDate = parseDate(exam.created_on);
@@ -116,6 +137,7 @@ export default async function Page({
                 averageExamsPerPrintDay={printStats.averageExamsPerPrintDay}
                 totalExams={exams.length}
             />
+            <PrintingDurationHistogram buckets={printingDurationBuckets} />
             <WhoWasLateChart
                 total={exams.length}
                 onTime={timingStats.onTime}
