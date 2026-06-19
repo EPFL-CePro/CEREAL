@@ -554,50 +554,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       ),
     },
     {
-      accessorKey: 'section_id',
-      header: 'Section',
-      cell: ({ row }) => (
-        <div>
-            <input
-              className="h-9 w-11 rounded-xl border border-slate-200 bg-slate-50 px-2 text-center text-sm text-slate-500 opacity-70"
-              defaultValue={allSections.find((element:FormattedSection) => element.section.id == row.original.section_id)?.section.code}
-              type="text"
-              disabled
-            />
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim().toLowerCase()
-        if (!search) return true
-
-        const sectionCode =
-          allSections
-            .find(
-              (element: FormattedSection) => element.section.id == row.getValue(columnId)
-            )
-            ?.section.code.toLowerCase() ?? ''
-
-        return sectionCode.includes(search)
-      },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const sectionCodeA =
-          allSections
-            .find(
-              (element: FormattedSection) => element.section.id == firstRow.getValue(columnId)
-            )
-            ?.section.code.toLowerCase() ?? ''
-
-        const sectionCodeB =
-          allSections
-            .find(
-              (element: FormattedSection) => element.section.id == secondRow.getValue(columnId)
-            )
-            ?.section.code.toLowerCase() ?? ''
-
-        return sectionCodeA.localeCompare(sectionCodeB)
-      },
-    },
-    {
       accessorKey: 'responsible_id',
       header: 'Responsible',
       cell: ({ row }) => (
@@ -767,7 +723,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         !isNaN(Number(search)) && row.original.nb_students == Number(search) ||
         !isNaN(Number(search)) && row.original.nb_pages == Number(search) ||
         remark.includes(search) ||
-        (allSections.find((element:FormattedSection) => element.section.id == row.original.section_id)?.section.code.toLowerCase().includes(search) || false) ||
         responsibleDisplay.includes(search) ||
         (hasNoResponsible && 'none'.includes(search))
       )
@@ -807,11 +762,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     ? allExamStatus.find(
         (element: ExamStatus) => element.id == selectedExam.exam_status_id
       )?.code
-    : ''
-  const selectedSection = selectedExam
-    ? allSections.find(
-        (element: FormattedSection) => element.section.id == selectedExam.section_id
-      )?.section.code
     : ''
   const formattedSelectedExamDate =
     selectedExam?.exam_date
@@ -1214,10 +1164,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Pages</p>
                   <p className="mt-1 text-sm font-medium">{selectedExam.nb_pages ?? 'Not set'}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Section</p>
-                  <p className="mt-1 text-sm font-medium">{selectedSection || 'Unknown'}</p>
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Contact</p>

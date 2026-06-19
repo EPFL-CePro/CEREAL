@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "../../../../auth";
-import { NavBar } from "../../../components/NavBar";
 import { Footer } from "../../../components/Footer";
 import { getCrepExamById } from "../../../lib/crep/database";
-import { examPrePrintStatus, examStatus } from "../../../lib/examStatus";
+import { examPrePrintStatus } from "../../../lib/examStatus";
 import { formatDateOnlyValue } from "../../../lib/dateTime";
 import { ExamFilesManager } from "../../../components/crep/exams/ExamFilesManager";
 
