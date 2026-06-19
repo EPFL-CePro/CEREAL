@@ -116,34 +116,6 @@ export async function getAllAcademicYears():Promise <FormattedAcademicYear[]> {
     })
 }
 
-export async function getAllSections():Promise <FormattedSection[]> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-    
-    return new Promise(function(resolve) {
-        connection.query('SELECT * FROM section;', (err:mysql.QueryError | null, rows:Section[]) => {
-            if (err) throw err
-            const formattedResult = rows.map(section => ({
-                value: section.id,
-                label: section.code,
-                section: {
-                    id: section.id,
-                    code: section.code,
-                    name: section.name,
-                }
-            }))
-            resolve(formattedResult as FormattedSection[]);
-        })
-        connection.end()
-    })
-}
-
 export async function getServiceById(serviceId:string): Promise<Service[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,

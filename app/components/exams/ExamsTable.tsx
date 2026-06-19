@@ -12,7 +12,7 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-import { deleteExam, getAllAcademicYears, getAllExamStatus, getAllExamTypes, getAllSections, getAllServiceLevels, getAllServices, getExamsByAcademicYear, updateExamDate, updateExamPagesNumber, updateExamRemark, updateExamResponsible, updateExamService, updateExamServiceLevel, updateExamStatus, updateExamStudentsNumber, updateExamType } from '@/app/lib/database'
+import { deleteExam, getAllAcademicYears, getAllExamStatus, getAllExamTypes, getAllServiceLevels, getAllServices, getExamsByAcademicYear, updateExamDate, updateExamPagesNumber, updateExamRemark, updateExamResponsible, updateExamService, updateExamServiceLevel, updateExamStatus, updateExamStudentsNumber, updateExamType } from '@/app/lib/database'
 import { Exam } from '@/types/exam'
 import { FormattedAcademicYear } from '@/types/academicYear'
 import { useRouter } from 'next/navigation'
@@ -20,7 +20,6 @@ import { ServiceLevel } from '@/types/serviceLevel'
 import { Service } from '@/types/service'
 import { ExamType } from '@/types/examType'
 import { ExamStatus } from '@/types/examStatus'
-import { FormattedSection } from '@/types/section'
 import { fetchCeproAdminsIT, fetchPersonBySciper, fetchTeachersByCourseCode } from '@/app/lib/api'
 import { EPFLUser } from '@/types/user'
 import { GroupUser } from '@/types/groupUser'
@@ -45,7 +44,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [allServices, setAllServices] = React.useState<Service[]>([])
   const [allExamTypes, setAllExamTypes] = React.useState<ExamType[]>([])
   const [allExamStatus, setAllExamStatus] = React.useState<ExamStatus[]>([])
-  const [allSections, setAllSections] = React.useState<FormattedSection[]>([])
   const [selectedExam, setSelectedExam] = React.useState<Exam | null>(null)
   const [selectedContact, setSelectedContact] = React.useState<EPFLUser | null>(null)
   const [isLoadingContact, setIsLoadingContact] = React.useState(false)
@@ -84,7 +82,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           services,
           examTypes,
           examStatus,
-          sections,
           allAcademicYears,
           ceproAdminsIT,
           teachers,
@@ -94,7 +91,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           getAllServices(),
           getAllExamTypes(),
           getAllExamStatus(),
-          getAllSections(),
           getAllAcademicYears() as Promise<FormattedAcademicYear[]>,
           fetchCeproAdminsIT() as Promise<GroupUser[]>,
           // The table can still render even if Oasis is down
@@ -111,7 +107,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         setAllServices(services)
         setAllExamTypes(examTypes)
         setAllExamStatus(examStatus)
-        setAllSections(sections)
         setAcademicYears(allAcademicYears.reverse()) // Reversing so that the most recent academic year is at the top of the select
         setAllCeproAdminsIT(ceproAdminsIT)
         setTeachersByCourse(teachers)
