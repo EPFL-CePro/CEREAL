@@ -1,7 +1,7 @@
 "use client";
 // This form allows users to register their exams into the system.
 import { useForm, SubmitHandler, useFieldArray, Controller } from "react-hook-form"
-import { getAllExamTypes, getAllServices, insertExam, getAllAcademicYears, getAllSections, getServiceById } from "@/app/lib/database";
+import { getAllExamTypes, getAllServices, insertExam, getAllSections, getServiceById } from "@/app/lib/database";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactSelect from "./ReactSelect";
 import { sendMail } from "@/app/lib/mail";
@@ -11,11 +11,11 @@ import { RegisterModal } from "./RegisterModal";
 import { Inputs } from "@/types/inputs";
 import { Service } from "@/types/service";
 import { ExamType } from "@/types/examType";
-import { FormattedAcademicYear } from "@/types/academicYear";
 import Select from "react-select";
 import { GroupBase, StylesConfig, Theme } from "react-select";
 import { FormattedSection } from "@/types/section";
 import { fetchPersonBySciper } from "@/app/lib/api";
+import { getCurrentAcademicYear } from "@/app/lib/academicYear";
 
 interface RegisterProps {
     user: AppUser
@@ -35,8 +35,6 @@ export default function App({ user }: RegisterProps) {
     const [isConfirmModal, setIsConfirmModal] = useState(false);
     const [services, setServices] = useState<Service[]>([]);
     const [examTypes, setExamTypes] = useState<ExamType[]>([]);
-    const [academicYears, setAcademicYears] = useState<FormattedAcademicYear[]>([]);
-    const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>();
     const [sections, setSections] = useState<FormattedSection[]>([]);
 
     useEffect(() => {
@@ -46,9 +44,6 @@ export default function App({ user }: RegisterProps) {
 
             const allExamTypes = await getAllExamTypes();
             setExamTypes(allExamTypes);
-
-            const allAcademicYears = await getAllAcademicYears();
-            setAcademicYears(allAcademicYears.reverse()); // .reverse() to get the most recent academic years first in the list.
 
             const allSections = await getAllSections();
             setSections(allSections);
@@ -61,13 +56,6 @@ export default function App({ user }: RegisterProps) {
             examType: [],
         }
     })
-
-    useEffect(() => {
-        if (!academicYears.length) return;
-
-        setValue("academicYear", academicYears[0], { shouldValidate: true, shouldDirty: false });
-        setSelectedAcademicYear(academicYears[0].academicYear.code);
-    }, [academicYears, setValue]);
 
     useEffect(() => {
         if (!examTypes.length) return;
@@ -156,7 +144,7 @@ export default function App({ user }: RegisterProps) {
                         exam_type_id: examType.id,
                         exam_status_id: 2,
                         exam_date: examType.dontKnowYet ? null : examType.date,
-                        academic_year_id: data.academicYear.academicYear.id,
+                        academic_year_id: getCurrentAcademicYear(),
                         exam_semester: parseInt(data.examSemester),
                         nb_students: null,
                         nb_pages: null,
@@ -259,10 +247,6 @@ CePro
         };
     }
 
-    const academicYearStyles = useMemo(() => 
-        makeCustomStyles<FormattedAcademicYear, false>(), []
-    )
-
     const sectionStyles = useMemo(() => 
         makeCustomStyles<FormattedSection, false>(), []
     )
@@ -298,28 +282,6 @@ CePro
                 {/* register your input into the hook by invoking the "register" function */}
                 <label>Your email address</label>
                 <ReactSelect control={control} label={"registeredBy"} name={"contact"} isMultiChoice={false} instanceId={2} user={user} disabled={true}/>
-                <label>Academic Year <RedAsterisk /></label>
-                <Controller
-                    name="academicYear"
-                    control={control}
-                    render={({ field }) => (
-                        <Select<FormattedAcademicYear, false>
-                            instanceId="academicYear"
-                            options={academicYears}
-                            styles={academicYearStyles}
-                            theme={theme}
-                            value={field.value}
-                            onChange={(val) => {
-                                field.onChange(val)
-                                setSelectedAcademicYear(val?.academicYear.code)
-                            }}
-                            onBlur={field.onBlur}
-                            ref={field.ref}
-                            isClearable
-                            isSearchable
-                        />
-                    )}
-                />
                 <label>Exam semester <RedAsterisk /></label>
                 <div className="flex gap-1" key={1}>
                         <input
@@ -343,7 +305,7 @@ CePro
                         <label className="!text-sm" htmlFor="semester-2">Semester 2</label>
                 </div>
                 <label>Select your exam <RedAsterisk /></label>
-                <ReactSelect key={selectedAcademicYear} control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} academicYear={selectedAcademicYear} />
+                <ReactSelect control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} />
                 <label>Exam section <RedAsterisk /></label>
                 <Controller
                     name="section"

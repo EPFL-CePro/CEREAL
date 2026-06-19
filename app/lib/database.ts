@@ -194,7 +194,7 @@ export async function getExamsByAcademicYear(academicYear: string): Promise <Exa
     connection.connect()
     
     return new Promise(function(resolve) {
-        connection.query('SELECT exam.* FROM exam LEFT JOIN academic_year ON exam.academic_year_id = academic_year.id WHERE academic_year.code = ?;', [academicYear], (err, rows) => {
+        connection.query('SELECT exam.* FROM exam WHERE exam.academic_year_id = ?;', [academicYear], (err, rows) => {
             if (err) throw err
             resolve(rows as Exam[]);
         })

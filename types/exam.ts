@@ -7,7 +7,7 @@ export type Exam = {
     exam_type_id: number;
     exam_status_id: number;
     exam_date?: string | Date | null;
-    academic_year_id: number;
+    academic_year_id: string;
     exam_semester: number;
     nb_students?: number | null;
     nb_pages?: number | null;
