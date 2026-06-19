@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import AcademicYearSelect from "@/app/components/crep/stats/AcademicYearSelect";
+import DeliveryDelayHistogram, { DeliveryDelayBucket } from "@/app/components/crep/stats/DeliveryDelayHistogram";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
 import { getCrepExamsByAcademicYear } from "@/app/lib/crep/database";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
@@ -22,6 +23,26 @@ function parseDate(value: Date | string | null | undefined) {
 
     const date = new Date(dateValue);
     return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getDeliveryDelayBuckets(delayCounts: Map<number, number>): DeliveryDelayBucket[] {
+    if (delayCounts.size === 0) return [];
+
+    const delays = Array.from(delayCounts.keys());
+    const minDelay = Math.min(...delays);
+    const maxDelay = Math.max(...delays);
+    const firstBucket = minDelay === 0 ? 0 : 1;
+
+    return Array.from(
+        { length: maxDelay - firstBucket + 1 },
+        (_, index) => {
+            const businessDays = firstBucket + index;
+            return {
+                businessDays,
+                count: delayCounts.get(businessDays) ?? 0,
+            };
+        }
+    );
 }
 
 export default async function Page({
@@ -53,6 +74,10 @@ export default async function Page({
             }
 
             const businessDays = businessDaysBetween(registeredDate, desiredDate);
+            stats.delayCounts.set(
+                businessDays,
+                (stats.delayCounts.get(businessDays) ?? 0) + 1
+            );
 
             if (businessDays < 8) {
                 stats.late++;
@@ -62,8 +87,9 @@ export default async function Page({
 
             return stats;
         },
-        { late: 0, onTime: 0, ignored: 0 }
+        { late: 0, onTime: 0, ignored: 0, delayCounts: new Map<number, number>() }
     );
+    const deliveryDelayBuckets = getDeliveryDelayBuckets(timingStats.delayCounts);
 
     return (
         <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -78,6 +104,7 @@ export default async function Page({
                 onTime={timingStats.onTime}
                 late={timingStats.late}
             />
+            <DeliveryDelayHistogram buckets={deliveryDelayBuckets} />
         </main>
     )
 }
