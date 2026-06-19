@@ -1,5 +1,4 @@
 import { ExamType } from "./examType";
-import { FormattedSection } from "./section";
 import { CourseSelectOption } from "./selectOption";
 
 export type Inputs = {
@@ -21,6 +20,5 @@ export type Inputs = {
     service: string
     examType: ExamType[]
     examSemester: string
-    section: FormattedSection
     print: string
 }
