@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import AcademicYearSelect from "@/app/components/crep/stats/AcademicYearSelect";
 import DeliveryDelayHistogram, { DeliveryDelayBucket } from "@/app/components/crep/stats/DeliveryDelayHistogram";
+import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
 import { getCrepExamsByAcademicYear } from "@/app/lib/crep/database";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
@@ -45,6 +46,17 @@ function getDeliveryDelayBuckets(delayCounts: Map<number, number>): DeliveryDela
     );
 }
 
+function getPrintStats(exams: CrepExam[]) {
+    const printDates = exams
+        .map((exam) => formatDateOnlyValue(exam.print_date))
+        .filter(Boolean);
+    const printDays = new Set(printDates).size;
+
+    return {
+        averageExamsPerPrintDay: printDays === 0 ? 0 : printDates.length / printDays,
+    };
+}
+
 export default async function Page({
     searchParams,
 }: {
@@ -63,6 +75,7 @@ export default async function Page({
     }
 
     const exams = await getCrepExamsByAcademicYear(selectedAcademicYear) as CrepExam[];
+    const printStats = getPrintStats(exams);
     const timingStats = exams.reduce(
         (stats, exam) => {
             const registeredDate = parseDate(exam.created_on);
@@ -99,6 +112,9 @@ export default async function Page({
                     selectedAcademicYear={selectedAcademicYear}
                 />
             </div>
+            <ExamPrintStatsTable
+                averageExamsPerPrintDay={printStats.averageExamsPerPrintDay}
+            />
             <WhoWasLateChart
                 total={exams.length}
                 onTime={timingStats.onTime}
