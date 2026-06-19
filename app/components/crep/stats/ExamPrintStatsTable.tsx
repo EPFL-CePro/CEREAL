@@ -1,5 +1,6 @@
 type ExamPrintStatsTableProps = {
   averageExamsPerPrintDay: number;
+  totalExams: number;
 };
 
 function formatAverage(value: number) {
@@ -8,6 +9,7 @@ function formatAverage(value: number) {
 
 export default function ExamPrintStatsTable({
   averageExamsPerPrintDay,
+  totalExams
 }: ExamPrintStatsTableProps) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -30,6 +32,14 @@ export default function ExamPrintStatsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
+            <tr>
+              <th scope="row" className="px-4 py-4 font-medium text-gray-950">
+                Total exams
+              </th>
+              <td className="px-4 py-4 text-xl font-semibold text-gray-950">
+                {totalExams}
+              </td>
+            </tr>
             <tr>
               <th scope="row" className="px-4 py-4 font-medium text-gray-950">
                 Exams to print per day

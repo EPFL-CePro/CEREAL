@@ -114,6 +114,7 @@ export default async function Page({
             </div>
             <ExamPrintStatsTable
                 averageExamsPerPrintDay={printStats.averageExamsPerPrintDay}
+                totalExams={exams.length}
             />
             <WhoWasLateChart
                 total={exams.length}
