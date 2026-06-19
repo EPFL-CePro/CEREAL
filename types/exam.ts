@@ -15,7 +15,6 @@ export type Exam = {
     // deadline_prep: string | Date;
     // deadline_repro: string | Date;
     remark?: string | null;
-    section_id: number;
     responsible_id: number | null;
     contact: string;
 }

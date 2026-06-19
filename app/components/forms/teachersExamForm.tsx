@@ -1,8 +1,8 @@
 "use client";
 // This form allows users to register their exams into the system.
-import { useForm, SubmitHandler, useFieldArray, Controller } from "react-hook-form"
-import { getAllExamTypes, getAllServices, insertExam, getAllSections, getServiceById } from "@/app/lib/database";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useForm, SubmitHandler, useFieldArray } from "react-hook-form"
+import { getAllExamTypes, getAllServices, insertExam, getServiceById } from "@/app/lib/database";
+import { useEffect, useState } from "react";
 import ReactSelect from "./ReactSelect";
 import { sendMail } from "@/app/lib/mail";
 import { User } from "next-auth";
@@ -11,9 +11,6 @@ import { RegisterModal } from "./RegisterModal";
 import { Inputs } from "@/types/inputs";
 import { Service } from "@/types/service";
 import { ExamType } from "@/types/examType";
-import Select from "react-select";
-import { GroupBase, StylesConfig, Theme } from "react-select";
-import { FormattedSection } from "@/types/section";
 import { fetchPersonBySciper } from "@/app/lib/api";
 import { getCurrentAcademicYear } from "@/app/lib/academicYear";
 
@@ -35,7 +32,6 @@ export default function App({ user }: RegisterProps) {
     const [isConfirmModal, setIsConfirmModal] = useState(false);
     const [services, setServices] = useState<Service[]>([]);
     const [examTypes, setExamTypes] = useState<ExamType[]>([]);
-    const [sections, setSections] = useState<FormattedSection[]>([]);
 
     useEffect(() => {
         (async () => {
@@ -44,14 +40,11 @@ export default function App({ user }: RegisterProps) {
 
             const allExamTypes = await getAllExamTypes();
             setExamTypes(allExamTypes);
-
-            const allSections = await getAllSections();
-            setSections(allSections);
             
         })();
     }, [])
 
-    const { control, register, handleSubmit, reset, setValue } = useForm<Inputs>({
+    const { control, register, handleSubmit, reset } = useForm<Inputs>({
         defaultValues: {
             examType: [],
         }
@@ -150,7 +143,6 @@ export default function App({ user }: RegisterProps) {
                         nb_pages: null,
                         total_pages: null,
                         remark: data.remark,
-                        section_id: data.section.section.id,
                         responsible_id: null,
                         contact: data.contact
                     }
@@ -206,50 +198,6 @@ CePro
             openModal("Unexpected Error", 'An unexpected error occurred while registering the exam.');
         }
     }
-    
-    const theme = useCallback((themeArg: Theme): Theme => {
-        return {
-            ...themeArg,
-            borderRadius: 9,
-            colors: {
-                ...themeArg.colors,
-                primary25: "rgba(239, 68, 68, 0.1)",
-                primary: "rgba(239, 68, 68, 1)",
-            },
-            fontWeight: "bolder" as unknown as Theme["spacing"],
-            fontSize: "24px" as unknown as Theme["spacing"],
-        } as Theme;
-    }, []);
-
-    function makeCustomStyles<Option, IsMulti extends boolean = boolean>(): StylesConfig<
-        Option,
-        IsMulti,
-        GroupBase<Option>
-    > {
-        return {
-            control: (styles) => ({
-            ...styles,
-            backgroundColor: "white",
-            ":focus-within": {
-                borderColor: "red",
-                boxShadow: "0 0 0 1px red",
-            },
-            padding: "4px",
-            }),
-            multiValueLabel: (styles) => ({
-            ...styles,
-            fontWeight: "500",
-            }),
-            option: (styles, { isSelected }) => ({
-            ...styles,
-            fontWeight: isSelected ? "600" : "normal",
-            }),
-        };
-    }
-
-    const sectionStyles = useMemo(() => 
-        makeCustomStyles<FormattedSection, false>(), []
-    )
 
     return (
         /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
@@ -306,25 +254,6 @@ CePro
                 </div>
                 <label>Select your exam <RedAsterisk /></label>
                 <ReactSelect control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} />
-                <label>Exam section <RedAsterisk /></label>
-                <Controller
-                    name="section"
-                    control={control}
-                    render={({ field }) => (
-                        <Select<FormattedSection, false>
-                            instanceId="section"
-                            options={sections}
-                            styles={sectionStyles}
-                            theme={theme}
-                            value={field.value}
-                            onChange={(val) => field.onChange(val)}
-                            onBlur={field.onBlur}
-                            ref={field.ref}
-                            isClearable
-                            isSearchable
-                        />
-                    )}
-                />
                 <label>Exam type <RedAsterisk /></label>
                 {fields.map((field, index) => (
                     <div className="flex flex-row justify-between w-full 2xl:w-4/5 [&>*>label]:text-lg" key={field.id}>
