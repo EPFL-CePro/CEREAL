@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const nodemailer = require('nodemailer');
 
 const SCRIPT_DIR = __dirname;
 
@@ -47,6 +48,7 @@ const IGNORED_DIRS = new Set(
     .map((s) => s.trim())
     .filter(Boolean)
 );
+const ALERT_TO = process.env.SCANS_ALERT_TO || 'cepro-exams@epfl.ch';
 
 function fail(msg) {
   console.error(`ERROR: ${msg}`);
@@ -202,6 +204,62 @@ function responsibleLogLine(r) {
   }
 }
 
+// Human-readable responsible info for the email body.
+function responsibleMailLine(r) {
+  switch (r.status) {
+    case 'ok':
+      return `${r.name}`;
+    case 'no_code':
+      return `Inconnu — aucun code de cours détecté dans le nom du dossier`;
+    case 'no_exam':
+      return `Inconnu — aucun examen avec le code exact "${r.code}" dans la base de données`;
+    case 'no_responsible':
+      return `Inconnu — examen "${r.code}" trouvé en base de données mais aucun responsable renseigné`;
+    case 'api_not_found':
+      return `Inconnu — sciper ${r.sciper} (examen ${r.code}) introuvable via l'API`;
+    case 'api_error':
+      return `Indéterminé — sciper ${r.sciper} (examen ${r.code}), erreur API: ${r.error}`;
+    default:
+      return `Inconnu`;
+  }
+}
+
+// Reimplementation of sendMail (app/lib/mail.ts) for this standalone CLI script.
+function getMailSubjectPrefix() {
+  return process.env.CEREAL_ENV === 'test' ? 'TEST - ' : '';
+}
+
+async function sendMail(to, subject, content, cc, replyTo) {
+  const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_SMTP_HOST,
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.MAIL_AUTH_USER,
+      pass: process.env.MAIL_AUTH_PASS,
+    },
+  });
+
+  return transporter.sendMail({
+    from: process.env.MAIL_FROM_EMAIL,
+    to,
+    subject: `${getMailSubjectPrefix()}${subject}`,
+    text: content,
+    cc,
+    replyTo,
+  });
+}
+
+// Email alert for one newly detected scan.
+async function sendNewScanMail(folderName, responsible) {
+  const subject = `Nouveau scan d'examen ${folderName}`;
+  const content =
+    `Un nouveau scan d'examen a été détecté sur le NAS.\n\n` +
+    `Dossier   : ${folderName}\n` +
+    `Responsable : ${responsibleMailLine(responsible)}\n`;
+  return sendMail(ALERT_TO, subject, content, '');
+}
+
 function writeScans(list, rowExists) {
   const json = JSON.stringify(list);
   const escaped = json.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -233,7 +291,8 @@ async function main() {
   const currentSet = new Set(folders);
   const now = new Date().toISOString();
 
-  const newScans = [];
+  let newCount = 0;
+  let mailFailed = 0;
   const updatedList = [];
 
   for (const name of folders) {
@@ -241,47 +300,59 @@ async function main() {
     if (existing) {
       // Scan already known
       updatedList.push(existing);
-    } else {
-      // New scan
-      const responsible = await resolveResponsible(name);
-      const entry = {
-        name,
-        detected_at: now,
-        status: 'new',
-        responsible_sciper: responsible.sciper,
-        responsible_name: responsible.name,
-        responsible_status: responsible.status,
-      };
-      updatedList.push(entry);
-      newScans.push({ entry, responsible });
+      continue;
     }
-  }
 
-  // Scans disparus du dossier actif (archivés dans ZZ_DONE ou supprimés).
-  const removed = stored.filter((s) => !currentSet.has(s.name));
-
-  /* ---------- Alertes ---------- */
-  for (const { entry, responsible } of newScans) {
-    console.log(`🆕 NEW SCAN : "${entry.name}" (${entry.detected_at})`);
+    // New scan: resolve responsible and alert by email.
+    const responsible = await resolveResponsible(name);
+    console.log(`🆕 NEW SCAN : "${name}" (${now})`);
     console.log(`    ${responsibleLogLine(responsible)}`);
+
+    try {
+      await sendNewScanMail(name, responsible);
+      console.log(`    ✉️  Email sent to ${ALERT_TO}`);
+    } catch (e) {
+      // Email failed: do NOT persist this scan so it is retried next run.
+      console.error(
+        `    ✉️  EMAIL FAILED for "${name}": ${e.message} — will retry next run`
+      );
+      mailFailed++;
+      continue;
+    }
+
+    updatedList.push({
+      name,
+      detected_at: now,
+      status: 'new',
+      responsible_sciper: responsible.sciper,
+      responsible_name: responsible.name,
+      responsible_status: responsible.status,
+    });
+    newCount++;
   }
+
+  // Scans no longer in the active folder (archived in ZZ_DONE or deleted).
+  const removed = stored.filter((s) => !currentSet.has(s.name));
   for (const s of removed) {
     console.log(`➖ Scan removed (not found in active folder) : "${s.name}"`);
   }
 
-  /* ---------- Persistance ---------- */
-  const changed =
-    newScans.length > 0 || removed.length > 0 || !rowExists;
+  /* ---------- Persistence ---------- */
+  const changed = newCount > 0 || removed.length > 0 || !rowExists;
 
   if (changed) {
     writeScans(updatedList, rowExists);
     console.log(
-      `List updated : ${updatedList.length} active scans` +
-        `(+${newScans.length} new, -${removed.length} removed).`
+      `List updated : ${updatedList.length} active scans ` +
+        `(+${newCount} new, -${removed.length} removed).`
     );
   } else {
-    console.log(
-      `No change. ${updatedList.length} active scans.`
+    console.log(`No change. ${updatedList.length} active scans.`);
+  }
+
+  if (mailFailed > 0) {
+    console.error(
+      `${mailFailed} email(s) failed; those scans were not saved and will be retried.`
     );
   }
 }
