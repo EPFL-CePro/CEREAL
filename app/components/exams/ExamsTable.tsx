@@ -19,14 +19,22 @@ import { ServiceLevel } from '@/types/serviceLevel'
 import { Service } from '@/types/service'
 import { ExamType } from '@/types/examType'
 import { ExamStatus } from '@/types/examStatus'
-import { fetchCeproAdminsIT, fetchPersonBySciper, fetchTeachersByCourseCode } from '@/app/lib/api'
-import { EPFLUser } from '@/types/user'
+import { fetchCeproAdminsIT, fetchTeachersByCourseCode } from '@/app/lib/api'
 import { GroupUser } from '@/types/groupUser'
 import { Teacher } from '@/types/teacher'
 
 interface ExamsTableProps {
   academicYear: string
 }
+
+type ExamContact = {
+  firstname?: string | null
+  lastname?: string | null
+  email?: string | null
+  sciper?: string | null
+}
+
+type ExamContactValue = string | ExamContact | null | undefined
 
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
@@ -44,16 +52,59 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [allExamTypes, setAllExamTypes] = React.useState<ExamType[]>([])
   const [allExamStatus, setAllExamStatus] = React.useState<ExamStatus[]>([])
   const [selectedExam, setSelectedExam] = React.useState<Exam | null>(null)
-  const [selectedContact, setSelectedContact] = React.useState<EPFLUser | null>(null)
-  const [isLoadingContact, setIsLoadingContact] = React.useState(false)
   const [isLoadingTable, setIsLoadingTable] = React.useState(true)
   const [allCeproAdminsIT, setAllCeproAdminsIT] = React.useState<GroupUser[]>([])
   const [teachersByCourse, setTeachersByCourse] = React.useState<Record<string, Teacher[]>>({})
-  const latestContactRequest = React.useRef<string | null>(null)
   const compactSelectClassName =
     'h-9 max-w-[9rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600'
   const compactInputClassName =
     'h-9 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600'
+
+  const parseContact = React.useCallback((contact: ExamContactValue): ExamContact | null => {
+    if (!contact) return null
+    if (typeof contact === 'object') return contact
+
+    try {
+      const parsed = JSON.parse(contact) as ExamContact
+      return parsed && typeof parsed === 'object' ? parsed : null
+    } catch {
+      return { sciper: contact }
+    }
+  }, [])
+
+  const formatContact = React.useCallback((contact: ExamContactValue) => {
+    const parsedContact = parseContact(contact)
+    if (!parsedContact) return 'Not set'
+
+    const fullName = [parsedContact.firstname, parsedContact.lastname]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+    const email = parsedContact.email?.trim()
+    const sciper = parsedContact.sciper?.trim()
+
+    if (fullName && email) return `${fullName} (${email})`
+    if (fullName) return fullName
+    if (email) return email
+    if (sciper) return sciper
+
+    return 'Not set'
+  }, [parseContact])
+
+  const getContactSearchText = React.useCallback((contact: ExamContactValue) => {
+    const parsedContact = parseContact(contact)
+    if (!parsedContact) return ''
+
+    return [
+      parsedContact.firstname,
+      parsedContact.lastname,
+      parsedContact.email,
+      parsedContact.sciper,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+  }, [parseContact])
 
   const updateExamInState = React.useCallback(
     (examId: string, updates: Partial<Exam>) => {
@@ -121,24 +172,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     }
   }, [academicYear])
 
-  const handleOpenExamDetails = async (exam: Exam) => {
+  const handleOpenExamDetails = (exam: Exam) => {
     setSelectedExam(exam)
-    setSelectedContact(null)
-    setIsLoadingContact(true)
-    latestContactRequest.current = exam.contact
-
-    try {
-      const person = await fetchPersonBySciper(exam.contact)
-      if (latestContactRequest.current === exam.contact) {
-        setSelectedContact(person)
-      }
-    } catch (error) {
-      console.error('Failed to fetch contact person', error)
-    } finally {
-      if (latestContactRequest.current === exam.contact) {
-        setIsLoadingContact(false)
-      }
-    }
   }
 
   type RemarkTextareaProps = {
@@ -218,6 +253,20 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           </div>
         )
       },
+    },
+    {
+      id: 'contact',
+      header: 'Contact',
+      accessorFn: (row) => getContactSearchText(row.contact),
+      cell: ({ row }) => (
+        <div className="min-w-0 max-w-[16rem] text-sm text-slate-700">
+          <span className="line-clamp-2">{formatContact(row.original.contact)}</span>
+        </div>
+      ),
+      sortingFn: (firstRow, secondRow) =>
+        getContactSearchText(firstRow.original.contact).localeCompare(
+          getContactSearchText(secondRow.original.contact)
+        ),
     },
     {
       accessorKey: 'service_level_id',
@@ -703,11 +752,13 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         .map((t) => `${t.firstname} ${t.name}`)
         .join(', ')
         .toLowerCase()
+      const contactDisplay = getContactSearchText(row.original.contact)
 
       return (
         row.original.name.toLowerCase().includes(search) ||
         row.original.code.toLowerCase().includes(search) ||
         teachersDisplay.includes(search) ||
+        contactDisplay.includes(search) ||
         (allServiceLevels.find((element:ServiceLevel) => element.id == row.original.service_level_id)?.name.toLowerCase().includes(search) || false) ||
         (allServices.find((element:Service) => element.id == row.original.service_id)?.code.toLowerCase().includes(search) || false) ||
         (allExamTypes.find((element:ExamType) => element.id == row.original.exam_type_id)?.code.toLowerCase().includes(search) || false) ||
@@ -761,11 +812,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     selectedExam?.exam_date
       ? new Date(selectedExam.exam_date as string | Date).toISOString().split('T')[0]
       : 'Not set'
-  const formattedSelectedContact = selectedContact
-    ? `${selectedContact.firstname} ${selectedContact.lastname} (${selectedContact.email})`
-    : isLoadingContact
-      ? 'Loading...'
-      : selectedExam?.contact || 'Not set'
 
   return (
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-10 lg:px-14">
@@ -1087,8 +1133,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               className="modal top-1/8 left-1/8 w-3/4 rounded-xl opacity-98 drop-shadow-2xl md:left-1/4 md:w-2/4"
               onClose={() => {
                 setSelectedExam(null)
-                setSelectedContact(null)
-                setIsLoadingContact(false)
               }}
             >
               <div className="rounded-xl bg-white p-8 text-slate-900">
@@ -1104,8 +1148,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                   type="button"
                   onClick={() => {
                     setSelectedExam(null)
-                    setSelectedContact(null)
-                    setIsLoadingContact(false)
                   }}
                   className="
                     rounded-full
@@ -1158,10 +1200,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Pages</p>
                   <p className="mt-1 text-sm font-medium">{selectedExam.nb_pages ?? 'Not set'}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Contact</p>
-                  <p className="mt-1 text-sm font-medium">{formattedSelectedContact}</p>
                 </div>
               </div>
 
