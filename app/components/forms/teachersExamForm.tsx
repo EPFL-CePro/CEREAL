@@ -23,6 +23,19 @@ interface AppUser extends User {
     sciper: string;
 }
 
+function formatContactForDB(contact: {
+    id?: string | number;
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+}, selectedSciper: string) {
+    return JSON.stringify({
+        firstname: contact.firstname ?? "",
+        lastname: contact.lastname ?? "",
+        email: contact.email ?? "",
+        sciper: String(contact.id ?? selectedSciper),
+    });
+}
 
 export default function App({ user }: RegisterProps) {
     const [modalOpen, setModalOpen] = useState(false);
@@ -144,7 +157,7 @@ export default function App({ user }: RegisterProps) {
                         total_pages: null,
                         remark: data.remark,
                         responsible_id: null,
-                        contact: data.contact
+                        contact: formatContactForDB(contact, data.contact)
                     }
                 )
                 if (typeof (insertedExam) !== 'number') {
