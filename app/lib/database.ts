@@ -49,6 +49,29 @@ export async function insertService(service: Omit<Service, 'id'>): Promise<numbe
     })
 }
 
+export async function deleteService(service: Service) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve) => {
+        connection.query(
+            'DELETE FROM service WHERE id = ?;',
+            [service.id],
+            (err, rows) => {
+                if (err) throw err
+                resolve(JSON.stringify(rows));
+            }
+        )
+        connection.end()
+    })
+}
+
 export async function insertServiceLevel(serviceLevel: Omit<ServiceLevel, 'id'>): Promise<number> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
