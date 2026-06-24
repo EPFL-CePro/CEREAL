@@ -141,6 +141,29 @@ export async function insertExamStatus(examStatus: Omit<ExamStatus, 'id'>): Prom
     })
 }
 
+export async function deleteExamStatus(examStatus: ExamStatus) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve) => {
+        connection.query(
+            'DELETE FROM exam_status WHERE id = ?;',
+            [examStatus.id],
+            (err, rows) => {
+                if (err) throw err
+                resolve(JSON.stringify(rows));
+            }
+        )
+        connection.end()
+    })
+}
+
 export async function getAllExamTypes(): Promise <ExamType[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
