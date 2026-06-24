@@ -2,6 +2,7 @@
 
 import React from "react";
 import {
+  deleteExamStatus,
   deleteService,
   deleteServiceLevel,
   getAllExamStatus,
@@ -72,6 +73,16 @@ export default function AdminPage() {
 
       setServiceLevels((currentServiceLevels) =>
         currentServiceLevels.filter((currentServiceLevel) => currentServiceLevel.id !== serviceLevel.id)
+      );
+    }
+  }
+
+  async function handleDeleteExamStatus(examStatus: ExamStatus) {
+    if(window.confirm("This will delete this exam status from the database. Are you sure you want to continue ?")) {
+      await deleteExamStatus(examStatus);
+
+      setExamStatuses((currentExamStatuses) =>
+        currentExamStatuses.filter((currentExamStatus) => currentExamStatus.id !== examStatus.id)
       );
     }
   }
@@ -325,14 +336,22 @@ export default function AdminPage() {
       {activeTab === "examStatus" && (
         <div className="grid gap-2">
           {examStatuses.map((status) => (
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 p-3" key={status.id}>
-              <span
-                className="h-4 w-4 rounded-full border border-slate-200"
-                style={{ backgroundColor: status.color }}
-              />
-              <span>
-                <strong>{status.code}</strong> - {status.name}
-              </span>
+            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={status.id}>
+              <div className="flex items-center gap-2">
+                <span
+                  className="flex h-3 w-3 rounded-full border border-slate-200"
+                  style={{ backgroundColor: status.color }}
+                />
+                <span>
+                  <strong>{status.code}</strong> - {status.name}
+                </span>
+              </div>
+              <button
+                className="bg-red-500 p-2 rounded-xl text-white ml-0 hover:cursor-pointer hover:bg-red-600 transition ease-in-out text-xs"
+                onClick={() => handleDeleteExamStatus(status)}
+              >
+                X
+              </button>
             </div>
           ))}
           <button
