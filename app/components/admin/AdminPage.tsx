@@ -3,6 +3,7 @@
 import React from "react";
 import {
   deleteService,
+  deleteServiceLevel,
   getAllExamStatus,
   getAllServiceLevels,
   getAllServices,
@@ -61,6 +62,16 @@ export default function AdminPage() {
 
       setServices((currentServices) =>
         currentServices.filter((currentService) => currentService.id !== service.id)
+      );
+    }
+  }
+
+  async function handleDeleteServiceLevel(serviceLevel: ServiceLevel) {
+    if(window.confirm("This will delete this service level from the database. Are you sure you want to continue ?")) {
+      await deleteServiceLevel(serviceLevel);
+
+      setServiceLevels((currentServiceLevels) =>
+        currentServiceLevels.filter((currentServiceLevel) => currentServiceLevel.id !== serviceLevel.id)
       );
     }
   }
@@ -291,8 +302,14 @@ export default function AdminPage() {
       {activeTab === "serviceLevel" && (
         <div className="grid gap-2">
           {serviceLevels.map((serviceLevel) => (
-            <div className="rounded-lg border border-slate-200 p-3" key={serviceLevel.id}>
-              <strong>{serviceLevel.code}</strong> - {serviceLevel.name}
+            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={serviceLevel.id}>
+              <span><strong>{serviceLevel.code}</strong> - {serviceLevel.name}</span>
+              <button
+                className="bg-red-500 p-2 rounded-xl text-white ml-0 hover:cursor-pointer hover:bg-red-600 transition ease-in-out text-xs"
+                onClick={() => handleDeleteServiceLevel(serviceLevel)}
+              >
+                X
+              </button>
             </div>
           ))}
           <button
