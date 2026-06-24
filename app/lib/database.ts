@@ -26,6 +26,75 @@ export async function getAllServices(): Promise <Service[]> {
     })
 }
 
+export async function insertService(service: Omit<Service, 'id'>): Promise<number> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve, reject) => {
+        connection.query(
+            'INSERT INTO service (code, description) VALUES (?, ?);',
+            [service.code, service.description],
+            (err, result) => {
+                if (err) return reject(err)
+                resolve((result as ResultSetHeader).insertId as number)
+            }
+        )
+        connection.end()
+    })
+}
+
+export async function insertServiceLevel(serviceLevel: Omit<ServiceLevel, 'id'>): Promise<number> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve, reject) => {
+        connection.query(
+            'INSERT INTO service_level (code, name) VALUES (?, ?);',
+            [serviceLevel.code, serviceLevel.name],
+            (err, result) => {
+                if (err) return reject(err)
+                resolve((result as ResultSetHeader).insertId as number)
+            }
+        )
+        connection.end()
+    })
+}
+
+export async function insertExamStatus(examStatus: Omit<ExamStatus, 'id'>): Promise<number> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve, reject) => {
+        connection.query(
+            'INSERT INTO exam_status (code, name, color) VALUES (?, ?, ?);',
+            [examStatus.code, examStatus.name, examStatus.color],
+            (err, result) => {
+                if (err) return reject(err)
+                resolve((result as ResultSetHeader).insertId as number)
+            }
+        )
+        connection.end()
+    })
+}
+
 export async function getAllExamTypes(): Promise <ExamType[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
