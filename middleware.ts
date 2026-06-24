@@ -23,6 +23,12 @@ export default async function middleware(req: NextRequest) {
 		return NextResponse.redirect(new URL("/403", req.url));
 	}
 
+	if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+		if(!session.user.isAdmin) {
+			return NextResponse.redirect(new URL("/403", req.url));
+		}
+	}
+
 	return NextResponse.next();
 
 }
