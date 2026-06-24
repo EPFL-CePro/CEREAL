@@ -2,6 +2,7 @@
 
 import React from "react";
 import {
+  deleteService,
   getAllExamStatus,
   getAllServiceLevels,
   getAllServices,
@@ -53,6 +54,16 @@ export default function AdminPage() {
   const [newColor, setNewColor] = React.useState("#9a9a9a");
   const [isAdding, setIsAdding] = React.useState(false);
   const [addError, setAddError] = React.useState("");
+
+  async function handleDeleteService(service: Service) {
+    if(window.confirm("This will delete this service from the database. Are you sure you want to continue ?")) {
+      await deleteService(service);
+
+      setServices((currentServices) =>
+        currentServices.filter((currentService) => currentService.id !== service.id)
+      );
+    }
+  }
 
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -162,8 +173,14 @@ export default function AdminPage() {
       {activeTab === "service" && (
         <div className="grid gap-2">
           {services.map((service) => (
-            <div className="rounded-lg border border-slate-200 p-3" key={service.id}>
-              <strong>{service.code}</strong> - {service.description}
+            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={service.id}>
+              <span><strong>{service.code}</strong> - {service.description}</span>
+              <button
+                className="bg-red-500 p-2 rounded-xl text-white ml-0 hover:cursor-pointer hover:bg-red-600 transition ease-in-out text-xs"
+                onClick={() => handleDeleteService(service)}
+              >
+                X
+              </button>
             </div>
           ))}
           <button
