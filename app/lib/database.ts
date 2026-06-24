@@ -72,29 +72,6 @@ export async function deleteService(service: Service) {
     })
 }
 
-export async function deleteServiceLevel(serviceLevel: ServiceLevel) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise((resolve) => {
-        connection.query(
-            'DELETE FROM service_level WHERE id = ?;',
-            [serviceLevel.id],
-            (err, rows) => {
-                if (err) throw err
-                resolve(JSON.stringify(rows));
-            }
-        )
-        connection.end()
-    })
-}
-
 export async function insertServiceLevel(serviceLevel: Omit<ServiceLevel, 'id'>): Promise<number> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
@@ -112,6 +89,29 @@ export async function insertServiceLevel(serviceLevel: Omit<ServiceLevel, 'id'>)
             (err, result) => {
                 if (err) return reject(err)
                 resolve((result as ResultSetHeader).insertId as number)
+            }
+        )
+        connection.end()
+    })
+}
+
+export async function deleteServiceLevel(serviceLevel: ServiceLevel) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve) => {
+        connection.query(
+            'DELETE FROM service_level WHERE id = ?;',
+            [serviceLevel.id],
+            (err, rows) => {
+                if (err) throw err
+                resolve(JSON.stringify(rows));
             }
         )
         connection.end()
