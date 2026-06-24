@@ -74,8 +74,14 @@ export default function AdminPage() {
       {activeTab === "examStatus" && (
         <div className="grid gap-2">
           {examStatuses.map((status) => (
-            <div className="rounded-lg border border-slate-200 p-3" key={status.id}>
-              <strong>{status.code}</strong> - {status.name}
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 p-3" key={status.id}>
+              <span
+                className="h-4 w-4 rounded-full border border-slate-200"
+                style={{ backgroundColor: status.color }}
+              />
+              <span>
+                <strong>{status.code}</strong> - {status.name}
+              </span>
             </div>
           ))}
         </div>
