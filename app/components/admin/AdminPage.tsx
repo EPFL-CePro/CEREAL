@@ -12,6 +12,7 @@ import {
   insertExamStatus,
   insertService,
   insertServiceLevel,
+  syncEmailTemplates,
   updateEmailTemplate,
 } from "@/app/lib/database";
 import { EMAIL_TEMPLATES, EmailTemplateKey } from "@/app/lib/emailTemplates";
@@ -265,6 +266,8 @@ export default function AdminPage() {
 
   React.useEffect(() => {
     (async () => {
+      await syncEmailTemplates();
+
       const [allServices, allServiceLevels, allExamStatuses, allEmailTemplates] = await Promise.all([
         getAllServices(),
         getAllServiceLevels(),

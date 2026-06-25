@@ -4,6 +4,7 @@ export type Placeholder = {
 };
 
 export type TemplateDefinition = {
+    section: string;
     name: string;
     placeholders: Placeholder[];
     defaults: {
@@ -15,14 +16,9 @@ export type TemplateDefinition = {
     };
 };
 
-export type EmailTemplateKey =
-    | "exam_services_confirmation"
-    | "crep_printing_confirmation"
-    | "exam_ready_to_print"
-    | "exam_ready_to_pickup";
-
-export const EMAIL_TEMPLATES: Record<EmailTemplateKey, TemplateDefinition> = {
+export const EMAIL_TEMPLATES = {
     exam_services_confirmation: {
+        section: "CEREAL",
         name: "Exam services subscription confirmation",
         placeholders: [
             { token: "course", desc: "Course code" },
@@ -68,7 +64,8 @@ CePro
     },
 
     crep_printing_confirmation: {
-        name: "Exam printing service subscription confirmation (CREP)",
+        section: "CREP",
+        name: "Exam printing service subscription confirmation",
         placeholders: [
             { token: "attentionPrefix", desc: "Subject prefix when attention required (computed)" },
             { token: "attentionBlock", desc: "Warning/error block, empty if none (computed)" },
@@ -102,7 +99,8 @@ Your subscription to our exam printing service has been registered:
     },
 
     exam_ready_to_print: {
-        name: "Exam ready to print (Repro notification)",
+        section: "CREP",
+        name: "Exam ready to print",
         placeholders: [
             { token: "examCode", desc: "Exam code (used in subject)" },
             { token: "description", desc: "Exam description" },
@@ -127,7 +125,8 @@ CePro team
     },
 
     exam_ready_to_pickup: {
-        name: "Exam ready to pick up (contact notification)",
+        section: "CREP",
+        name: "Exam ready to pick up",
         placeholders: [
             { token: "examCode", desc: "Exam code (used in subject)" },
             { token: "description", desc: "Exam description" },
@@ -155,6 +154,10 @@ CePro team
         },
     },
 };
+
+// Keys are derived from the registry, so adding or removing a template is a
+// single edit to EMAIL_TEMPLATES above (no separate union to keep in sync).
+export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES;
 
 export type TemplateContext = Record<string, string | number | null | undefined>;
 
