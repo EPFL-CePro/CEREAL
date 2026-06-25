@@ -5,7 +5,7 @@ import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } 
 import { useState } from "react";
 import ReactSelect from "../forms/ReactSelect";
 import { fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
-import { sendMail } from "@/app/lib/mail";
+import { sendTemplatedMail } from "@/app/lib/mail";
 import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dateTime";
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
@@ -413,14 +413,8 @@ export default function App({ user }: RegisterProps) {
             If the status is `registered-error`, that means that a printing schedule could NOT be found, so the CePro (and Repro) team need to do something for the user. 
            */
             if (process.env.NODE_ENV !== "development") {
-                await sendMail(
-                    user.email || '',
-                    `${status == 'registered-warning' || status == 'registered-error' ? 'REQUIRES ATTENTION - ' : ''}CePro - Exam printing service subscription confirmation`,
-                    `
-Hello,
-Your subscription to our exam printing service has been registered:
-
-${['registered-warning', 'registered-error'].includes(status) ? `
+                const attentionRequired = ['registered-warning', 'registered-error'].includes(status);
+                const attentionBlock = attentionRequired ? `
 ⚠️ : ${
     status === 'registered-error'
         ? `Due to a printing planning extremely full or too tight delays, we could not determine a printing session for your exam.
@@ -429,17 +423,19 @@ The CePro team will get in touch with you as soon as possible to discuss about y
 The CePro team will get in touch with you shortly to discuss about your situation.
 Next time, please register to the printing service earlier to make sur that the printing team has the right amount of time to print your exam correctly.`
 }
-` : ''}
-
-- Course: ${data.course?.label}
-- Exam date: ${data.examDate}
-- Desired delivery date: ${data.desiredDate}
-- Contact: ${contact?.firstname} ${contact?.lastname} (${contact?.email})
-${authorizedPersons.length > 0 ? `- Authorized persons: ${authorizedPersons.map(user => `${user.email}`).join(', ')}` : ''}
-- Files: ${filesNamesArray.join(', ')}
-${data.remark && `- Additional remarks: ${data.remark}`}`,
-                    'cepro-exams@epfl.ch'
-                );
+` : '';
+                await sendTemplatedMail("crep_printing_confirmation", {
+                    attentionPrefix: attentionRequired ? 'REQUIRES ATTENTION - ' : '',
+                    attentionBlock,
+                    course: data.course?.label,
+                    examDate: data.examDate,
+                    desiredDate: data.desiredDate,
+                    contact: `${contact?.firstname} ${contact?.lastname} (${contact?.email})`,
+                    authorizedPersonsLine: authorizedPersons.length > 0 ? `- Authorized persons: ${authorizedPersons.map(user => `${user.email}`).join(', ')}` : '',
+                    files: filesNamesArray.join(', '),
+                    remarkLine: data.remark ? `- Additional remarks: ${data.remark}` : '',
+                    "registrant.email": user.email || '',
+                });
             }
             if(status == 'registered-warning') {
                 // Modal with warning that there is less than 8 days between the exam date and the desired delivery date.

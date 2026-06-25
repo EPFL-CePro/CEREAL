@@ -4,7 +4,7 @@ import { useForm, SubmitHandler, useFieldArray } from "react-hook-form"
 import { getAllExamTypes, getAllServices, insertExam, getServiceById } from "@/app/lib/database";
 import { useEffect, useState } from "react";
 import ReactSelect from "./ReactSelect";
-import { sendMail } from "@/app/lib/mail";
+import { sendTemplatedMail } from "@/app/lib/mail";
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
 import { RegisterModal } from "./RegisterModal";
@@ -165,44 +165,24 @@ export default function App({ user }: RegisterProps) {
                     return;
                 }
             }
-            if (process.env.NODE_ENV !== "development") {
-                await sendMail(
-                    user.email || '',
-                    `CePro - exam services subscription confirmation`,
-                    `
-Hello,
-Your subscription to our exam services has been successfully registered:
-
-- Course: ${data.course.exam.code}
-- Teacher${data.course.exam.teachers.length > 1 ? 's' : ''}: ${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}${t.sciper ? ` (${t.sciper})` : ''}`).join(', ')}
-- Contact: ${contact.email}
-- Type${data.examType.filter((examType) => examType.checked).length > 1 ? 's' : ''} of exam: ${data.examType.filter((examType) => examType.checked).map((examType) => examType.name).join(', ')}
-- Service: ${service[0].description}
-- Level of service: Silver
-- Date of exam:
-${data.examType
-  .filter((examType) => examType.checked)
-  .map(
-    (examType) =>
-      `    - ${examType.name} : ${
-        examType.dontKnowYet ? `Don't know yet` : examType.date
-      }`
-  )
-  .join('\n')}
-- Remarks: ${data.remark}
-
-If you have asked to discuss with us which service to use, we will get back to you shortly.
-Your comments will also be taken into account and we will do what is necessary to take them into account and keep you informed if necessary.
-
-You can already browse our moodle pages, which contain all the information you need to prepare and organise your exam.
-https://moodle.epfl.ch/course/view.php?id=16420
-
-Best
-
-CePro
-`,
-                    'cepro-exams@epfl.ch'
-                );
+            if (process.env.NODE_ENV == "development") {
+                await sendTemplatedMail("exam_services_confirmation", {
+                    course: data.course.exam.code,
+                    teachers: data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}${t.sciper ? ` (${t.sciper})` : ''}`).join(', '),
+                    contactEmail: contact.email,
+                    examTypes: data.examType.filter((examType) => examType.checked).map((examType) => examType.name).join(', '),
+                    service: service[0].description,
+                    serviceLevel: "Silver",
+                    examDates: data.examType
+                        .filter((examType) => examType.checked)
+                        .map(
+                            (examType) =>
+                                `    - ${examType.name} : ${examType.dontKnowYet ? `Don't know yet` : examType.date}`
+                        )
+                        .join('\n'),
+                    remark: data.remark,
+                    "registrant.email": user.email || '',
+                });
             }
             openModal("Registration Successful", 'Your Exam ' + data.course.exam.code + ' has been registered and a confirmation has been sent to your email.');
             reset();

@@ -6,6 +6,7 @@ import { ExamType } from '@/types/examType';
 import { Exam, NewExam } from '@/types/exam';
 import { ServiceLevel } from '@/types/serviceLevel';
 import { ExamStatus } from '@/types/examStatus';
+import { EmailTemplate } from '@/types/emailTemplate';
 
 export async function getAllServices(): Promise <Service[]> {
     const connection = mysql.createConnection({
@@ -528,6 +529,68 @@ export async function deleteExam(examId: string) {
             if (err) throw err
             resolve(JSON.stringify(rows));
         })
+        connection.end()
+    })
+}
+
+export async function getAllEmailTemplates(): Promise<EmailTemplate[]> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('SELECT * FROM email_template ORDER BY id;', (err, rows) => {
+            if (err) throw err
+            resolve(rows as EmailTemplate[]);
+        })
+        connection.end()
+    })
+}
+
+export async function getEmailTemplate(templateKey: string): Promise<EmailTemplate | null> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('SELECT * FROM email_template WHERE template_key = ?;', [templateKey], (err, rows) => {
+            if (err) throw err
+            const templates = rows as EmailTemplate[]
+            resolve(templates.length > 0 ? templates[0] : null);
+        })
+        connection.end()
+    })
+}
+
+export async function updateEmailTemplate(template: EmailTemplate) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve, reject) => {
+        connection.query(
+            'UPDATE email_template SET subject = ?, body = ?, recipients_to = ?, recipients_cc = ?, reply_to = ? WHERE template_key = ?;',
+            [template.subject, template.body, template.recipients_to, template.recipients_cc, template.reply_to, template.template_key],
+            (err, rows) => {
+                if (err) return reject(err)
+                resolve(JSON.stringify(rows));
+            }
+        )
         connection.end()
     })
 }
