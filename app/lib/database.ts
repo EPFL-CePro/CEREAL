@@ -7,6 +7,7 @@ import { Exam, NewExam } from '@/types/exam';
 import { ServiceLevel } from '@/types/serviceLevel';
 import { ExamStatus } from '@/types/examStatus';
 import { EmailTemplate } from '@/types/emailTemplate';
+import { EMAIL_TEMPLATES } from '@/app/lib/emailTemplates';
 
 export async function getAllServices(): Promise <Service[]> {
     const connection = mysql.createConnection({
@@ -530,6 +531,81 @@ export async function deleteExam(examId: string) {
             resolve(JSON.stringify(rows));
         })
         connection.end()
+    })
+}
+
+// Reconcile the email_template table with the EMAIL_TEMPLATES registry, which is
+// the source of truth:
+//  - INSERT the templates that are actually missing (existing rows, including
+//    admin customizations, are left untouched);
+//  - DELETE the rows whose template_key is no longer in the registry (an email
+//    removed from the code disappears from the DB and the admin UI).
+// Adding/removing an email therefore only requires a registry change + call site,
+// with no manual SQL in production. We insert only the missing rows (rather than
+// INSERT IGNORE everything) so the common case writes nothing and does not burn
+// AUTO_INCREMENT ids on every page load.
+export async function syncEmailTemplates() {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    const keys = Object.keys(EMAIL_TEMPLATES)
+
+    return new Promise<void>((resolve, reject) => {
+        connection.query('SELECT template_key FROM email_template;', (selectErr, rows) => {
+            if (selectErr) {
+                connection.end()
+                return reject(selectErr)
+            }
+
+            const existing = new Set((rows as { template_key: string }[]).map((row) => row.template_key))
+            const toInsert = Object.entries(EMAIL_TEMPLATES)
+                .filter(([key]) => !existing.has(key))
+                .map(([key, def]) => [
+                    key,
+                    def.section,
+                    def.name,
+                    def.defaults.subject,
+                    def.defaults.body,
+                    def.defaults.to,
+                    def.defaults.cc,
+                    def.defaults.replyTo,
+                ])
+
+            const runDelete = () => {
+                connection.query(
+                    'DELETE FROM email_template WHERE template_key NOT IN (?);',
+                    [keys],
+                    (deleteErr) => {
+                        connection.end()
+                        if (deleteErr) return reject(deleteErr)
+                        resolve()
+                    }
+                )
+            }
+
+            if (toInsert.length === 0) {
+                runDelete()
+                return
+            }
+
+            connection.query(
+                'INSERT INTO email_template (template_key, section, name, subject, body, recipients_to, recipients_cc, reply_to) VALUES ?;',
+                [toInsert],
+                (insertErr) => {
+                    if (insertErr) {
+                        connection.end()
+                        return reject(insertErr)
+                    }
+                    runDelete()
+                }
+            )
+        })
     })
 }
 
