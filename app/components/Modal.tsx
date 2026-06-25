@@ -13,7 +13,7 @@ import {
     getDatePartFromDateTimeString,
     getTimePartFromDateTimeString,
 } from "../lib/dateTime";
-import { sendMail } from "../lib/mail";
+import { sendTemplatedMail } from "../lib/mail";
 import { AuthorizedPersons } from "@/types/user";
 import { limitTextToLines } from "../lib/remarks";
 
@@ -521,45 +521,24 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             if (process.env.NODE_ENV !== "development") {
                                 const datePrintSchedule = new Date(event?.extendedProps?.printSchedule)
                                 const examURL = `https://cereal.epfl.ch/crep/?openExamId=${event?.id}&day=${formatDateYYYYMMDD(datePrintSchedule)}`;
-                                await sendMail(
-                                    'examen.repro@epfl.ch',
-                                    `Exam ${event?.extendedProps?.code} is ready to be printed`,
-                                    `
-Hello,
-
-The exam ${event?.extendedProps?.description} status has been set to "toPrint" in CREP.
-
-You can see the exam in the app directly by clicking on this link : ${examURL}
-
-Best,
-CePro team
-`,
-                                    ''
-                                );
+                                await sendTemplatedMail("exam_ready_to_print", {
+                                    examCode: event?.extendedProps?.code,
+                                    description: event?.extendedProps?.description,
+                                    examURL,
+                                });
                             }
                         }
 
                         if (shouldNotifyFinished) {
                             const authorizedPersonsEmails = event?.extendedProps?.authorizedPersons.map((e:AuthorizedPersons) => e.email).join(', ')
                             if (process.env.NODE_ENV !== "development") {
-                                await sendMail(
-                                    event?.extendedProps?.contact.email,
-                                    `Exam ${event?.extendedProps?.code} is ready to be picked up`,
-                                    `
-Hello,
-
-The exam ${event?.extendedProps?.description} has been finished printing and is ready to be picked up at the Repro.
-Number of boxes : ${boxes}
-
-Click on this link to find where the Repro is located : https://plan.epfl.ch/?room=%253DBP%200243
-Click on this link to see the Repro's opening hours : https://www.epfl.ch/campus/services/repro/fr/contacts/#ancre2
-
-Best,
-CePro team
-`,
-                                    authorizedPersonsEmails,
-                                    'examen.repro@epfl.ch'
-                                );
+                                await sendTemplatedMail("exam_ready_to_pickup", {
+                                    examCode: event?.extendedProps?.code,
+                                    description: event?.extendedProps?.description,
+                                    boxes,
+                                    "contact.email": event?.extendedProps?.contact.email,
+                                    authorizedPersons: authorizedPersonsEmails,
+                                });
                             }
                         }
 
