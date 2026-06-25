@@ -1,6 +1,7 @@
 export type EmailTemplate = {
     id: number;
     template_key: string;
+    section: string;
     name: string;
     subject: string;
     body: string;

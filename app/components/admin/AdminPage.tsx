@@ -91,6 +91,11 @@ export default function AdminPage() {
   const [templateError, setTemplateError] = React.useState("");
   const fieldRefs = React.useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
   const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
+  const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
+
+  function toggleSection(section: string) {
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  }
 
   async function handleDeleteService(service: Service) {
     if(window.confirm("This will delete this service from the database. Are you sure you want to continue ?")) {
@@ -472,22 +477,39 @@ export default function AdminPage() {
       )}
 
       {activeTab === "emailTemplate" && (
-        <div className="grid gap-2">
-          {emailTemplates.map((template) => (
-            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={template.template_key}>
-              <div className="flex flex-col">
-                <span className="font-medium text-slate-900">{template.name}</span>
-                <span className="text-xs text-slate-500">To: {template.recipients_to || "—"}</span>
+        <div className="grid gap-6">
+          {groupTemplatesBySection(emailTemplates).map(([section, templates]) => {
+            const collapsed = collapsedSections[section];
+            return (
+              <div className="grid gap-2" key={section}>
+                <button
+                  aria-expanded={!collapsed}
+                  className="flex items-center gap-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:cursor-pointer hover:text-slate-900"
+                  onClick={() => toggleSection(section)}
+                  type="button"
+                >
+                  <span className={`inline-block transition-transform ${collapsed ? "" : "rotate-90"}`}>›</span>
+                  {section}
+                  <span className="font-normal normal-case text-slate-400">({templates.length})</span>
+                </button>
+                {!collapsed && templates.map((template) => (
+                  <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={template.template_key}>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-slate-900">{template.name}</span>
+                      <span className="text-xs text-slate-500">To: {template.recipients_to || "—"}</span>
+                    </div>
+                    <button
+                      className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-red-700 transition ease-in-out"
+                      onClick={() => openEditTemplate(template)}
+                      type="button"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ))}
               </div>
-              <button
-                className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-red-700 transition ease-in-out"
-                onClick={() => openEditTemplate(template)}
-                type="button"
-              >
-                Edit
-              </button>
-            </div>
-          ))}
+            );
+          })}
           {emailTemplates.length === 0 && (
             <p className="text-sm text-slate-500">No email templates found.</p>
           )}
@@ -599,6 +621,21 @@ export default function AdminPage() {
 
 function isHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+// Group templates by their section, preserving first-appearance order.
+function groupTemplatesBySection(templates: EmailTemplate[]): [string, EmailTemplate[]][] {
+  const groups = new Map<string, EmailTemplate[]>();
+  for (const template of templates) {
+    const section = template.section || "Other";
+    const existing = groups.get(section);
+    if (existing) {
+      existing.push(template);
+    } else {
+      groups.set(section, [template]);
+    }
+  }
+  return Array.from(groups.entries());
 }
 
 function TabButton({
