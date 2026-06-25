@@ -584,8 +584,8 @@ export async function updateEmailTemplate(template: EmailTemplate) {
 
     return new Promise((resolve, reject) => {
         connection.query(
-            'UPDATE email_template SET subject = ?, body = ?, recipients_to = ?, recipients_cc = ?, reply_to = ? WHERE template_key = ?;',
-            [template.subject, template.body, template.recipients_to, template.recipients_cc, template.reply_to, template.template_key],
+            'UPDATE email_template SET name = ?, subject = ?, body = ?, recipients_to = ?, recipients_cc = ?, reply_to = ? WHERE template_key = ?;',
+            [template.name, template.subject, template.body, template.recipients_to, template.recipients_cc, template.reply_to, template.template_key],
             (err, rows) => {
                 if (err) return reject(err)
                 resolve(JSON.stringify(rows));
