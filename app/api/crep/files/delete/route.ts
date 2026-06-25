@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getCrepExamById, updateCrepExamFiles } from "@/app/lib/crep/database";
+import { getAllCrepExamsForRepro, getCrepExamById, updateCrepExamFiles } from "@/app/lib/crep/database";
 import { deleteExamFile, getExamFolderName } from "@/app/lib/crep/upload";
 import { examPrePrintStatus } from "@/app/lib/examStatus";
+import { CrepExam } from "@/types/crepExam";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,14 @@ export async function POST(req: NextRequest) {
   }
 
   const contact = JSON.parse(exam.contact) as { email: string };
-  if (contact.email !== session.user.email && !session.user.isAdmin) {
+
+  let canAccessAsRepro = false;
+  if (session.user.hasCrepAccess && !session.user.isAdmin) {
+    const reproExams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[];
+    canAccessAsRepro = reproExams.some((reproExam) => reproExam.id === exam.id);
+  }
+
+  if (contact.email !== session.user.email && !session.user.isAdmin && !canAccessAsRepro) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "../../../../auth";
 import { Footer } from "../../../components/Footer";
-import { getCrepExamById } from "../../../lib/crep/database";
+import { getAllCrepExamsForRepro, getCrepExamById } from "../../../lib/crep/database";
 import { examPrePrintStatus } from "../../../lib/examStatus";
 import { formatDateOnlyValue } from "../../../lib/dateTime";
 import { ExamFilesManager } from "../../../components/crep/exams/ExamFilesManager";
+import type { CrepExam } from "@/types/crepExam";
 
 export const metadata = {
   title: "CREP - Exam files",
@@ -23,8 +24,14 @@ export default async function ExamProfilePage({
   const exam = await getCrepExamById(examId);
   if (!exam) notFound();
 
+  let canAccessAsRepro = false;
+  if (session.user.hasCrepAccess && !session.user.isAdmin) {
+    const reproExams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[];
+    canAccessAsRepro = reproExams.some((reproExam) => reproExam.id === exam.id);
+  }
+
   const contact = JSON.parse(exam.contact) as { email: string };
-  if (contact.email !== session.user.email && !session.user.isAdmin) {
+  if (contact.email !== session.user.email && !session.user.isAdmin && !canAccessAsRepro) {
     return (
       <div className="font-sans grid grid-rows items-center justify-items-center px-6 sm:px-12 gap-8 pt-8 sm:pb-0">
         <div className="w-full max-w-3xl">

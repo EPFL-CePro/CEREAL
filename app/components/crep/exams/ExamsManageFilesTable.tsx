@@ -9,6 +9,7 @@ import { examStatus } from "@/app/lib/examStatus";
 type ExamsTableProps = {
   exams: CrepExam[];
   isAdmin: boolean;
+  hasAccess: boolean;
 };
 
 type Contact = {
@@ -39,7 +40,7 @@ function normalize(value: unknown): string {
   return String(value ?? "").toLowerCase();
 }
 
-export function ExamsManageFilesTable({ exams, isAdmin }: ExamsTableProps) {
+export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableProps) {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
 
@@ -78,6 +79,8 @@ export function ExamsManageFilesTable({ exams, isAdmin }: ExamsTableProps) {
     );
   }
 
+  const shouldSeeContactAndStatus = isAdmin || hasAccess;
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200">
       <div className="border-b border-slate-200 bg-white p-4">
@@ -100,8 +103,8 @@ export function ExamsManageFilesTable({ exams, isAdmin }: ExamsTableProps) {
               <th className="px-4 py-3">Code</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Desired print date</th>
-              {isAdmin && <th className="px-4 py-3">Contact person</th>}
-              {isAdmin && <th className="px-4 py-3">Status</th>}
+              {shouldSeeContactAndStatus && <th className="px-4 py-3">Contact person</th>}
+              {shouldSeeContactAndStatus && <th className="px-4 py-3">Status</th>}
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -109,7 +112,7 @@ export function ExamsManageFilesTable({ exams, isAdmin }: ExamsTableProps) {
             {filteredExams.length === 0 ? (
               <tr className="border-t border-slate-200">
                 <td
-                  colSpan={isAdmin ? 6 : 4}
+                  colSpan={shouldSeeContactAndStatus ? 6 : 4}
                   className="px-4 py-6 text-center text-slate-600"
                 >
                   No exams match your search.
@@ -124,12 +127,12 @@ export function ExamsManageFilesTable({ exams, isAdmin }: ExamsTableProps) {
                     <td className="px-4 py-3 font-mono">{exam.exam_code}</td>
                     <td className="px-4 py-3">{exam.exam_name}</td>
                     <td className="px-4 py-3">{desiredDate}</td>
-                    {isAdmin && (
+                    {shouldSeeContactAndStatus && (
                       <td className="px-4 py-3">
                         {contact.firstname} {contact.lastname} ({contact.email})
                       </td>
                     )}
-                    {isAdmin && (
+                    {shouldSeeContactAndStatus && (
                       <td className="px-4 py-3">
                         <span
                           className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white text-nowrap"
