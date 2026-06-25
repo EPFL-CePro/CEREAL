@@ -50,6 +50,7 @@ const addModalConfig: Record<AddModalType, {
 };
 
 type TemplateFormFields = {
+  name: string;
   subject: string;
   body: string;
   recipients_to: string;
@@ -58,6 +59,7 @@ type TemplateFormFields = {
 };
 
 const emptyTemplateForm: TemplateFormFields = {
+  name: "",
   subject: "",
   body: "",
   recipients_to: "",
@@ -66,6 +68,7 @@ const emptyTemplateForm: TemplateFormFields = {
 };
 
 const templateFieldLabels: { key: keyof TemplateFormFields; label: string; multiline?: boolean }[] = [
+  { key: "name", label: "Name" },
   { key: "subject", label: "Subject" },
   { key: "body", label: "Body", multiline: true },
   { key: "recipients_to", label: "To" },
@@ -198,6 +201,7 @@ export default function AdminPage() {
   function openEditTemplate(template: EmailTemplate) {
     setEditingTemplate(template);
     setTemplateForm({
+      name: template.name ?? "",
       subject: template.subject ?? "",
       body: template.body ?? "",
       recipients_to: template.recipients_to ?? "",
