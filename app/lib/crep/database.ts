@@ -36,7 +36,7 @@ export async function getAllCrepExamsForRepro(email: string) {
     connection.connect()
 
     return new Promise(function(resolve) {
-        connection.query(`SELECT * from crep WHERE status IN ('toPrint', 'printing') OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`, [email],
+        connection.query(`SELECT * from crep WHERE status = 'toPrint' OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`, [email],
             (err, rows) => {
             if (err) throw err
             resolve(rows);
