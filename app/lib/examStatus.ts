@@ -31,6 +31,7 @@ export const examPrePrintStatus = [
     'registered',
     'registered-warning',
     'registered-error',
+    'toPrint'
 ];
 
 export const examBlockingPrintStatus = [
