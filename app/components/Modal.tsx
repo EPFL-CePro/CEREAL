@@ -82,6 +82,8 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const modalRef = useRef<HTMLFormElement | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const canEditModal = user.isAdmin || user.hasCrepAccess
+
     async function save() {
         // save remark, save status, and update the exams state
         const updatedExams = Array.isArray(exams) ? exams.map((e: EventInput) => {
@@ -90,7 +92,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 e.status = selectStatus
                 e.reproRemark = reproRemark
                 e.boxes = boxes
-                if (user.isAdmin) {
+                if (canEditModal) {
                     e.desiredDate = desiredDate ? new Date(desiredDate) : desiredDate
                     e.examDate = examDate ? new Date(examDate) : examDate
                     e.financialCenter = financialCenter
@@ -113,7 +115,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         await updateExamStatusById(event?.id || '', selectStatus)
         setSelectStatus(selectStatus)
 
-        if (user.isAdmin) {
+        if (canEditModal) {
             await updateCrepExamFields(event?.id || '', {
                 desired_date: desiredDate,
                 exam_date: examDate,
@@ -280,11 +282,11 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="desiredDate">Desired delivery date</label>
-                                <input className="exam-date basis-full xl:basis-auto" type="date" name="desiredDate" disabled={!user.isAdmin} value={desiredDate} onChange={(e) => setDesiredDate(e.target.value)} />
+                                <input className="exam-date basis-full xl:basis-auto" type="date" name="desiredDate" disabled={!canEditModal} value={desiredDate} onChange={(e) => setDesiredDate(e.target.value)} />
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="examDate">Exam date</label>
-                                <input className="exam-date basis-full xl:basis-auto" type="date" name="examDate" disabled={!user.isAdmin} value={examDate} onChange={(e) => setExamDate(e.target.value)} />
+                                <input className="exam-date basis-full xl:basis-auto" type="date" name="examDate" disabled={!canEditModal} value={examDate} onChange={(e) => setExamDate(e.target.value)} />
                             </div>
                         </div>
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
@@ -302,7 +304,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="financial">Financial center</label>
-                                <input className="financial-center basis-full xl:basis-auto" type="text" name="financial" disabled={!user.isAdmin} value={financialCenter} onChange={(e) => setFinancialCenter(e.target.value)} />
+                                <input className="financial-center basis-full xl:basis-auto" type="text" name="financial" disabled={!canEditModal} value={financialCenter} onChange={(e) => setFinancialCenter(e.target.value)} />
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="folderName">Folder name</label>
@@ -312,17 +314,17 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="copiesNumber">Number of copies</label>
-                                <input className="copies-number basis-full xl:basis-auto" type={user.isAdmin ? "number" : "text"} min={1} name="copiesNumber" disabled={!user.isAdmin} value={copiesNumber} onChange={(e) => setCopiesNumber(e.target.value)} />
+                                <input className="copies-number basis-full xl:basis-auto" type={canEditModal ? "number" : "text"} min={1} name="copiesNumber" disabled={!canEditModal} value={copiesNumber} onChange={(e) => setCopiesNumber(e.target.value)} />
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="pagesPerCopy">Pages per copy</label>
-                                <input className="pages-copy basis-full xl:basis-auto" type={user.isAdmin ? "number" : "text"} min={1} name="pagesPerCopy" disabled={!user.isAdmin} value={pagesPerCopy} onChange={(e) => setPagesPerCopy(e.target.value)} />
+                                <input className="pages-copy basis-full xl:basis-auto" type={canEditModal ? "number" : "text"} min={1} name="pagesPerCopy" disabled={!canEditModal} value={pagesPerCopy} onChange={(e) => setPagesPerCopy(e.target.value)} />
                             </div>
                         </div>
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="paperFormat">Bindings</label>
-                                {user.isAdmin ? (
+                                {canEditModal ? (
                                     <select className="paper-format basis-full xl:basis-auto" name="paperFormat" value={paperFormat} onChange={(e) => setPaperFormat(e.target.value)}>
                                         <option value="A3">Saddle stitch (A3)</option>
                                         <option value="A4">Stapple (A4)</option>
@@ -333,7 +335,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="paperColor">Print</label>
-                                {user.isAdmin ? (
+                                {canEditModal ? (
                                     <div className="flex flex-row flex-wrap gap-2 basis-full xl:basis-auto">
                                         <select className="paper-color" name="paperColor" value={paperColor} onChange={(e) => setPaperColor(e.target.value)}>
                                             <option value="greyscale">Greyscale</option>
@@ -352,7 +354,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
                                 <label className="font-semibold w-full" htmlFor="needScan">Needs to be scanned</label>
-                                {user.isAdmin ? (
+                                {canEditModal ? (
                                     <select className="need-scan basis-full xl:basis-auto" name="needScan" value={needScan ? 'true' : 'false'} onChange={(e) => setNeedScan(e.target.value === 'true')}>
                                         <option value="true">Yes</option>
                                         <option value="false">No</option>
@@ -471,7 +473,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
                         const previousStatus = event?.extendedProps?.status;
                         // Enforcing the A3 rule that pages per copy must be multiple of 4, as when submitting the form.
-                        if (user.isAdmin && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
+                        if (canEditModal && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
                             window.alert("When printing in A3, the number of pages per copy must be a multiple of 4.");
                             setSelectStatus(previousStatus);
                             setIsSubmitting(false);
