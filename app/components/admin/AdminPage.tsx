@@ -68,6 +68,14 @@ const emptyTemplateForm: TemplateFormFields = {
   reply_to: "",
 };
 
+type BoFileStats = {
+  name: string;
+  size: number;
+  lastModified: string;
+  firstSheetName: string;
+  rowCount: number;
+};
+
 const templateFieldLabels: { key: keyof TemplateFormFields; label: string; multiline?: boolean }[] = [
   { key: "name", label: "Name" },
   { key: "subject", label: "Subject" },
@@ -97,7 +105,7 @@ export default function AdminPage() {
   const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
   const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
   const [selectedFile, setSelectedFile] = React.useState<File>();
-  const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<string>();
+  const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<BoFileStats | null>(null);
 
   function toggleSection(section: string) {
     setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -156,6 +164,8 @@ export default function AdminPage() {
         console.error(await res.text());
         return;
     }
+
+    await refreshExistingBoFile();
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -299,6 +309,19 @@ export default function AdminPage() {
     }
   }
 
+  async function refreshExistingBoFile() {
+    const res = await fetch("/api/cereal/diff-exams/check-existing-bo", {
+      method: "GET",
+    });
+    if (!res.ok) {
+      console.error(await res.text());
+      return;
+    }
+    const responseJson = await res.json();
+
+    setAlreadyExistingBo(responseJson.boFile);
+  }
+
   React.useEffect(() => {
     (async () => {
       await syncEmailTemplates();
@@ -315,16 +338,7 @@ export default function AdminPage() {
       setExamStatuses(allExamStatuses);
       setEmailTemplates(allEmailTemplates);
 
-      const res = await fetch("/api/cereal/diff-exams/check-existing-bo", {
-        method: "GET",
-      });
-      if (!res.ok) {
-        console.error(await res.text());
-        return;
-      }
-      const responseJson = await res.json();
-      
-      setAlreadyExistingBo(responseJson.boFile);
+      await refreshExistingBoFile();
     })();
   }, []);
 
@@ -682,10 +696,25 @@ export default function AdminPage() {
             <button onClick={() => handleBoUpload()}>Upload BO file</button>
           </div>
           {alreadyExistingBo &&
-            <div>
-              A BO file already exists, named {alreadyExistingBo}.<br />
-              <span className="underline">Uploading a new file will completely erase the old one.</span>
-            </div>
+            <>            
+              <div>
+                A BO file already exists, named {alreadyExistingBo.name}.<br />
+                <span className="underline">Uploading a new file will completely erase the old one.</span>
+              </div>
+              <div>
+                <h2 className="font-semibold">Stats of the actual file</h2>
+                <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+                  <dt className="font-semibold">Size</dt>
+                  <dd>{formatFileSize(alreadyExistingBo.size)}</dd>
+                  <dt className="font-semibold">Last edited</dt>
+                  <dd>{formatDateTime(alreadyExistingBo.lastModified)}</dd>
+                  <dt className="font-semibold">First sheet</dt>
+                  <dd>{alreadyExistingBo.firstSheetName || "Unknown"}</dd>
+                  <dt className="font-semibold">Rows</dt>
+                  <dd>{alreadyExistingBo.rowCount.toLocaleString()}</dd>
+                </dl>
+              </div>
+            </>
           }
         </div>
       )}
@@ -695,6 +724,19 @@ export default function AdminPage() {
 
 function isHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 // Group templates by their section, preserving first-appearance order.
