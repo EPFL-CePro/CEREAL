@@ -1,7 +1,7 @@
 // app/api/cereal/diff-exams/check-existing-bo/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { checkExistingBoFile } from "@/app/lib/manageFiles";
+import { getExistingBoFileStats } from "@/app/lib/manageFiles";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export async function GET() {
   }
 
   try {
-    const boFile = await checkExistingBoFile();
+    const boFile = await getExistingBoFileStats();
 
     return NextResponse.json({
       boFile
