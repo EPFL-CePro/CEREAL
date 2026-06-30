@@ -97,6 +97,7 @@ export default function AdminPage() {
   const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
   const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
   const [selectedFile, setSelectedFile] = React.useState<File>();
+  const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<string>();
 
   function toggleSection(section: string) {
     setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -313,6 +314,17 @@ export default function AdminPage() {
       setServiceLevels(allServiceLevels);
       setExamStatuses(allExamStatuses);
       setEmailTemplates(allEmailTemplates);
+
+      const res = await fetch("/api/cereal/diff-exams/check-existing-bo", {
+        method: "GET",
+      });
+      if (!res.ok) {
+        console.error(await res.text());
+        return;
+      }
+      const responseJson = await res.json();
+      
+      setAlreadyExistingBo(responseJson.boFile);
     })();
   }, []);
 
@@ -664,9 +676,17 @@ export default function AdminPage() {
       )}
 
       {activeTab === "defferedExams" && (
-        <div className="flex gap-6">
-          <input type="file" onChange={handleFileChange} className="inset-0 cursor-pointer" />
-          <button onClick={() => handleBoUpload()}>Upload BO file</button>
+        <div className="flex flex-col gap-4">
+          <div className="flex">
+            <input type="file" onChange={handleFileChange} className="inset-0 cursor-pointer" />
+            <button onClick={() => handleBoUpload()}>Upload BO file</button>
+          </div>
+          {alreadyExistingBo &&
+            <div>
+              A BO file already exists, named {alreadyExistingBo}.<br />
+              <span className="underline">Uploading a new file will completely erase the old one.</span>
+            </div>
+          }
         </div>
       )}
     </main>
