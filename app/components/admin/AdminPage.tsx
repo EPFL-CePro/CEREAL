@@ -20,6 +20,7 @@ import { EmailTemplate } from "@/types/emailTemplate";
 import { ExamStatus } from "@/types/examStatus";
 import { Service } from "@/types/service";
 import { ServiceLevel } from "@/types/serviceLevel";
+import * as XLSX from 'xlsx';
 
 type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams";
 type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">;
@@ -155,6 +156,16 @@ export default function AdminPage() {
 
     const formData = new FormData();
     formData.append("file", selectedFile)
+
+    const workbook = XLSX.read(await selectedFile.arrayBuffer(), { type: "array", sheetRows: 1 });
+    const firstSheetName = workbook.SheetNames[0];
+    const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
+    const firstColumnHeader = String(firstSheet?.A1?.v ?? "").trim();
+
+    if (firstColumnHeader !== "SCIPER") {
+      alert("Please upload a valid BO XLSX file.");
+      return;
+    }
 
     const res = await fetch("/api/cereal/diff-exams/upload-bo", {
         method: "POST",
