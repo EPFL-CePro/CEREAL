@@ -27,6 +27,7 @@ services:
     volumes:
       - .:/app
       - ${EXAM_FILES_UPLOAD_FOLDER}:${EXAM_FILES_UPLOAD_FOLDER}:rw
+      - ${DEFFERED_EXAMS_DIR}:${DEFFERED_EXAMS_DIR}:rw
     stdin_open: true
     tty: true
     command: /bin/sh -c "cd /app && npm install && npm run dev"
@@ -36,6 +37,7 @@ services:
     environment:
       - NODE_ENV=development
       - EXAM_FILES_UPLOAD_FOLDER=${EXAM_FILES_UPLOAD_FOLDER}
+      - DEFFERED_EXAMS_DIR=${DEFFERED_EXAMS_DIR}
     env_file:
       - .env
     networks:

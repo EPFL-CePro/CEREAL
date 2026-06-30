@@ -21,8 +21,8 @@ import { ExamStatus } from "@/types/examStatus";
 import { Service } from "@/types/service";
 import { ServiceLevel } from "@/types/serviceLevel";
 
-type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate";
-type AddModalType = Exclude<Tab, "emailTemplate">;
+type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams";
+type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">;
 
 const addModalConfig: Record<AddModalType, {
   title: string;
@@ -96,6 +96,7 @@ export default function AdminPage() {
   const fieldRefs = React.useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
   const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
   const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
+  const [selectedFile, setSelectedFile] = React.useState<File>();
 
   function toggleSection(section: string) {
     setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -130,6 +131,39 @@ export default function AdminPage() {
       );
     }
   }
+
+  async function handleBoUpload() {
+    if(!selectedFile) return;
+
+    const isXlsxFile =
+      selectedFile.name.toLowerCase().endsWith(".xlsx") ||
+      selectedFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    if (!isXlsxFile) {
+      alert("Please upload an XLSX file.")
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile)
+
+    const res = await fetch("/api/cereal/diff-exams/upload-bo", {
+        method: "POST",
+        body: formData,
+    });
+    if (!res.ok) {
+        console.error(await res.text());
+        return;
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const newFile = e.target.files[0]
+
+    setSelectedFile(newFile)
+  };
 
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -308,6 +342,12 @@ export default function AdminPage() {
           onClick={() => setActiveTab("emailTemplate")}
         >
           Emails
+        </TabButton>
+        <TabButton
+          active={activeTab === "defferedExams"}
+          onClick={() => setActiveTab("defferedExams")}
+        >
+          Diff exams & Abs
         </TabButton>
       </div>
 
@@ -620,6 +660,13 @@ export default function AdminPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {activeTab === "defferedExams" && (
+        <div className="flex gap-6">
+          <input type="file" onChange={handleFileChange} className="inset-0 cursor-pointer" />
+          <button onClick={() => handleBoUpload()}>Upload BO file</button>
         </div>
       )}
     </main>

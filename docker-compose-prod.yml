@@ -10,7 +10,9 @@ services:
     environment:
       - NODE_ENV=production
       - EXAM_FILES_UPLOAD_FOLDER=${EXAM_FILES_UPLOAD_FOLDER}
+      - DEFFERED_EXAMS_DIR=${DEFFERED_EXAMS_DIR}
     env_file:
       - .env
     volumes:
       - ${EXAM_FILES_UPLOAD_FOLDER}:${EXAM_FILES_UPLOAD_FOLDER}:rw
+      - ${DEFFERED_EXAMS_DIR}:${DEFFERED_EXAMS_DIR}:rw
