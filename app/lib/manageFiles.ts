@@ -1,3 +1,4 @@
+import { BoFile } from "@/types/boFile";
 import {mkdir, writeFile, readdir, access, constants, rename, stat, readFile } from "fs/promises";
 import path from "path";
 import * as XLSX from "xlsx";
@@ -69,15 +70,7 @@ export async function checkExistingBoFile(): Promise<string> {
     return dirWithoutBackupFolder[0];
 }
 
-export type BoFileStats = {
-    name: string;
-    size: number;
-    lastModified: string;
-    firstSheetName: string;
-    rowCount: number;
-};
-
-export async function getExistingBoFileStats(): Promise<BoFileStats | null> {
+export async function getExistingBoFile(): Promise<BoFile | null> {
     if (!examsFilesBasePath) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
@@ -90,12 +83,48 @@ export async function getExistingBoFileStats(): Promise<BoFileStats | null> {
         stat(filePath),
         readFile(filePath),
     ]);
-    const workbook = XLSX.read(buffer, { type: "buffer", sheetRows: 100000 });
+    const workbook = XLSX.read(buffer, { type: "buffer", cellNF: true });
     const firstSheetName = workbook.SheetNames[0] ?? "";
     const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
     const rowCount = firstSheet?.["!ref"]
         ? XLSX.utils.decode_range(firstSheet["!ref"]).e.r + 1
         : 0;
+
+    const content = firstSheet
+        ? XLSX.utils.sheet_to_json(firstSheet, {
+            defval: null,
+            raw: true,
+        }) as Record<string, unknown>[]
+        : [];
+
+    if (firstSheet?.["!ref"]) {
+        const range = XLSX.utils.decode_range(firstSheet["!ref"]);
+        const headers = Array.from({ length: range.e.c - range.s.c + 1 }, (_, index) => {
+            const cell = firstSheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + index })];
+            return cell?.v == null ? "" : String(cell.v);
+        });
+
+        for (let row = range.s.r + 1; row <= range.e.r; row++) {
+            const contentRow = content[row - range.s.r - 1];
+            if (!contentRow) continue;
+
+            /* Checking if the cell is a date, since XLSX lib sends back a number instead of a date.
+            If the cell is a number, trying to convert it as a date.
+            Made by Codex */ 
+            for (let col = range.s.c; col <= range.e.c; col++) {
+                const header = headers[col - range.s.c];
+                if (!header) continue;
+
+                const cell = firstSheet[XLSX.utils.encode_cell({ r: row, c: col })];
+                if (cell?.t !== "n" || typeof cell.v !== "number" || !XLSX.SSF.is_date(cell.z)) continue;
+
+                const parsedDate = XLSX.SSF.parse_date_code(cell.v);
+                if (!parsedDate) continue;
+
+                contentRow[header] = new Date(Date.UTC(parsedDate.y, parsedDate.m - 1, parsedDate.d)).toISOString();
+            }
+        }
+    }
 
     return {
         name,
@@ -103,5 +132,6 @@ export async function getExistingBoFileStats(): Promise<BoFileStats | null> {
         lastModified: fileStats.mtime.toISOString(),
         firstSheetName,
         rowCount,
+        content,
     };
 }

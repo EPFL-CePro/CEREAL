@@ -21,6 +21,7 @@ import { ExamStatus } from "@/types/examStatus";
 import { Service } from "@/types/service";
 import { ServiceLevel } from "@/types/serviceLevel";
 import * as XLSX from 'xlsx';
+import { BoFile } from "@/types/boFile";
 
 type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams";
 type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">;
@@ -69,14 +70,6 @@ const emptyTemplateForm: TemplateFormFields = {
   reply_to: "",
 };
 
-type BoFileStats = {
-  name: string;
-  size: number;
-  lastModified: string;
-  firstSheetName: string;
-  rowCount: number;
-};
-
 const templateFieldLabels: { key: keyof TemplateFormFields; label: string; multiline?: boolean }[] = [
   { key: "name", label: "Name" },
   { key: "subject", label: "Subject" },
@@ -106,7 +99,7 @@ export default function AdminPage() {
   const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
   const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
   const [selectedFile, setSelectedFile] = React.useState<File>();
-  const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<BoFileStats | null>(null);
+  const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<BoFile | null>(null);
 
   function toggleSection(section: string) {
     setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
