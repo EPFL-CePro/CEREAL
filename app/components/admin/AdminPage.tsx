@@ -98,7 +98,7 @@ export default function AdminPage() {
   const fieldRefs = React.useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
   const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
   const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
-  const [selectedFile, setSelectedFile] = React.useState<File>();
+  const [selectedBoFile, setSelectedBoFile] = React.useState<File>();
   const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<BoFile | null>(null);
 
   function toggleSection(section: string) {
@@ -136,11 +136,11 @@ export default function AdminPage() {
   }
 
   async function handleBoUpload() {
-    if(!selectedFile) return;
+    if(!selectedBoFile) return;
 
     const isXlsxFile =
-      selectedFile.name.toLowerCase().endsWith(".xlsx") ||
-      selectedFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      selectedBoFile.name.toLowerCase().endsWith(".xlsx") ||
+      selectedBoFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     if (!isXlsxFile) {
       alert("Please upload an XLSX file.")
@@ -148,9 +148,9 @@ export default function AdminPage() {
     }
 
     const formData = new FormData();
-    formData.append("file", selectedFile)
+    formData.append("file", selectedBoFile)
 
-    const workbook = XLSX.read(await selectedFile.arrayBuffer(), { type: "array", sheetRows: 1 });
+    const workbook = XLSX.read(await selectedBoFile.arrayBuffer(), { type: "array", sheetRows: 1 });
     const firstSheetName = workbook.SheetNames[0];
     const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
     const firstColumnHeader = String(firstSheet?.A1?.v ?? "").trim();
@@ -172,12 +172,12 @@ export default function AdminPage() {
     await refreshExistingBoFile();
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
     const newFile = e.target.files[0]
 
-    setSelectedFile(newFile)
+    setSelectedBoFile(newFile)
   };
 
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
@@ -696,7 +696,7 @@ export default function AdminPage() {
       {activeTab === "defferedExams" && (
         <div className="flex flex-col gap-4">
           <div className="flex">
-            <input type="file" onChange={handleFileChange} className="inset-0 cursor-pointer" />
+            <input type="file" onChange={handleBoFileChange} className="inset-0 cursor-pointer" />
             <button onClick={() => handleBoUpload()}>Upload BO file</button>
           </div>
           {alreadyExistingBo &&
