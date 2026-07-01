@@ -28,7 +28,7 @@ export default function App({ user }: RegisterProps) {
     }
 
     async function getBoFile() {
-        const res = await fetch("/api/cereal/diff-exams/check-existing-bo", {
+        const res = await fetch("/api/cereal/diff-exams/get-bo-user", {
             method: "GET",
         });
         if (!res.ok) {
@@ -42,7 +42,7 @@ export default function App({ user }: RegisterProps) {
             return;
         }
 
-        setBoFileForUser(responseJson.boFile.content.filter((element:{SCIPER:string}) => parseInt(element["SCIPER"]) == parseInt(user.sciper)));
+        setBoFileForUser(responseJson.boFile);
     }
 
     React.useEffect(() => {
