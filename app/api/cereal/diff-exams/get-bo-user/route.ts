@@ -1,7 +1,7 @@
 // app/api/cereal/diff-exams/get-bo-user/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getExistingBoFile } from "@/app/lib/manageFiles";
+import { getExistingXLSXFile } from "@/app/lib/manageFiles";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export async function GET() {
   }
 
   try {
-    const boFile = await getExistingBoFile();
+    const boFile = await getExistingXLSXFile("BO");
 
     const filteredBoUser = boFile
       ? boFile.content.filter((element) => String(element.SCIPER) == session.user.sciper)
