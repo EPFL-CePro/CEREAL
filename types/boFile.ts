@@ -1,4 +1,4 @@
-export type BoFile = {
+export type XLSXFile = {
     name: string;
     size: number;
     lastModified: string;

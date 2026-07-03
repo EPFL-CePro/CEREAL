@@ -1,38 +1,36 @@
-// app/api/cereal/diff-exams/upload-bo/route.ts
+// app/api/cereal/diff-exams/check-existing-xlsx/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadBoExtractFile } from "@/app/lib/manageFiles";
+import { getExistingXLSXFile } from "@/app/lib/manageFiles";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await auth();
 
   if (!session?.user.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formData = await req.formData();
-  const file = formData.get("file") as File;
-
-  if (!file) {
+  const folderName = req.nextUrl.searchParams.get("folder_name");
+  if (!folderName) {
     return NextResponse.json(
-      { error: "No file uploaded" },
+      { error: "Missing folder_name" },
       { status: 400 }
     );
   }
 
   try {
-    const savedPath = await uploadBoExtractFile(file);
+    const file = await getExistingXLSXFile(folderName);
 
     return NextResponse.json({
-      savedPath
+      file
     });
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "Failed to save files" },
+      { error: "Failed to get XLSX file" },
       { status: 500 }
     );
   }
