@@ -91,24 +91,24 @@ export default function App() {
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data">
-                <label>Début de l'absence (selon justificatif)</label>
+                <label>Début de l&apos;absence (selon justificatif)</label>
                 <input type="date" {...register("startingAbsenceDate", { onChange: (e) => setBeginAbsenceDate(parseDateInputValue(e.target.value)) })}/>
 
-                <label>Fin de l'absence (selon justificatif)</label>
+                <label>Fin de l&apos;absence (selon justificatif)</label>
                 <input type="date" {...register("endingAbsenceDate", { onChange: (e) => setEndAbsenceDate(parseDateInputValue(e.target.value)) })}/>
 
-                <label>Justificatif d'absence</label>
+                <label>Justificatif d&apos;absence</label>
                 <input type="file" {...register("absenceFile")}/>
 
                 <div className="flex gap-2 mt-8">
                     <input type="checkbox" id="also-diffs" onChange={(e) => setIsSubscribeToDiffChecked(e.target.checked)} />
-                    <label htmlFor="also-diffs">Je souhaite également m'inscrire aux examens différés</label>
+                    <label htmlFor="also-diffs">Je souhaite également m&apos;inscrire aux examens différés</label>
                 </div>
 
                 {isSubscribeToDiffChecked && (
                     <div>
                         {!beginAbsenceDate || !endAbsenceDate ?
-                            <>Merci de d'abord sélectionner une date de début et de fin d'absence.</>
+                            <>Merci de d&apos;abord sélectionner une date de début et de fin d&apos;absence.</>
                         : isBoFileLoading ?
                             <>Loading your exams...</>
                         : boFileError ?
@@ -122,7 +122,7 @@ export default function App() {
                                             <th className="p-2 font-semibold">Matière</th>
                                             <th className="p-2 font-semibold">Enseignant(s)</th>
                                             <th className="p-2 font-semibold">Date</th>
-                                            <th className="p-2 font-semibold">Inscription à l'examen différé</th>
+                                            <th className="p-2 font-semibold">Inscription à l&apos;examen différé</th>
                                         </tr>
                                     </thead>
                                     <tbody>
