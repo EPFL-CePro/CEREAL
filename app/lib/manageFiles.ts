@@ -1,4 +1,4 @@
-import { XLSXFile } from "@/types/boFile";
+import { BoFileForUser, XLSXFile } from "@/types/boFile";
 import {mkdir, writeFile, readdir, access, constants, rename, stat, readFile } from "fs/promises";
 import path from "path";
 import * as XLSX from "xlsx";
@@ -139,4 +139,105 @@ export async function getExistingXLSXFile(
         rowCount,
         content,
     };
+}
+
+export async function getExistingXLSXFileMetadata(
+    folder_name: string
+): Promise<Omit<XLSXFile, "content"> | null> {
+    if (!examsFilesBasePath) {
+        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
+    }
+
+    const name = await checkExistingXLSXFile(folder_name);
+    if (!name) return null;
+
+    const filePath = path.join(examsFilesBasePath, folder_name, name);
+    const [fileStats, buffer] = await Promise.all([
+        stat(filePath),
+        readFile(filePath),
+    ]);
+    const workbook = XLSX.read(buffer, { type: "buffer", sheetRows: 1 });
+    const firstSheetName = workbook.SheetNames[0] ?? "";
+    const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
+    const sheetRange = firstSheet?.["!fullref"] ?? firstSheet?.["!ref"];
+    const rowCount = sheetRange
+        ? XLSX.utils.decode_range(sheetRange).e.r + 1
+        : 0;
+
+    return {
+        name,
+        size: fileStats.size,
+        lastModified: fileStats.mtime.toISOString(),
+        firstSheetName,
+        rowCount,
+    };
+}
+
+export async function getBOFileRowsForSciper(
+    sciper: string
+): Promise<BoFileForUser[] | null> {
+    if (!examsFilesBasePath) {
+        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
+    }
+
+    const name = await checkExistingXLSXFile("BO");
+    if (!name) return null;
+
+    const filePath = path.join(examsFilesBasePath, "BO", name);
+    const buffer = await readFile(filePath);
+    const workbook = XLSX.read(buffer, { type: "buffer", cellNF: true });
+    const firstSheetName = workbook.SheetNames[0] ?? "";
+    const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
+
+    if (!firstSheet?.["!ref"]) return [];
+
+    const range = XLSX.utils.decode_range(firstSheet["!ref"]);
+    const rawHeaders = Array.from({ length: range.e.c - range.s.c + 1 }, (_, index) => {
+        const cell = firstSheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + index })];
+        return cell?.v == null ? "" : String(cell.v);
+    });
+    const headers = rawHeaders.map((header, index) => {
+        const normalizedHeader = header || "__EMPTY";
+        const previousHeaderCount = rawHeaders
+            .slice(0, index)
+            .filter((previousHeader) => (previousHeader || "__EMPTY") === normalizedHeader)
+            .length;
+
+        return previousHeaderCount === 0 ? normalizedHeader : `${normalizedHeader}_${previousHeaderCount}`;
+    });
+    const sciperIndex = rawHeaders.indexOf("SCIPER");
+    if (sciperIndex === -1) return [];
+
+    const rows: BoFileForUser[] = [];
+    const sciperColumn = range.s.c + sciperIndex;
+
+    for (let row = range.s.r + 1; row <= range.e.r; row++) {
+        const sciperCell = firstSheet[XLSX.utils.encode_cell({ r: row, c: sciperColumn })];
+        if (String(sciperCell?.v ?? "") !== sciper) continue;
+
+        const rowContent: Record<string, unknown> = {};
+
+        for (let col = range.s.c; col <= range.e.c; col++) {
+            const headerIndex = col - range.s.c;
+            if (!rawHeaders[headerIndex]) continue;
+
+            const header = headers[headerIndex];
+
+            const cell = firstSheet[XLSX.utils.encode_cell({ r: row, c: col })];
+            let value = cell?.v ?? null;
+
+            if (cell?.t === "n" && typeof cell.v === "number" && XLSX.SSF.is_date(cell.z)) {
+                const parsedDate = XLSX.SSF.parse_date_code(cell.v);
+                if (parsedDate) {
+                    value = new Date(Date.UTC(parsedDate.y, parsedDate.m - 1, parsedDate.d)).toISOString();
+                }
+            }
+
+            rowContent[header] = value;
+        }
+
+        rows.push(rowContent as BoFileForUser);
+    }
+
+    return rows;
 }
