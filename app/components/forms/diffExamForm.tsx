@@ -64,19 +64,6 @@ export default function App() {
                 <label>Justificatif d'absence</label>
                 <input type="file" {...register("absenceFile")}/>
 
-                {
-                    isBoFileLoading ?
-                        <>Loading your exams...</>
-                    : boFileError ?
-                        <>{boFileError}</>
-                    : boFileForUser ?
-                        <>
-                            You are registered for {boFileForUser.length} exam(s).
-                        </>
-                    :
-                        <>No BO file uploaded for the moment. Please come back later.</>
-                }
-
                 <input className="btn btn-primary hover:cursor-pointer" type="submit" value="Submit exam registration" />
             </form>
         </div >
