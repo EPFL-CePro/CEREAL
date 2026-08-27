@@ -10,6 +10,8 @@ export default function App() {
     const [boFileForUser, setBoFileForUser] = React.useState<BoFileForUser[] | null>(null);
     const [isBoFileLoading, setIsBoFileLoading] = React.useState(true);
     const [boFileError, setBoFileError] = React.useState("");
+
+    const [isSubscribeToDiffChecked, setIsSubscribeToDiffChecked] = React.useState(false);
     
 
     const { handleSubmit, register } = useForm<DiffExamFormInputs>({})
@@ -65,9 +67,48 @@ export default function App() {
                 <input type="file" {...register("absenceFile")}/>
 
                 <div className="flex gap-2 mt-8">
-                    <input type="checkbox" id="also-diffs" />
+                    <input type="checkbox" id="also-diffs" onChange={(e) => setIsSubscribeToDiffChecked(e.target.checked)} />
                     <label htmlFor="also-diffs">Je souhaite également m'inscrire aux examens différés</label>
                 </div>
+
+                {isSubscribeToDiffChecked && (
+                    <div>
+                        {isBoFileLoading ?
+                            <>Loading your exams...</>
+                        : boFileError ?
+                            <>{boFileError}</>
+                        : boFileForUser ?
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse text-left text-sm">
+                                    <thead>
+                                        <tr className="border-b border-slate-300">
+                                            <th className="p-2 font-semibold">Code</th>
+                                            <th className="p-2 font-semibold">Matière</th>
+                                            <th className="p-2 font-semibold">Enseignant(s)</th>
+                                            <th className="p-2 font-semibold">Date</th>
+                                            <th className="p-2 font-semibold">Inscription à l'examen différé</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {boFileForUser.map((exam, index) => (
+                                            <tr
+                                                className="border-b border-slate-200"
+                                                key={`${exam["codification matière (indépendant du plan)"]}-${index}`}
+                                            >
+                                                <td className="p-2">{exam["codification matière (indépendant du plan)"]}</td>
+                                                <td className="p-2">{exam["matière (libellé fr)"]}</td>
+                                                <td className="p-2">{exam["enseignant(s) responsable"]}</td>
+                                                <td className="p-2">{new Date(exam["date séance"]).toLocaleDateString()}</td>
+                                                <td className="p-2 text-center"><input type="checkbox" id="also-diffs" onChange={(e) => console.log(e.target.checked)} /></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        :
+                            <>No BO file uploaded for the moment. Please come back later.</>}
+                    </div>
+                )}
 
                 <input className="btn btn-primary hover:cursor-pointer" type="submit" value="Submit exam registration" />
             </form>
