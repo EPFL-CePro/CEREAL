@@ -61,6 +61,9 @@ export default function App() {
                 <label>Fin de l'absence (selon justificatif)</label>
                 <input type="date" {...register("endingAbsenceDate")}/>
 
+                <label>Justificatif d'absence</label>
+                <input type="file" {...register("absenceFile")}/>
+
                 {
                     isBoFileLoading ?
                         <>Loading your exams...</>
