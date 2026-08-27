@@ -64,6 +64,11 @@ export default function App() {
                 <label>Justificatif d'absence</label>
                 <input type="file" {...register("absenceFile")}/>
 
+                <div className="flex gap-2 mt-8">
+                    <input type="checkbox" id="also-diffs" />
+                    <label htmlFor="also-diffs">Je souhaite également m'inscrire aux examens différés</label>
+                </div>
+
                 <input className="btn btn-primary hover:cursor-pointer" type="submit" value="Submit exam registration" />
             </form>
         </div >
