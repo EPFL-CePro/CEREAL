@@ -1,7 +1,7 @@
 // app/api/cereal/diff-exams/check-existing-xlsx/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getExistingXLSXFile } from "@/app/lib/manageFiles";
+import { getExistingXLSXFileMetadata } from "@/app/lib/manageFiles";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const file = await getExistingXLSXFile(folderName);
+    const file = await getExistingXLSXFileMetadata(folderName);
 
     return NextResponse.json({
       file

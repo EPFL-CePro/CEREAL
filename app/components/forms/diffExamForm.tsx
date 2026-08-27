@@ -19,6 +19,8 @@ interface AppUser extends User {
 export default function App({ user }: RegisterProps) {
 
     const [boFileForUser, setBoFileForUser] = React.useState<BoFileForUser[] | null>(null);
+    const [isBoFileLoading, setIsBoFileLoading] = React.useState(true);
+    const [boFileError, setBoFileError] = React.useState("");
     
 
     const { handleSubmit, control } = useForm<Inputs>({})
@@ -28,21 +30,29 @@ export default function App({ user }: RegisterProps) {
     }
 
     async function getBoFile() {
-        const res = await fetch("/api/cereal/diff-exams/get-bo-user", {
-            method: "GET",
-        });
-        if (!res.ok) {
-            console.error(await res.text());
-            return;
-        }
-        const responseJson = await res.json();
+        setIsBoFileLoading(true);
+        setBoFileError("");
 
-        if(!responseJson.boFile) {
-            setBoFileForUser(null)
-            return;
-        }
+        try {
+            const res = await fetch("/api/cereal/diff-exams/get-bo-user", {
+                method: "GET",
+            });
+            if (!res.ok) {
+                console.error(await res.text());
+                setBoFileError("Unable to load BO file information. Please try again later.");
+                setBoFileForUser(null);
+                return;
+            }
+            const responseJson = await res.json();
 
-        setBoFileForUser(responseJson.boFile);
+            setBoFileForUser(responseJson.boFile);
+        } catch (error) {
+            console.error(error);
+            setBoFileError("Unable to load BO file information. Please try again later.");
+            setBoFileForUser(null);
+        } finally {
+            setIsBoFileLoading(false);
+        }
     }
 
     React.useEffect(() => {
@@ -61,8 +71,14 @@ export default function App({ user }: RegisterProps) {
                 <ReactSelect control={control} label={"registeredBy"} name={"contact"} isMultiChoice={false} instanceId={2} user={user} disabled={true}/>
 
                 {
-                    boFileForUser ?
-                        <>You are registered for {boFileForUser.length} exam(s).</>
+                    isBoFileLoading ?
+                        <>Loading your exams...</>
+                    : boFileError ?
+                        <>{boFileError}</>
+                    : boFileForUser ?
+                        <>
+                            You are registered for {boFileForUser.length} exam(s).
+                        </>
                     :
                         <>No BO file uploaded for the moment. Please come back later.</>
                 }
