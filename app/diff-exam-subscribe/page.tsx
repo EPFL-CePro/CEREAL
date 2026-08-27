@@ -10,7 +10,7 @@ export default async function Page() {
     if (!session?.user) return;
     return (
         <main>
-            <DiffRegisterForm user={session.user}/>
+            <DiffRegisterForm />
         </main>
     )
 }
