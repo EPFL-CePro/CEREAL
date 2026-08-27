@@ -5,6 +5,19 @@ import React from "react";
 import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
 
+function getStartOfDay(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function parseDateInputValue(value: string) {
+    if (!value) return null;
+
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day);
+}
+
 export default function App() {
 
     const [boFileForUser, setBoFileForUser] = React.useState<BoFileForUser[] | null>(null);
@@ -12,7 +25,28 @@ export default function App() {
     const [boFileError, setBoFileError] = React.useState("");
 
     const [isSubscribeToDiffChecked, setIsSubscribeToDiffChecked] = React.useState(false);
-    
+
+    const [beginAbsenceDate, setBeginAbsenceDate] = React.useState<Date | null>(null);
+    const [endAbsenceDate, setEndAbsenceDate] = React.useState<Date | null>(null);
+
+    const filteredBoFileForUser = React.useMemo(() => {
+        if (!boFileForUser) return null;
+        if (!beginAbsenceDate || !endAbsenceDate) return boFileForUser;
+
+        const rangeStart = getStartOfDay(beginAbsenceDate).getTime();
+        const rangeEnd = getStartOfDay(endAbsenceDate).getTime();
+        const minDate = Math.min(rangeStart, rangeEnd);
+        const maxDate = Math.max(rangeStart, rangeEnd);
+
+        return boFileForUser.filter((exam) => {
+            const examDate = new Date(exam["date séance"]);
+            if (Number.isNaN(examDate.getTime())) return false;
+
+            const examDay = getStartOfDay(examDate).getTime();
+            return examDay >= minDate && examDay <= maxDate;
+        });
+    }, [beginAbsenceDate, boFileForUser, endAbsenceDate]);
+
 
     const { handleSubmit, register } = useForm<DiffExamFormInputs>({})
 
@@ -58,10 +92,10 @@ export default function App() {
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data">
                 <label>Début de l'absence (selon justificatif)</label>
-                <input type="date" {...register("startingAbsenceDate")}/>
+                <input type="date" {...register("startingAbsenceDate", { onChange: (e) => setBeginAbsenceDate(parseDateInputValue(e.target.value)) })}/>
 
                 <label>Fin de l'absence (selon justificatif)</label>
-                <input type="date" {...register("endingAbsenceDate")}/>
+                <input type="date" {...register("endingAbsenceDate", { onChange: (e) => setEndAbsenceDate(parseDateInputValue(e.target.value)) })}/>
 
                 <label>Justificatif d'absence</label>
                 <input type="file" {...register("absenceFile")}/>
@@ -73,11 +107,13 @@ export default function App() {
 
                 {isSubscribeToDiffChecked && (
                     <div>
-                        {isBoFileLoading ?
+                        {!beginAbsenceDate || !endAbsenceDate ?
+                            <>Merci de d'abord sélectionner une date de début et de fin d'absence.</>
+                        : isBoFileLoading ?
                             <>Loading your exams...</>
                         : boFileError ?
                             <>{boFileError}</>
-                        : boFileForUser ?
+                        : filteredBoFileForUser ?
                             <div className="overflow-x-auto">
                                 <table className="w-full border-collapse text-left text-sm">
                                     <thead>
@@ -90,7 +126,7 @@ export default function App() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {boFileForUser.map((exam, index) => (
+                                        {filteredBoFileForUser.map((exam, index) => (
                                             <tr
                                                 className="border-b border-slate-200"
                                                 key={`${exam["codification matière (indépendant du plan)"]}-${index}`}
