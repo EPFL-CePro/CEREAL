@@ -1,31 +1,20 @@
 "use client";
 // This form allows users to register their exams into the system.
 import { useForm, SubmitHandler } from "react-hook-form"
-import ReactSelect from "./ReactSelect";
-import { User } from "next-auth";
-import { Inputs } from "@/types/inputs";
 import React from "react";
 import { BoFileForUser } from "@/types/boFile";
+import { DiffExamFormInputs } from "@/types/diffExamForm";
 
-interface RegisterProps {
-    user: AppUser
-}
-
-interface AppUser extends User {
-    isAdmin?: boolean;
-    sciper: string;
-}
-
-export default function App({ user }: RegisterProps) {
+export default function App() {
 
     const [boFileForUser, setBoFileForUser] = React.useState<BoFileForUser[] | null>(null);
     const [isBoFileLoading, setIsBoFileLoading] = React.useState(true);
     const [boFileError, setBoFileError] = React.useState("");
     
 
-    const { handleSubmit, control } = useForm<Inputs>({})
+    const { handleSubmit, register } = useForm<DiffExamFormInputs>({})
 
-    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
         console.log(data)
     }
 
@@ -66,9 +55,11 @@ export default function App({ user }: RegisterProps) {
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data">
-                {/* register your input into the hook by invoking the "register" function */}
-                <label>Your email address</label>
-                <ReactSelect control={control} label={"registeredBy"} name={"contact"} isMultiChoice={false} instanceId={2} user={user} disabled={true}/>
+                <label>Début de l'absence (selon justificatif)</label>
+                <input type="date" {...register("startingAbsenceDate")}/>
+
+                <label>Fin de l'absence (selon justificatif)</label>
+                <input type="date" {...register("endingAbsenceDate")}/>
 
                 {
                     isBoFileLoading ?
