@@ -49,7 +49,30 @@ export default function App() {
     }, [beginAbsenceDate, boFileForUser, endAbsenceDate]);
 
 
-    const { handleSubmit, register } = useForm<DiffExamFormInputs>({})
+    const { handleSubmit, register, setValue, watch } = useForm<DiffExamFormInputs>({
+        defaultValues: {
+            diffExams: [],
+        },
+    })
+
+    const selectedDiffExams = watch("diffExams") ?? [];
+
+    function getExamKey(exam: BoFileForUser) {
+        return `${exam["codification matière (indépendant du plan)"]}-${exam["date séance"]}`;
+    }
+
+    function handleDiffExamChange(exam: BoFileForUser, isChecked: boolean) {
+        const examKey = getExamKey(exam);
+        const nextDiffExams = isChecked
+            ? [...selectedDiffExams, exam]
+            : selectedDiffExams.filter((selectedExam) => getExamKey(selectedExam) !== examKey);
+
+        setValue("diffExams", nextDiffExams, { shouldDirty: true, shouldTouch: true });
+    }
+
+    React.useEffect(() => {
+        register("diffExams");
+    }, [register]);
 
     const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
         console.log(data)
@@ -149,18 +172,29 @@ export default function App() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredBoFileForUser.map((exam, index) => (
-                                            <tr
-                                                className="border-b border-slate-200"
-                                                key={`${exam["codification matière (indépendant du plan)"]}-${index}`}
-                                            >
-                                                <td className="p-2">{exam["codification matière (indépendant du plan)"]}</td>
-                                                <td className="p-2">{exam["matière (libellé fr)"]}</td>
-                                                <td className="p-2">{exam["enseignant(s) responsable"]}</td>
-                                                <td className="p-2">{new Date(exam["date séance"]).toLocaleDateString()}</td>
-                                                <td className="p-2 text-center"><input type="checkbox" id="also-diffs" onChange={(e) => console.log(e.target.checked)} /></td>
-                                            </tr>
-                                        ))}
+                                        {filteredBoFileForUser.map((exam, index) => {
+                                            const examKey = getExamKey(exam);
+                                            const isExamSelected = selectedDiffExams.some((selectedExam) => getExamKey(selectedExam) === examKey);
+
+                                            return (
+                                                <tr
+                                                    className="border-b border-slate-200"
+                                                    key={`${examKey}-${index}`}
+                                                >
+                                                    <td className="p-2">{exam["codification matière (indépendant du plan)"]}</td>
+                                                    <td className="p-2">{exam["matière (libellé fr)"]}</td>
+                                                    <td className="p-2">{exam["enseignant(s) responsable"]}</td>
+                                                    <td className="p-2">{new Date(exam["date séance"]).toLocaleDateString()}</td>
+                                                    <td className="p-2 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isExamSelected}
+                                                            onChange={(e) => handleDiffExamChange(exam, e.target.checked)}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
