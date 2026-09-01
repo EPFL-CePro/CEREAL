@@ -115,7 +115,14 @@ export default function App() {
             }
             const responseJson = await res.json();
 
-            setBoFileForUser(responseJson.boFile);
+            const uniqueBoFile = responseJson.boFile.filter((exam: BoFileForUser, index: number) =>
+                responseJson.boFile.findIndex((otherExam: BoFileForUser) =>
+                    otherExam["codification matière (indépendant du plan)"] === exam["codification matière (indépendant du plan)"] &&
+                    otherExam["date séance"] === exam["date séance"]
+                ) === index
+            );
+
+            setBoFileForUser(uniqueBoFile);
         } catch (error) {
             console.error(error);
             setBoFileError("Unable to load BO file information. Please try again later.");
