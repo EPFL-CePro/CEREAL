@@ -5,6 +5,8 @@ declare module "next-auth" {
     sciper: string;
     hasCrepAccess?: boolean;
     isAdmin?: boolean;
+    first_name?: string;
+    last_name?: string;
   }
 
   interface Session {
@@ -15,6 +17,8 @@ declare module "next-auth" {
       tid?: string
       hasCrepAccess: boolean
       isAdmin: boolean
+      first_name: string
+      last_name: string
     } & DefaultSession["user"]
   }
 }
@@ -28,6 +32,8 @@ declare module "next-auth/jwt" {
     username?: string;
     hasCrepAccess?: boolean;
     isAdmin?: boolean;
+    first_name: string;
+    last_name: string;
     error?: string;
   }
 }
