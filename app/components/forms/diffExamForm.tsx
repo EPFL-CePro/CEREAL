@@ -55,10 +55,12 @@ export default function App() {
         console.log(data)
         if(!beginAbsenceDate || !endAbsenceDate) {
             alert("Merci de sélectionner une date de début et de fin d'absence.")
+            return;
         }
 
         if(data.absenceFile.length == 0) {
             alert("Merci d'uploader un fichier d'absence valide.");
+            return;
         }
 
         const formData = new FormData();
