@@ -8,12 +8,15 @@ const ADMIN_GROUP = 'CREP-admin_AppGrpU';
 const decodeJWT = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
 
 const getGroups = (groups: unknown): string[] => Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : [];
+const getStringClaim = (claim: unknown): string => typeof claim === 'string' ? claim : '';
 
 const createSessionToken = (token: JWT, idToken: Record<string, unknown>, accessToken: Record<string, unknown>, expiresAt?: number) => {
 	const groups = getGroups(idToken.groups);
+	const firstName = getStringClaim(idToken.given_name);
+	const lastName = getStringClaim(idToken.family_name);
 
 	return {
-		name: `${idToken.given_name ?? ''} ${idToken.family_name ?? ''}`.trim(),
+		name: `${firstName} ${lastName}`.trim(),
 		email: typeof idToken.email === 'string' ? idToken.email : token.email,
 		picture: token.picture || '',
 		expires_at: expiresAt,
@@ -23,6 +26,8 @@ const createSessionToken = (token: JWT, idToken: Record<string, unknown>, access
 		username: typeof idToken.gaspar === 'string' ? idToken.gaspar : '',
 		hasCrepAccess: groups.some((group) => AUTHORIZED_GROUPS.includes(group)),
 		isAdmin: groups.includes(ADMIN_GROUP),
+		first_name: firstName,
+		last_name: lastName,
 	};
 };
 
@@ -48,6 +53,8 @@ const sanitizeExistingToken = (token: JWT) => {
 		username: token.username || '',
 		hasCrepAccess: token.hasCrepAccess ?? groups.some((group) => AUTHORIZED_GROUPS.includes(group)),
 		isAdmin: token.isAdmin ?? groups.includes(ADMIN_GROUP),
+		first_name: token.first_name || '',
+		last_name: token.last_name || '',
 		error: token.error,
 	};
 };
@@ -91,6 +98,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					picture: token.picture || '',
 					hasCrepAccess: false,
 					isAdmin: false,
+					first_name: token.first_name || '',
+					last_name: token.last_name || '',
 					error: 'TokenProcessingError',
 				};
 			}
@@ -108,6 +117,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					tid: token.tid || '',
 					hasCrepAccess: Boolean(token.hasCrepAccess),
 					isAdmin: Boolean(token.isAdmin),
+					first_name: token.first_name || '',
+					last_name: token.last_name || '',
 				},
 			};
 		},
