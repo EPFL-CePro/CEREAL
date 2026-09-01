@@ -5,4 +5,5 @@ export type DiffExamFormInputs = {
     endingAbsenceDate: string;
     absenceFile: File[];
     diffExams: BoFileForUser[];
+    comment: string;
 }
