@@ -4,7 +4,6 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import React from "react";
 import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
-import { uploadAbsenceFile } from "@/app/lib/manageFiles";
 
 function getStartOfDay(date: Date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
