@@ -152,6 +152,9 @@ export default function App() {
                 <label>Justificatif d&apos;absence</label>
                 <input type="file" {...register("absenceFile")}/>
 
+                <label>Commentaire</label>
+                <textarea rows={5} {...register("comment")}/>
+
                 <div className="flex gap-2 mt-8">
                     <input type="checkbox" id="also-diffs" onChange={(e) => setIsSubscribeToDiffChecked(e.target.checked)} />
                     <label htmlFor="also-diffs">Je souhaite également m&apos;inscrire aux examens différés</label>
