@@ -241,3 +241,28 @@ export async function getBOFileRowsForSciper(
 
     return rows;
 }
+
+export async function uploadAbsenceFile(
+    file: File
+): Promise<string> {
+    console.log("start upload absence file");
+    if (!examsFilesBasePath) {
+        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
+    }
+    const absencesDir = path.join(examsFilesBasePath, "absences");
+    console.log("Absences Dir :", absencesDir.toString());
+
+    //create folder
+    await mkdir(absencesDir, {recursive: true});
+    console.log("folder created!");
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const filePath = path.join(absencesDir, file.name);
+
+    await writeFile(filePath, buffer);
+    console.log("saved path:",filePath.toString());
+
+    return filePath;
+}
