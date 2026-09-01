@@ -8,6 +8,7 @@ import { ServiceLevel } from '@/types/serviceLevel';
 import { ExamStatus } from '@/types/examStatus';
 import { EmailTemplate } from '@/types/emailTemplate';
 import { EMAIL_TEMPLATES } from '@/app/lib/emailTemplates';
+import { NewAbsence } from '@/types/absence';
 
 export async function getAllServices(): Promise <Service[]> {
     const connection = mysql.createConnection({
@@ -669,4 +670,37 @@ export async function updateEmailTemplate(template: EmailTemplate) {
         )
         connection.end()
     })
+}
+
+export async function insertAbsence(absence: NewAbsence): Promise<number> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    });
+
+    connection.connect();
+
+    return new Promise((resolve, reject) => {
+        const sql = `INSERT INTO exam_student_absence (sciper, first_name, last_name, certificate_date_from, certificate_date_to, certificate_file_name, comment, sac_has_accepted, sac_remark) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+
+        const params = [
+            absence.sciper,
+            absence.first_name,
+            absence.last_name,
+            absence.certificate_date_from,
+            absence.certificate_date_to,
+            absence.certificate_file_name,
+            absence.comment,
+            absence.sac_has_accepted,
+            absence.sac_remark
+        ];
+
+        connection.query(sql, params, (err, result) => {
+            if (err) return reject(err);
+            resolve((result as ResultSetHeader).insertId as number);
+        });
+        connection.end();
+    });
 }
