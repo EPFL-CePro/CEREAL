@@ -53,6 +53,10 @@ export default function App() {
 
     const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
         console.log(data)
+        if(!beginAbsenceDate || !endAbsenceDate) {
+            alert("Merci de sélectionner une date de début et de fin d'absence.")
+        }
+
         if(data.absenceFile.length == 0) {
             alert("Merci d'uploader un fichier d'absence valide.");
         }
