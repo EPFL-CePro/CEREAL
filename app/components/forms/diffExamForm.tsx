@@ -4,6 +4,17 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import React from "react";
 import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
+import { insertAbsence } from "@/app/lib/database";
+import { User } from "next-auth";
+
+interface diffExamFormProps {
+    user: AppUser
+}
+
+interface AppUser extends User {
+    isAdmin?: boolean;
+    sciper: string;
+}
 
 function getStartOfDay(date: Date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -18,7 +29,7 @@ function parseDateInputValue(value: string) {
     return new Date(year, month - 1, day);
 }
 
-export default function App() {
+export default function App({ user }: diffExamFormProps) {
 
     const [boFileForUser, setBoFileForUser] = React.useState<BoFileForUser[] | null>(null);
     const [isBoFileLoading, setIsBoFileLoading] = React.useState(true);
@@ -96,6 +107,20 @@ export default function App() {
             console.error(await res.text());
             return;
         }
+
+        await insertAbsence(
+            {
+                sciper: Number(user.sciper),
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                certificate_date_from: new Date(data.startingAbsenceDate),
+                certificate_date_to: new Date(data.endingAbsenceDate),
+                certificate_file_name: data.absenceFile[0].name,
+                comment: data.comment,
+                sac_has_accepted: false,
+                sac_remark: ''
+            }
+        )
 
     }
 
