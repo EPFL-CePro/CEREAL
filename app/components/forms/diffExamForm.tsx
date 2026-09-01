@@ -4,6 +4,7 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import React from "react";
 import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
+import { uploadAbsenceFile } from "@/app/lib/manageFiles";
 
 function getStartOfDay(date: Date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -52,6 +53,22 @@ export default function App() {
 
     const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
         console.log(data)
+        if(data.absenceFile.length == 0) {
+            alert("Merci d'uploader un fichier d'absence valide.");
+        }
+
+        const formData = new FormData();
+        formData.append("file", data.absenceFile[0]);
+
+        const res = await fetch("/api/cereal/diff-exams/upload-absence", {
+            method: "POST",
+            body: formData
+        });
+        if (!res.ok) {
+            console.error(await res.text());
+            return;
+        }
+
     }
 
     async function getBoFile() {
