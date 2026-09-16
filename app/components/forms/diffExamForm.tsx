@@ -40,6 +40,8 @@ export default function App({ user }: diffExamFormProps) {
     const [beginAbsenceDate, setBeginAbsenceDate] = React.useState<Date | null>(null);
     const [endAbsenceDate, setEndAbsenceDate] = React.useState<Date | null>(null);
 
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
     const filteredBoFileForUser = React.useMemo(() => {
         if (!boFileForUser) return null;
         if (!beginAbsenceDate || !endAbsenceDate) return boFileForUser;
@@ -85,14 +87,17 @@ export default function App({ user }: diffExamFormProps) {
     }, [register]);
 
     const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
+        setIsSubmitting(true)
         console.log(data)
         if(!beginAbsenceDate || !endAbsenceDate) {
             alert("Merci de sélectionner une date de début et de fin d'absence.")
+            setIsSubmitting(false)
             return;
         }
 
         if(data.absenceFile.length == 0) {
             alert("Merci d'uploader un fichier d'absence valide.");
+            setIsSubmitting(false)
             return;
         }
 
@@ -133,6 +138,8 @@ export default function App({ user }: diffExamFormProps) {
                 }
             )
         }
+
+        setIsSubmitting(false)
 
     }
 
@@ -249,7 +256,19 @@ export default function App({ user }: diffExamFormProps) {
                     </div>
                 )}
 
-                <input className="btn btn-primary hover:cursor-pointer" type="submit" value="Submit exam registration" />
+                <button
+                    className="btn btn-primary hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
+                    type="submit"
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting && (
+                        <span
+                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                            aria-hidden="true"
+                        />
+                    )}
+                    <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
+                </button>
             </form>
         </div >
 
