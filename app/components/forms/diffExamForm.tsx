@@ -115,13 +115,13 @@ export default function App({ user }: diffExamFormProps) {
         setIsSubmitting(true)
         console.log(data)
         if(!beginAbsenceDate || !endAbsenceDate) {
-            openModal("Erreur de sélection de date", "Merci de sélectionner une date de début et de fin d'absence.");
+            openModal("Date Selection Error", "Please select a beginning and ending absence date.");
             setIsSubmitting(false)
             return;
         }
 
         if(data.absenceFile.length == 0) {
-            openModal("Erreur de fichier", "Merci d'uploader un fichier d'absence valide.");
+            openModal("File Error", "Please upload a valid absence file.");
             setIsSubmitting(false)
             return;
         }
@@ -233,31 +233,31 @@ export default function App({ user }: diffExamFormProps) {
                     <RegisterModal setModalOpen={setModalOpen} title={modalTitle} message={modalMessage} isConfirm={isConfirmModal} onResult={handleModalResult} />
                 )}
             </dialog>
-            <h1 className="text-3xl font-semibold mb-8 text-center" >CePro — Absence submission & Diff exam subscription</h1>
+            <h1 className="text-3xl font-semibold mb-8 text-center" >CePro — Absence submission & Deferred exams subscription</h1>
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data">
-                <label>Début de l&apos;absence (selon justificatif)</label>
+                <label>Beginning of the absence (according to absence file)</label>
                 <input type="date" {...register("startingAbsenceDate", { onChange: (e) => setBeginAbsenceDate(parseDateInputValue(e.target.value)) })}/>
 
-                <label>Fin de l&apos;absence (selon justificatif)</label>
+                <label>End of the absence (according to absence file)</label>
                 <input type="date" {...register("endingAbsenceDate", { onChange: (e) => setEndAbsenceDate(parseDateInputValue(e.target.value)) })}/>
 
-                <label>Justificatif d&apos;absence</label>
+                <label>Absence file</label>
                 <input type="file" {...register("absenceFile")}/>
 
-                <label>Commentaire</label>
+                <label>Remark</label>
                 <textarea rows={5} {...register("comment")}/>
 
                 <div className="flex gap-2 mt-8">
                     <input type="checkbox" id="also-diffs" onChange={(e) => setIsSubscribeToDiffChecked(e.target.checked)} />
-                    <label htmlFor="also-diffs">Je souhaite également m&apos;inscrire aux examens différés</label>
+                    <label htmlFor="also-diffs">I also want to subscribe to deferred exams</label>
                 </div>
 
                 {isSubscribeToDiffChecked && (
                     <div>
                         {!beginAbsenceDate || !endAbsenceDate ?
-                            <>Merci de d&apos;abord sélectionner une date de début et de fin d&apos;absence.</>
+                            <>Please select a beginning and ending absence date first.</>
                         : isBoFileLoading ?
                             <>Loading your exams...</>
                         : boFileError ?
@@ -268,10 +268,10 @@ export default function App({ user }: diffExamFormProps) {
                                     <thead>
                                         <tr className="border-b border-slate-300">
                                             <th className="p-2 font-semibold">Code</th>
-                                            <th className="p-2 font-semibold">Matière</th>
-                                            <th className="p-2 font-semibold">Enseignant(s)</th>
-                                            <th className="p-2 font-semibold">Date</th>
-                                            <th className="p-2 font-semibold">Inscription à l&apos;examen différé</th>
+                                            <th className="p-2 font-semibold">Course name</th>
+                                            <th className="p-2 font-semibold">Teacher(s)</th>
+                                            <th className="p-2 font-semibold">Exam date</th>
+                                            <th className="p-2 font-semibold">Subscribe to deferred exam</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -317,7 +317,7 @@ export default function App({ user }: diffExamFormProps) {
                             aria-hidden="true"
                         />
                     )}
-                    <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
+                    <span>{isSubmitting ? "Submitting..." : "Submit absence"}</span>
                 </button>
             </form>
         </div >
