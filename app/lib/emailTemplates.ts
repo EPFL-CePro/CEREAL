@@ -153,6 +153,47 @@ CePro team
             replyTo: "examen.repro@epfl.ch",
         },
     },
+
+    absence_confirmation: {
+        section: "CEREAL",
+        name: "Deferred exams & absence submission",
+        placeholders: [
+            { token: "registrant.email", desc: "User submitting the absence (email)" },
+            { token: "dateFrom", desc: "Starting date of the absence" },
+            { token: "dateTo", desc: "Ending date of the absence" },
+            { token: "diff_exams", desc: "List of exams user registers to" },
+            { token: "remark", desc: "Remark about the absence" },
+        ],
+        defaults: {
+            subject: "Absence & deferred exams submission",
+            body: `
+Hello,
+
+A new absence and deferred exams subscription has been submitted.
+
+Here is a recap :
+
+- Person : {{registrant.email}}
+- Starting absence date as indicated on document : {{dateFrom}}
+- Ending absence date as indicated on document : {{dateTo}}
+- Inscription to following exams : {{diff_exams}}
+- Remarks: {{remark}}
+
+This is an automated email !
+
+The Registrar's office will validate the certificate.
+If you subscribed to deferred exams, you will receive a notice 3 days before the deferred exam date.
+More information available on https://go.epfl.ch/absence-examen-prope
+
+Best
+
+CePro
+`,
+            to: "{{registrant.email}}",
+            cc: "cepro-exams@epfl.ch",
+            replyTo: "",
+        },
+    },
 };
 
 // Keys are derived from the registry, so adding or removing a template is a

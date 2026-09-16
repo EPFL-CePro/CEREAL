@@ -6,6 +6,7 @@ import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
 import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database";
 import { User } from "next-auth";
+import { sendTemplatedMail } from "@/app/lib/mail";
 
 interface diffExamFormProps {
     user: AppUser
@@ -137,6 +138,20 @@ export default function App({ user }: diffExamFormProps) {
                     isa_has_grade: false,
                 }
             )
+        }
+
+        if (process.env.NODE_ENV !== "development") {
+            await sendTemplatedMail("absence_confirmation", {
+                dateFrom: data.startingAbsenceDate,  
+                dateTo: data.endingAbsenceDate,
+                "diff_exams": data.diffExams.length > 0
+                    ?
+                        data.diffExams.map(exam => `${exam["codification matière (indépendant du plan)"]} - ${exam["matière (libellé fr)"]}`).join(', ')
+                    : 
+                        'None',
+                "registrant.email": user.email,
+                remark: data.comment,
+            });
         }
 
         setIsSubmitting(false)
