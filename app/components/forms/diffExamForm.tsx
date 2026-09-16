@@ -4,7 +4,7 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import React from "react";
 import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
-import { insertAbsence } from "@/app/lib/database";
+import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database";
 import { User } from "next-auth";
 
 interface diffExamFormProps {
@@ -108,7 +108,7 @@ export default function App({ user }: diffExamFormProps) {
             return;
         }
 
-        await insertAbsence(
+        const absence = await insertAbsence(
             {
                 sciper: Number(user.sciper),
                 first_name: user.first_name || '',
@@ -121,6 +121,18 @@ export default function App({ user }: diffExamFormProps) {
                 sac_remark: ''
             }
         )
+        for (let index = 0; index < data.diffExams.length; index++) {
+            const exam = data.diffExams[index];
+            await insertDiffExamSubscription(
+                {
+                    exam_student_absence_id: absence,
+                    exam_code: exam["codification matière (indépendant du plan)"],
+                    exam_name: exam["matière (libellé fr)"],
+                    exam_date: new Date(exam["date séance"]),
+                    isa_has_grade: false,
+                }
+            )
+        }
 
     }
 

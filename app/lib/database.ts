@@ -9,6 +9,7 @@ import { ExamStatus } from '@/types/examStatus';
 import { EmailTemplate } from '@/types/emailTemplate';
 import { EMAIL_TEMPLATES } from '@/app/lib/emailTemplates';
 import { NewAbsence } from '@/types/absence';
+import { NewDiffExam } from '@/types/diffExam';
 
 export async function getAllServices(): Promise <Service[]> {
     const connection = mysql.createConnection({
@@ -695,6 +696,35 @@ export async function insertAbsence(absence: NewAbsence): Promise<number> {
             absence.comment,
             absence.sac_has_accepted,
             absence.sac_remark
+        ];
+
+        connection.query(sql, params, (err, result) => {
+            if (err) return reject(err);
+            resolve((result as ResultSetHeader).insertId as number);
+        });
+        connection.end();
+    });
+}
+
+export async function insertDiffExamSubscription(diffExam: NewDiffExam): Promise<number> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    });
+
+    connection.connect();
+
+    return new Promise((resolve, reject) => {
+        const sql = `INSERT INTO deferred_exam_registration (exam_student_absence_id, exam_code, exam_name, exam_date, isa_has_grade) VALUES (?, ?, ?, ?, ?);`;
+
+        const params = [
+            diffExam.exam_student_absence_id,
+            diffExam.exam_code,
+            diffExam.exam_name,
+            diffExam.exam_date,
+            diffExam.isa_has_grade,
         ];
 
         connection.query(sql, params, (err, result) => {
