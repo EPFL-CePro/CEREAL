@@ -113,7 +113,6 @@ export default function App({ user }: diffExamFormProps) {
 
     const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
         setIsSubmitting(true)
-        console.log(data)
         if(!beginAbsenceDate || !endAbsenceDate) {
             openModal("Date Selection Error", "Please select a beginning and ending absence date.");
             setIsSubmitting(false)
