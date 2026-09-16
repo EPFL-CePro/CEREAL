@@ -7,6 +7,7 @@ import { DiffExamFormInputs } from "@/types/diffExamForm";
 import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database";
 import { User } from "next-auth";
 import { sendTemplatedMail } from "@/app/lib/mail";
+import { RegisterModal } from "./RegisterModal";
 
 interface diffExamFormProps {
     user: AppUser
@@ -42,6 +43,12 @@ export default function App({ user }: diffExamFormProps) {
     const [endAbsenceDate, setEndAbsenceDate] = React.useState<Date | null>(null);
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const [modalOpen, setModalOpen] = React.useState(false);
+    const [modalTitle, setModalTitle] = React.useState("Registration Successful");
+    const [modalMessage, setModalMessage] = React.useState("Your exam has been successfully registered.");
+    const [modalResolver, setModalResolver] = React.useState<((confirmed: boolean) => void) | null>(null);
+    const [isConfirmModal, setIsConfirmModal] = React.useState(false);
 
     const filteredBoFileForUser = React.useMemo(() => {
         if (!boFileForUser) return null;
@@ -83,6 +90,23 @@ export default function App({ user }: diffExamFormProps) {
         setValue("diffExams", nextDiffExams, { shouldDirty: true, shouldTouch: true });
     }
 
+    const openModal = (title: string, message: string) => {
+        setIsConfirmModal(false);
+        setModalResolver(null);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalOpen(true);
+        const dialog = document.getElementById("register-modal") as HTMLDialogElement | null;
+        dialog?.showModal?.();
+    };
+    const handleModalResult = (confirmed: boolean) => {
+        if (modalResolver) {
+            modalResolver(confirmed);
+            setModalResolver(null);
+        }
+        setModalOpen(false);
+    };
+
     React.useEffect(() => {
         register("diffExams");
     }, [register]);
@@ -91,13 +115,13 @@ export default function App({ user }: diffExamFormProps) {
         setIsSubmitting(true)
         console.log(data)
         if(!beginAbsenceDate || !endAbsenceDate) {
-            alert("Merci de sélectionner une date de début et de fin d'absence.")
+            openModal("Erreur de sélection de date", "Merci de sélectionner une date de début et de fin d'absence.");
             setIsSubmitting(false)
             return;
         }
 
         if(data.absenceFile.length == 0) {
-            alert("Merci d'uploader un fichier d'absence valide.");
+            openModal("Erreur de fichier", "Merci d'uploader un fichier d'absence valide.");
             setIsSubmitting(false)
             return;
         }
@@ -198,6 +222,17 @@ export default function App({ user }: diffExamFormProps) {
     return (
         /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
         <div className="flex flex-col items-center m-24">
+            <dialog id="register-modal" className="modal fixed top-3/8 left-1/8 w-3/4 md:left-1/4 md:w-2/4 rounded-xl flex items-center justify-center z-50 drop-shadow-2xl backdrop:backdrop-blur-xs opacity-98" onClose={() => {
+                setModalOpen(false);
+                if (modalResolver) {
+                    modalResolver(false);
+                    setModalResolver(null);
+                }
+            }}>
+                {modalOpen && (
+                    <RegisterModal setModalOpen={setModalOpen} title={modalTitle} message={modalMessage} isConfirm={isConfirmModal} onResult={handleModalResult} />
+                )}
+            </dialog>
             <h1 className="text-3xl font-semibold mb-8 text-center" >CePro — Absence submission & Diff exam subscription</h1>
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
