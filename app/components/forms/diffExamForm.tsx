@@ -178,6 +178,8 @@ export default function App({ user }: diffExamFormProps) {
             });
         }
 
+        openModal("Success", "Your absence has been successfully submitted. An email should have been sent to you.")
+
         setIsSubmitting(false)
 
     }
