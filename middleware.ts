@@ -29,7 +29,8 @@ export default async function middleware(req: NextRequest) {
 	// Routes available only to administrators of the app
 	if (
 		pathname === '/admin' || pathname.startsWith('/admin/') ||
-		pathname === '/exams' || pathname.startsWith('/exams/')
+		pathname === '/exams' || pathname.startsWith('/exams/') ||
+		pathname === '/sac-absences' || pathname.startsWith('/sac-absences/')
 	) {
 		if(!session.user.isAdmin) {
 			return NextResponse.redirect(new URL("/403", req.url));

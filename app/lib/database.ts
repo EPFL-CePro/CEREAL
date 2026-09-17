@@ -1,6 +1,6 @@
 'use server';
 import mysql from 'mysql2';
-import type { ResultSetHeader } from 'mysql2';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { Service } from '@/types/service';
 import { ExamType } from '@/types/examType';
 import { Exam, NewExam } from '@/types/exam';
@@ -8,8 +8,8 @@ import { ServiceLevel } from '@/types/serviceLevel';
 import { ExamStatus } from '@/types/examStatus';
 import { EmailTemplate } from '@/types/emailTemplate';
 import { EMAIL_TEMPLATES } from '@/app/lib/emailTemplates';
-import { NewAbsence } from '@/types/absence';
-import { NewDiffExam } from '@/types/diffExam';
+import type { Absence, NewAbsence } from '@/types/absence';
+import type { DiffExam, NewDiffExam } from '@/types/diffExam';
 
 export async function getAllServices(): Promise <Service[]> {
     const connection = mysql.createConnection({
@@ -733,4 +733,98 @@ export async function insertDiffExamSubscription(diffExam: NewDiffExam): Promise
         });
         connection.end();
     });
+}
+
+export async function getAllAbsences(): Promise <Absence[]> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+    
+    type AbsenceWithDiffExamRow = RowDataPacket & Omit<Absence, 'deferred_exam_registrations'> & {
+        diff_exam_id: string | null;
+        diff_exam_absence_id: number | null;
+        exam_code: string | null;
+        exam_name: string | null;
+        exam_date: Date | null;
+        isa_has_grade: boolean | null;
+        diff_exam_sac_has_accepted: boolean | null;
+        diff_exam_sac_remark: string | null;
+    };
+
+    return new Promise<Absence[]>(function(resolve, reject) {
+        const sql = `
+            SELECT
+                exam_student_absence.id,
+                exam_student_absence.sciper,
+                exam_student_absence.first_name,
+                exam_student_absence.last_name,
+                exam_student_absence.certificate_date_from,
+                exam_student_absence.certificate_date_to,
+                exam_student_absence.certificate_file_name,
+                exam_student_absence.comment,
+                exam_student_absence.sac_has_accepted,
+                exam_student_absence.sac_remark,
+                exam_student_absence.created_at,
+                deferred_exam_registration.id AS diff_exam_id,
+                deferred_exam_registration.exam_student_absence_id AS diff_exam_absence_id,
+                deferred_exam_registration.exam_code,
+                deferred_exam_registration.exam_name,
+                deferred_exam_registration.exam_date,
+                deferred_exam_registration.isa_has_grade,
+                deferred_exam_registration.sac_has_accepted AS diff_exam_sac_has_accepted,
+                deferred_exam_registration.sac_remark AS diff_exam_sac_remark
+            FROM exam_student_absence
+            LEFT JOIN deferred_exam_registration
+                ON deferred_exam_registration.exam_student_absence_id = exam_student_absence.id;
+        `;
+
+        connection.query(sql, (err, rows) => {
+            connection.end()
+            if (err) return reject(err)
+
+            const absences = new Map<string, Absence>();
+
+            for (const row of rows as AbsenceWithDiffExamRow[]) {
+                let absence = absences.get(row.id);
+
+                if (!absence) {
+                    absence = {
+                        id: row.id,
+                        sciper: row.sciper,
+                        first_name: row.first_name,
+                        last_name: row.last_name,
+                        certificate_date_from: row.certificate_date_from,
+                        certificate_date_to: row.certificate_date_to,
+                        certificate_file_name: row.certificate_file_name,
+                        comment: row.comment,
+                        sac_has_accepted: row.sac_has_accepted,
+                        sac_remark: row.sac_remark,
+                        created_at: row.created_at,
+                        deferred_exam_registrations: [],
+                    };
+                    absences.set(row.id, absence);
+                }
+
+                if (row.diff_exam_id !== null) {
+                    absence.deferred_exam_registrations.push({
+                        id: row.diff_exam_id,
+                        exam_student_absence_id: row.diff_exam_absence_id as number,
+                        exam_code: row.exam_code as string,
+                        exam_name: row.exam_name as string,
+                        exam_date: row.exam_date as Date,
+                        isa_has_grade: row.isa_has_grade as boolean,
+                        sac_has_accepted: row.diff_exam_sac_has_accepted as boolean,
+                        sac_remark: row.diff_exam_sac_remark as string,
+                    } satisfies DiffExam);
+                }
+            }
+
+            resolve(Array.from(absences.values()));
+        })
+    })
 }
