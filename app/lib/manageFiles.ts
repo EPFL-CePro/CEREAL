@@ -249,7 +249,7 @@ export async function uploadAbsenceFile(
     if (!examsFilesBasePath) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
-    const absencesDir = path.join(examsFilesBasePath, "absences");
+    const absencesDir = path.join(examsFilesBasePath, "certificates");
     console.log("Absences Dir :", absencesDir.toString());
 
     //create folder
