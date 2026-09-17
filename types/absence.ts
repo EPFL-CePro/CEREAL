@@ -1,3 +1,5 @@
+import type { DiffExam } from "./diffExam";
+
 export type Absence = {
     id: string;
     sciper: Number;
@@ -9,6 +11,8 @@ export type Absence = {
     comment: string;
     sac_has_accepted: boolean;
     sac_remark: string;
+    created_at: Date;
+    deferred_exam_registrations: DiffExam[];
 }
 
-export type NewAbsence = Omit<Absence, 'id'>;
+export type NewAbsence = Omit<Absence, 'id' | 'created_at' | 'deferred_exam_registrations'>;
