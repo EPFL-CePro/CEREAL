@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const session = await auth();
 
-  if (!session?.user.isAdmin) {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
