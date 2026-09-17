@@ -165,7 +165,7 @@ export default function App({ user }: RegisterProps) {
                     return;
                 }
             }
-            if (process.env.NODE_ENV == "development") {
+            if (process.env.NODE_ENV !== "development") {
                 await sendTemplatedMail("exam_services_confirmation", {
                     course: data.course.exam.code,
                     teachers: data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}${t.sciper ? ` (${t.sciper})` : ''}`).join(', '),
