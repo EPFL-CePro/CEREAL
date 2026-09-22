@@ -1,6 +1,6 @@
 'use client'
 
-import { getAllAbsences } from "@/app/lib/database";
+import { getAllAbsences, updateBooleanColumnById } from "@/app/lib/database";
 import { Absence } from "@/types/absence";
 import { useEffect, useState } from "react";
 
@@ -20,12 +20,13 @@ export function SacAbsencesTable() {
         return new Date(date).toLocaleDateString("fr-FR")
     }
 
-    function BooleanCheckbox({ defaultValue }: { defaultValue: boolean }) {
+    function BooleanCheckbox({ defaultValue, tableName, columnName, id }: { defaultValue: boolean, tableName: string, columnName: string, id: string }) {
         return (
             <input
                 type="checkbox"
                 defaultChecked={defaultValue}
                 className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-green-600"
+                onChange={(event) => updateBooleanColumnById(tableName, columnName, id, event.currentTarget.checked)}
             />
         )
     }
@@ -61,6 +62,9 @@ export function SacAbsencesTable() {
                                 <td className="px-4 py-3 text-center">
                                     <BooleanCheckbox
                                         defaultValue={absence.sac_has_accepted}
+                                        tableName="exam_student_absence"
+                                        columnName="sac_has_accepted"
+                                        id={absence.id}
                                     />
                                 </td>
                                 <td className="max-w-56 px-4 py-3 text-gray-700">{absence.sac_remark || "-"}</td>
@@ -88,12 +92,18 @@ export function SacAbsencesTable() {
                                                             <td className="px-3 py-2 text-center">
                                                                 <BooleanCheckbox
                                                                     defaultValue={exam.sac_has_accepted}
+                                                                    tableName="deferred_exam_registration"
+                                                                    columnName="sac_has_accepted"
+                                                                    id={exam.id}
                                                                 />
                                                             </td>
                                                             <td className="px-3 py-2 text-gray-700">{exam.sac_remark || "-"}</td>
                                                             <td className="px-3 py-2 text-center">
                                                                 <BooleanCheckbox
                                                                     defaultValue={exam.isa_has_grade}
+                                                                    tableName="deferred_exam_registration"
+                                                                    columnName="isa_has_grade"
+                                                                    id={exam.id}
                                                                 />
                                                             </td>
                                                         </tr>
