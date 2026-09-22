@@ -1,8 +1,8 @@
 'use client'
 
-import { getAllAbsences, updateBooleanColumnById } from "@/app/lib/database";
+import { getAllAbsences, updateSACById } from "@/app/lib/database";
 import { Absence } from "@/types/absence";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function SacAbsencesTable() {
 
@@ -26,7 +26,37 @@ export function SacAbsencesTable() {
                 type="checkbox"
                 defaultChecked={defaultValue}
                 className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-green-600"
-                onChange={(event) => updateBooleanColumnById(tableName, columnName, id, event.currentTarget.checked)}
+                onChange={(event) => updateSACById(tableName, columnName, id, event.currentTarget.checked)}
+            />
+        )
+    }
+
+    function TextareaRemarks({ defaultValue, tableName, columnName, id }: { defaultValue: string, tableName: string, columnName: string, id: string }) {
+        const logTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+        useEffect(() => {
+            return () => {
+                if (logTimeoutRef.current) {
+                    clearTimeout(logTimeoutRef.current);
+                }
+            }
+        }, [])
+
+        return (
+            <textarea 
+                className="w-72"
+                defaultValue={defaultValue}
+                onChange={(e) => {
+                    const value = e.currentTarget.value;
+
+                    if (logTimeoutRef.current) {
+                        clearTimeout(logTimeoutRef.current);
+                    }
+
+                    logTimeoutRef.current = setTimeout(() => {
+                        updateSACById(tableName, columnName, id, value);
+                    }, 1200);
+                }}
             />
         )
     }
@@ -58,7 +88,14 @@ export function SacAbsencesTable() {
                                 <td className="px-4 py-3 font-medium text-gray-900">{absence.last_name}</td>
                                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{dateToString(absence.certificate_date_from)}</td>
                                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{dateToString(absence.certificate_date_to)}</td>
-                                <td className="max-w-56 px-4 py-3 text-gray-700">{absence.comment || "-"}</td>
+                                <td className="px-4 py-3 text-gray-700">
+                                    <TextareaRemarks
+                                        defaultValue={absence.comment}
+                                        tableName="exam_student_absence"
+                                        columnName="comment"
+                                        id={absence.id}
+                                    />
+                                </td>
                                 <td className="px-4 py-3 text-center">
                                     <BooleanCheckbox
                                         defaultValue={absence.sac_has_accepted}
@@ -67,7 +104,14 @@ export function SacAbsencesTable() {
                                         id={absence.id}
                                     />
                                 </td>
-                                <td className="max-w-56 px-4 py-3 text-gray-700">{absence.sac_remark || "-"}</td>
+                                <td className="px-4 py-3 text-gray-700">
+                                    <TextareaRemarks
+                                        defaultValue={absence.sac_remark}
+                                        tableName="exam_student_absence"
+                                        columnName="sac_remark"
+                                        id={absence.id}
+                                    />
+                                </td>
                                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{dateToString(absence.created_at)}</td>
                                 <td className="min-w-[36rem] px-4 py-3">
                                     {absence.deferred_exam_registrations.length > 0 ? (
@@ -97,7 +141,14 @@ export function SacAbsencesTable() {
                                                                     id={exam.id}
                                                                 />
                                                             </td>
-                                                            <td className="px-3 py-2 text-gray-700">{exam.sac_remark || "-"}</td>
+                                                            <td className="px-3 py-2 text-gray-700">
+                                                                <TextareaRemarks
+                                                                    defaultValue={exam.sac_remark}
+                                                                    tableName="deferred_exam_registration"
+                                                                    columnName="sac_remark"
+                                                                    id={exam.id}
+                                                                />
+                                                            </td>
                                                             <td className="px-3 py-2 text-center">
                                                                 <BooleanCheckbox
                                                                     defaultValue={exam.isa_has_grade}
