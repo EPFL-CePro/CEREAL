@@ -72,6 +72,7 @@ export function SacAbsencesTable() {
                         <th className="px-4 py-3">Last name</th>
                         <th className="px-4 py-3">Begin date</th>
                         <th className="px-4 py-3">Ending date</th>
+                        <th className="px-4 py-3">Certificate file</th>
                         <th className="px-4 py-3">Comment</th>
                         <th className="px-4 py-3 text-center">Accepted</th>
                         <th className="px-4 py-3">Remark</th>
@@ -88,6 +89,16 @@ export function SacAbsencesTable() {
                                 <td className="px-4 py-3 font-medium text-gray-900">{absence.last_name}</td>
                                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{dateToString(absence.certificate_date_from)}</td>
                                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{dateToString(absence.certificate_date_to)}</td>
+                                <td className="whitespace-nowrap px-4 py-3 text-gray-700">
+                                    <a
+                                        href={`/api/cereal/diff-exams/absence-certificate/${encodeURIComponent(absence.id)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-blue-600 underline-offset-2 hover:underline"
+                                    >
+                                        Open
+                                    </a>
+                                </td>
                                 <td className="px-4 py-3 text-gray-700">
                                     <TextareaRemarks
                                         defaultValue={absence.comment}
