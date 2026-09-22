@@ -829,6 +829,31 @@ export async function getAllAbsences(): Promise <Absence[]> {
     })
 }
 
+export async function getAbsenceCertificateFileNameById(id: string): Promise<string | null> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise<string | null>((resolve, reject) => {
+        connection.query(
+            "SELECT certificate_file_name FROM exam_student_absence WHERE id = ? LIMIT 1;",
+            [id],
+            (err, rows) => {
+                connection.end()
+                if (err) return reject(err)
+
+                const result = rows as RowDataPacket[];
+                resolve(result[0]?.certificate_file_name ?? null);
+            }
+        )
+    })
+}
+
 export async function updateSACById(tableName: string, columnName: string, id: string, value: boolean | string) {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
