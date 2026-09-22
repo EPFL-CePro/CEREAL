@@ -828,3 +828,26 @@ export async function getAllAbsences(): Promise <Absence[]> {
         })
     })
 }
+
+export async function updateBooleanColumnById(tableName: string, columnName: string, id: string, value: boolean) {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise((resolve, reject) => {
+        connection.query(
+            `UPDATE ${tableName} SET ${columnName} = ? WHERE id = ?;`,
+            [value, id],
+            (err, rows) => {
+                if (err) return reject(err)
+                resolve(JSON.stringify(rows));
+            }
+        )
+        connection.end()
+    })
+}
