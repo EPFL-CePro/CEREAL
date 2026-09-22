@@ -829,7 +829,7 @@ export async function getAllAbsences(): Promise <Absence[]> {
     })
 }
 
-export async function updateBooleanColumnById(tableName: string, columnName: string, id: string, value: boolean) {
+export async function updateSACById(tableName: string, columnName: string, id: string, value: boolean | string) {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
         user: process.env.MYSQL_USER,
