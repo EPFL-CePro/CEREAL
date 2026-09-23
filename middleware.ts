@@ -11,32 +11,40 @@ export default async function middleware(req: NextRequest) {
 		return NextResponse.redirect(authUrl);
 	}
 
-	// Routes available to anyone as long as they are logged in.
-	if (
-		pathname === '/crep/register' || pathname.startsWith('/crep/register/') ||
-		pathname === '/crep/exams' || pathname.startsWith('/crep/exams/') ||
-		pathname === '/teachers-exam-subscribe' || pathname.startsWith('/teachers-exam-subscribe/') ||
-		pathname === '/diff-exam-subscribe' || pathname.startsWith('/diff-exam-subscribe/')
-	) {
-    	return NextResponse.next();
-  	}
+	// If user is admin, he can access anything.
+	if(session.user.isAdmin) {
+		return NextResponse.next();
+	}
 
-	// For all other routes, requiring at least access to the app (group access). If not, redirecting to `/403`.
-	if(!session.user.hasCrepAccess) {
-		return NextResponse.redirect(new URL("/403", req.url));
+	// Routes available only to people who can access the CREP sub-module
+	if (
+		pathname === '/crep'
+	) {
+		if(!session.user.hasCrepAccess) {
+			return NextResponse.redirect(new URL("/403", req.url));
+		}
+	}
+
+	// Routes available only to the SAC.
+	if (
+		pathname === '/sac-absences' || pathname.startsWith('/sac-absences/')
+	) {
+		if(!session.user.hasSACAccess) {
+			return NextResponse.redirect(new URL("/403", req.url));
+		}
 	}
 
 	// Routes available only to administrators of the app
 	if (
 		pathname === '/admin' || pathname.startsWith('/admin/') ||
-		pathname === '/exams' || pathname.startsWith('/exams/') ||
-		pathname === '/sac-absences' || pathname.startsWith('/sac-absences/')
+		pathname === '/exams' || pathname.startsWith('/exams/')
 	) {
 		if(!session.user.isAdmin) {
 			return NextResponse.redirect(new URL("/403", req.url));
 		}
 	}
 
+	// If the previous conditions did not match, it means that the route trying to be accessed is a non-protected route, anybody can access to.
 	return NextResponse.next();
 
 }
