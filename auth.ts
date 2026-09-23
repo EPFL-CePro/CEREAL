@@ -2,8 +2,9 @@ import NextAuth, { Account } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 
-const AUTHORIZED_GROUPS = ['CREP-access_AppGrpU', 'CREP-admin_AppGrpU'];
-const ADMIN_GROUP = 'CREP-admin_AppGrpU';
+const AUTHORIZED_CREP_GROUP = 'CEREAL-CREP_AppGrpU';
+const AUTHORIZED_SAC_GROUP = 'CEREAL-SAC_AppGrpU';
+const ADMIN_GROUP = 'CEREAL-admin_AppGrpU';
 
 const decodeJWT = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
 
@@ -24,7 +25,8 @@ const createSessionToken = (token: JWT, idToken: Record<string, unknown>, access
 		tid: typeof accessToken.tid === 'string' ? accessToken.tid : '',
 		uniqueid: typeof idToken.uniqueid === 'string' ? idToken.uniqueid : '',
 		username: typeof idToken.gaspar === 'string' ? idToken.gaspar : '',
-		hasCrepAccess: groups.some((group) => AUTHORIZED_GROUPS.includes(group)),
+		hasCrepAccess: groups.includes(AUTHORIZED_CREP_GROUP),
+		hasSACAccess: groups.includes(AUTHORIZED_SAC_GROUP),
 		isAdmin: groups.includes(ADMIN_GROUP),
 		first_name: firstName,
 		last_name: lastName,
@@ -51,7 +53,8 @@ const sanitizeExistingToken = (token: JWT) => {
 		tid,
 		uniqueid: token.uniqueid || '',
 		username: token.username || '',
-		hasCrepAccess: token.hasCrepAccess ?? groups.some((group) => AUTHORIZED_GROUPS.includes(group)),
+		hasCrepAccess: token.hasCrepAccess ?? groups.includes(AUTHORIZED_CREP_GROUP),
+		hasSACAccess: token.hasSACAccess ?? groups.includes(AUTHORIZED_SAC_GROUP),
 		isAdmin: token.isAdmin ?? groups.includes(ADMIN_GROUP),
 		first_name: token.first_name || '',
 		last_name: token.last_name || '',
@@ -97,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					email: token.email || '',
 					picture: token.picture || '',
 					hasCrepAccess: false,
+					hasSACAccess: false,
 					isAdmin: false,
 					first_name: token.first_name || '',
 					last_name: token.last_name || '',
@@ -116,6 +120,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					oid: token.oid || '',
 					tid: token.tid || '',
 					hasCrepAccess: Boolean(token.hasCrepAccess),
+					hasSACAccess: Boolean(token.hasSACAccess),
 					isAdmin: Boolean(token.isAdmin),
 					first_name: token.first_name || '',
 					last_name: token.last_name || '',

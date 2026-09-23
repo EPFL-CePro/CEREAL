@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface User {
     sciper: string;
     hasCrepAccess?: boolean;
+    hasSACAccess?: boolean;
     isAdmin?: boolean;
     first_name?: string;
     last_name?: string;
@@ -16,6 +17,7 @@ declare module "next-auth" {
       oid?: string
       tid?: string
       hasCrepAccess: boolean
+      hasSACAccess: boolean
       isAdmin: boolean
       first_name: string
       last_name: string
@@ -31,6 +33,7 @@ declare module "next-auth/jwt" {
     uniqueid?: string;
     username?: string;
     hasCrepAccess?: boolean;
+    hasSACAccess?: boolean;
     isAdmin?: boolean;
     first_name: string;
     last_name: string;
