@@ -2,11 +2,22 @@
 
 import { getAllAbsences, updateSACById } from "@/app/lib/database";
 import { Absence } from "@/types/absence";
-import { useEffect, useRef, useState } from "react";
+import {
+    ColumnDef,
+    flexRender,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getSortedRowModel,
+    SortingState,
+    useReactTable,
+} from "@tanstack/react-table";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export function SacAbsencesTable() {
 
     const [absences, setAbsences] = useState<Absence[] | null>(null);
+    const [globalFilter, setGlobalFilter] = useState("");
+    const [sorting, setSorting] = useState<SortingState>([]);
 
     useEffect(() => {
         (async function () {
@@ -60,29 +71,144 @@ export function SacAbsencesTable() {
             />
         )
     }
+
+    function getAbsenceSearchText(absence: Absence) {
+        const deferredExams = absence.deferred_exam_registrations.flatMap(exam => [
+            exam.exam_code,
+            exam.exam_name,
+            dateToString(exam.exam_date),
+            exam.sac_remark,
+        ]);
+
+        return [
+            absence.sciper,
+            absence.first_name,
+            absence.last_name,
+            dateToString(absence.certificate_date_from),
+            dateToString(absence.certificate_date_to),
+            absence.certificate_file_name,
+            absence.comment,
+            absence.sac_remark,
+            dateToString(absence.created_at),
+            ...deferredExams,
+        ].join(" ").toLowerCase();
+    }
+
+    const columns = useMemo<ColumnDef<Absence>[]>(() => [
+        {
+            accessorKey: "sciper",
+            header: "Sciper",
+        },
+        {
+            accessorKey: "first_name",
+            header: "First name",
+        },
+        {
+            accessorKey: "last_name",
+            header: "Last name",
+        },
+        {
+            id: "certificate_date_from",
+            accessorFn: absence => new Date(absence.certificate_date_from).getTime(),
+            header: "Begin date",
+        },
+        {
+            id: "certificate_date_to",
+            accessorFn: absence => new Date(absence.certificate_date_to).getTime(),
+            header: "Ending date",
+        },
+        {
+            accessorKey: "certificate_file_name",
+            header: "Certificate file",
+        },
+        {
+            accessorKey: "comment",
+            header: "Comment",
+        },
+        {
+            accessorKey: "sac_has_accepted",
+            header: "Accepted",
+        },
+        {
+            accessorKey: "sac_remark",
+            header: "Remark",
+        },
+        {
+            id: "created_at",
+            accessorFn: absence => new Date(absence.created_at).getTime(),
+            header: "Created on",
+        },
+        {
+            id: "deferred_exam_registrations",
+            accessorFn: absence => absence.deferred_exam_registrations.length,
+            header: "Diff exams",
+        },
+    ], []);
+
+    const table = useReactTable({
+        data: absences ?? [],
+        columns,
+        state: {
+            globalFilter,
+            sorting,
+        },
+        onGlobalFilterChange: setGlobalFilter,
+        onSortingChange: setSorting,
+        globalFilterFn: (row, _columnId, filterValue) => {
+            const search = String(filterValue ?? "").trim().toLowerCase();
+            return getAbsenceSearchText(row.original).includes(search);
+        },
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+    });
     
 
     return (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="sticky left-0 border-b border-gray-200 bg-gray-50 px-4 py-3">
+                <label htmlFor="absence-search" className="sr-only">Search an absence</label>
+                <input
+                    id="absence-search"
+                    type="search"
+                    value={globalFilter}
+                    onChange={(event) => setGlobalFilter(event.currentTarget.value)}
+                    placeholder="Search an absence..."
+                    className="h-10 w-full max-w-md rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+            </div>
             <table className="min-w-full border-collapse text-sm">
                 <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    <tr>
-                        <th className="px-4 py-3">Sciper</th>
-                        <th className="px-4 py-3">First name</th>
-                        <th className="px-4 py-3">Last name</th>
-                        <th className="px-4 py-3">Begin date</th>
-                        <th className="px-4 py-3">Ending date</th>
-                        <th className="px-4 py-3">Certificate file</th>
-                        <th className="px-4 py-3">Comment</th>
-                        <th className="px-4 py-3 text-center">Accepted</th>
-                        <th className="px-4 py-3">Remark</th>
-                        <th className="px-4 py-3">Created on</th>
-                        <th className="px-4 py-3">Diff exams</th>
-                    </tr>
+                    {table.getHeaderGroups().map(headerGroup => (
+                        <tr key={headerGroup.id}>
+                            {headerGroup.headers.map(header => {
+                                const isSorted = header.column.getIsSorted();
+
+                                return (
+                                    <th
+                                        key={header.id}
+                                        aria-sort={isSorted === "asc" ? "ascending" : isSorted === "desc" ? "descending" : "none"}
+                                        className={`px-4 py-3 ${header.column.id === "sac_has_accepted" ? "text-center" : ""}`}
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={header.column.getToggleSortingHandler()}
+                                            className="inline-flex items-center gap-1.5 whitespace-nowrap hover:text-gray-900"
+                                        >
+                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                            <span aria-hidden="true" className="w-3 text-center text-gray-400">
+                                                {isSorted === "asc" ? "↑" : isSorted === "desc" ? "↓" : "↕"}
+                                            </span>
+                                        </button>
+                                    </th>
+                                )
+                            })}
+                        </tr>
+                    ))}
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                     {
-                        absences?.map(absence => (
+                        table.getRowModel().rows.map(({ original: absence }) => (
                             <tr className="align-top hover:bg-gray-50" key={absence.id}>
                                 <td className="px-4 py-3 text-gray-900">{String(absence.sciper)}</td>
                                 <td className="px-4 py-3 font-medium text-gray-900">{absence.first_name}</td>
