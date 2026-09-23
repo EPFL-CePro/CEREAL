@@ -1,6 +1,7 @@
 'use client'
 
 import { getAllAbsences, updateSACById } from "@/app/lib/database";
+import { exportAbsences, ExportMode } from "@/app/lib/exportAbsences";
 import { Absence } from "@/types/absence";
 import {
     ColumnDef,
@@ -18,6 +19,8 @@ export function SacAbsencesTable() {
     const [absences, setAbsences] = useState<Absence[] | null>(null);
     const [globalFilter, setGlobalFilter] = useState("");
     const [sorting, setSorting] = useState<SortingState>([]);
+    const [exportMode, setExportMode] = useState<ExportMode>("all");
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         (async function () {
@@ -26,6 +29,19 @@ export function SacAbsencesTable() {
     
         })()
     }, [])
+
+    async function handleExport() {
+        setIsExporting(true);
+        try {
+            // Refetch so that checkboxes/remarks edited in the table are taken into account
+            const freshAbsences = await getAllAbsences();
+            if (!exportAbsences(freshAbsences, exportMode)) {
+                alert("Nothing to export.");
+            }
+        } finally {
+            setIsExporting(false);
+        }
+    }
 
     function dateToString(date: Date | string) {
         return new Date(date).toLocaleDateString("fr-FR")
@@ -166,7 +182,7 @@ export function SacAbsencesTable() {
 
     return (
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div className="sticky left-0 border-b border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="sticky left-0 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3">
                 <label htmlFor="absence-search" className="sr-only">Search an absence</label>
                 <input
                     id="absence-search"
@@ -176,6 +192,28 @@ export function SacAbsencesTable() {
                     placeholder="Search an absence..."
                     className="h-10 w-full max-w-md rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
+                <div className="flex items-center gap-2">
+                    <label htmlFor="absence-export-mode" className="sr-only">Export mode</label>
+                    <select
+                        id="absence-export-mode"
+                        value={exportMode}
+                        onChange={(event) => setExportMode(event.currentTarget.value as ExportMode)}
+                        className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                        <option value="all">All</option>
+                        <option value="accepted">Accepted absences</option>
+                        <option value="by-student">Per student (accepted)</option>
+                        <option value="by-exam">Per exam (accepted)</option>
+                    </select>
+                    <button
+                        type="button"
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="h-10 rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isExporting ? "Exporting..." : "Export"}
+                    </button>
+                </div>
             </div>
             <table className="min-w-full border-collapse text-sm">
                 <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
