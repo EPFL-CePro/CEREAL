@@ -190,7 +190,7 @@ Best
 CePro
 `,
             to: "{{registrant.email}}",
-            cc: "cepro-exams@epfl.ch",
+            cc: "annonce-absence-examen@groupes.epfl.ch",
             replyTo: "",
         },
     },
