@@ -58,11 +58,12 @@ const sanitizeExistingToken = (token: JWT) => {
 		isAdmin: token.isAdmin ?? groups.includes(ADMIN_GROUP),
 		first_name: token.first_name || '',
 		last_name: token.last_name || '',
+		impersonate: token.impersonate ?? null,
 		error: token.error,
 	};
 };
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
 	providers: [
 		MicrosoftEntraID({
 			clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
@@ -77,7 +78,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 	],
 	callbacks: {
 		authorized: async ({ auth }) => !!auth,
-		jwt: async ({ token, account }: { token: JWT; account?: Account | null }) => {
+		jwt: async ({ token, account, trigger, session }: { token: JWT; account?: Account | null; trigger?: string; session?: { user?: { impersonating?: JWT['impersonate'] } } }) => {
 			try {
 				if (account?.access_token && account?.id_token) {
 					const accessToken = decodeJWT(account.access_token);
@@ -87,6 +88,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				}
 
 				const sanitizedToken = sanitizeExistingToken(token);
+
+				// Only real admins can start or stop an impersonation.
+				if (trigger === 'update' && sanitizedToken.isAdmin && session?.user && 'impersonating' in session.user) {
+					sanitizedToken.impersonate = session.user.impersonating ?? null;
+				}
 
 				if (!sanitizedToken.expires_at || Date.now() < sanitizedToken.expires_at * 1000) {
 					return sanitizedToken;
@@ -109,6 +115,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 			}
 		},
 		session: async ({ session, token }) => {
+			// When an admin impersonates another type of user, only the rights are replaced, the identity is kept.
+			const impersonate = token.isAdmin ? token.impersonate ?? null : null;
+			const rights = impersonate ? {
+				hasCrepAccess: impersonate === 'crep',
+				hasSACAccess: impersonate === 'sac',
+				isAdmin: false,
+			} : {
+				hasCrepAccess: Boolean(token.hasCrepAccess),
+				hasSACAccess: Boolean(token.hasSACAccess),
+				isAdmin: Boolean(token.isAdmin),
+			};
+
 			return {
 				...session,
 				user: {
@@ -119,11 +137,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 					username: token?.username || '',
 					oid: token.oid || '',
 					tid: token.tid || '',
-					hasCrepAccess: Boolean(token.hasCrepAccess),
-					hasSACAccess: Boolean(token.hasSACAccess),
-					isAdmin: Boolean(token.isAdmin),
+					...rights,
 					first_name: token.first_name || '',
 					last_name: token.last_name || '',
+					impersonating: impersonate,
 				},
 			};
 		},
