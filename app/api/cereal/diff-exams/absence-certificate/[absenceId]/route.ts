@@ -20,7 +20,7 @@ export async function GET(
 ) {
   const session = await auth();
 
-  if (!session?.user.hasSACAccess) {
+  if (!session?.user.hasSACAccess && !session?.user.isAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
