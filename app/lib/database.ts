@@ -250,6 +250,28 @@ export async function getAcademicYearsFromExams(): Promise<string[]> {
     })
 }
 
+export async function getExamCountsByAcademicYearAndService(): Promise<{ academic_year_id: string; service_id: number; count: number }[]> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query(
+            'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
+            (err, rows: { academic_year_id: string; service_id: number; count: number }[]) => {
+                if (err) throw err
+                resolve(rows.map((row) => ({ ...row, count: Number(row.count) })));
+            }
+        )
+        connection.end()
+    })
+}
+
 export async function getServiceById(serviceId:string): Promise<Service[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
