@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import AcademicYearSelect from "@/app/components/AcademicYearSelect";
 import YearlyTotalChart from "@/app/components/exams/stats/YearlyTotalChart";
 import ExamsByServiceChart, { ExamsByServiceSeries } from "@/app/components/exams/stats/ExamsByServiceChart";
 import {
@@ -60,13 +59,6 @@ export default async function Page({
 
     return (
         <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-                <AcademicYearSelect
-                    academicYears={[...allAcademicYears].reverse()}
-                    selectedAcademicYear={selectedAcademicYear}
-                    basePath="/exams/stats"
-                />
-            </div>
             <ExamsByServiceChart
                 academicYears={allAcademicYears}
                 series={examsByServiceSeries}
