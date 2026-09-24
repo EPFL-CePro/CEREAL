@@ -2,36 +2,41 @@
 
 import { BarChart } from "@mui/x-charts/BarChart";
 
-export type CopiesByYear = {
+export type YearlyTotal = {
   academicYear: string;
-  copies: number;
+  total: number;
 };
 
-type CopiesByYearChartProps = {
-  copiesByYear: CopiesByYear[];
+type YearlyTotalChartProps = {
+  title: string;
+  description: string;
+  seriesLabel: string;
+  totals: YearlyTotal[];
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
-export default function CopiesByYearChart({
-  copiesByYear,
-}: CopiesByYearChartProps) {
+export default function YearlyTotalChart({
+  title,
+  description,
+  seriesLabel,
+  totals,
+}: YearlyTotalChartProps) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <div className="max-w-xl">
         <h2 className="text-2xl font-bold tracking-normal text-gray-950">
-          Copies by year
+          {title}
         </h2>
         <p className="mt-3 text-sm leading-6 text-gray-600">
-          Number of copies per academic year, one copy being one registered student
-          of an exam.
+          {description}
         </p>
       </div>
 
       <div className="mt-8 min-h-[20rem]">
-        {copiesByYear.length > 0 ? (
+        {totals.length > 0 ? (
           <BarChart
-            dataset={copiesByYear}
+            dataset={totals}
             xAxis={[
               {
                 scaleType: "band",
@@ -40,14 +45,14 @@ export default function CopiesByYearChart({
             ]}
             yAxis={[
               {
-                width: 56,
+                width: 72,
                 valueFormatter: (value: number) => numberFormatter.format(value),
               },
             ]}
             series={[
               {
-                dataKey: "copies",
-                label: "Copies",
+                dataKey: "total",
+                label: seriesLabel,
                 color: "#36a2eb",
                 valueFormatter: (value) => numberFormatter.format(value ?? 0),
               },
