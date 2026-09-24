@@ -15,6 +15,7 @@ import {
   syncEmailTemplates,
   updateEmailTemplate,
 } from "@/app/lib/database";
+import { startImpersonation } from "@/app/lib/impersonation";
 import { EMAIL_TEMPLATES, EmailTemplateKey } from "@/app/lib/emailTemplates";
 import { EmailTemplate } from "@/types/emailTemplate";
 import { ExamStatus } from "@/types/examStatus";
@@ -401,6 +402,12 @@ export default function AdminPage() {
 
   return (
     <main className="p-6 max-w-2xl">
+      <div className="mb-6 flex items-center gap-2 rounded-lg border border-slate-200 p-3">
+        <span className="mr-auto text-sm font-medium text-slate-900">Impersonate a user type</span>
+        <button className="btn btn-primary" onClick={() => startImpersonation("sac")} type="button">SAC</button>
+        <button className="btn btn-primary" onClick={() => startImpersonation("crep")} type="button">CREP (Repro)</button>
+        <button className="btn btn-primary" onClick={() => startImpersonation("none")} type="button">No rights</button>
+      </div>
       <div className="mb-6 flex gap-2 border-b border-slate-200">
         <TabButton
           active={activeTab === "service"}

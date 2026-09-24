@@ -21,6 +21,7 @@ declare module "next-auth" {
       isAdmin: boolean
       first_name: string
       last_name: string
+      impersonating?: 'sac' | 'crep' | 'none' | null
     } & DefaultSession["user"]
   }
 }
@@ -37,6 +38,7 @@ declare module "next-auth/jwt" {
     isAdmin?: boolean;
     first_name: string;
     last_name: string;
+    impersonate?: 'sac' | 'crep' | 'none' | null;
     error?: string;
   }
 }
