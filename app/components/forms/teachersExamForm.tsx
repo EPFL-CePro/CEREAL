@@ -13,6 +13,7 @@ import { Service } from "@/types/service";
 import { ExamType } from "@/types/examType";
 import { fetchPersonBySciper } from "@/app/lib/api";
 import { getCurrentAcademicYear } from "@/app/lib/academicYear";
+import Link from "next/link";
 
 interface RegisterProps {
     user: AppUser
@@ -214,7 +215,7 @@ export default function App({ user }: RegisterProps) {
                 </p>
                 <div className="flex flex-col gap-2">
                     <p>For more information about the different services and levels provided by the CePro, please click the <i>Learn more</i> button bellow.</p>
-                    <button className="btn btn-primary hover:cursor-pointer ml-auto mr-auto">Learn more</button>
+                    <Link className="btn btn-primary hover:cursor-pointer ml-auto mr-auto" href="https://exadoc.epfl.ch/" target="_blank">Learn more</Link>
                 </div>
             </div>
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
