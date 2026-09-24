@@ -272,6 +272,28 @@ export async function getExamCountsByAcademicYearAndService(): Promise<{ academi
     })
 }
 
+export async function getCopyCountsByAcademicYear(): Promise<{ academic_year_id: string; copies: number }[]> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query(
+            'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
+            (err, rows: { academic_year_id: string; copies: number }[]) => {
+                if (err) throw err
+                resolve(rows.map((row) => ({ ...row, copies: Number(row.copies) })));
+            }
+        )
+        connection.end()
+    })
+}
+
 export async function getServiceById(serviceId:string): Promise<Service[]> {
     const connection = mysql.createConnection({
         host: process.env.MYSQL_HOST,
