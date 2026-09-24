@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import AcademicYearSelect from "@/app/components/crep/stats/AcademicYearSelect";
+import AcademicYearSelect from "@/app/components/AcademicYearSelect";
 import DeliveryDelayHistogram, { DeliveryDelayBucket } from "@/app/components/crep/stats/DeliveryDelayHistogram";
 import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable";
 import PrintingDurationHistogram, { PrintingDurationBucket } from "@/app/components/crep/stats/PrintingDurationHistogram";
@@ -131,6 +131,7 @@ export default async function Page({
                 <AcademicYearSelect
                     academicYears={academicYears}
                     selectedAcademicYear={selectedAcademicYear}
+                    basePath="/crep/stats"
                 />
             </div>
             <ExamPrintStatsTable

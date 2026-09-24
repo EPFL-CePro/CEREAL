@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 type AcademicYearSelectProps = {
   academicYears: string[];
   selectedAcademicYear: string;
+  basePath: string;
 };
 
 export default function AcademicYearSelect({
   academicYears,
   selectedAcademicYear,
+  basePath,
 }: AcademicYearSelectProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,7 +28,7 @@ export default function AcademicYearSelect({
           onChange={(event) => {
             const params = new URLSearchParams(searchParams.toString());
             params.set("academicYear", event.target.value);
-            router.push(`/crep/stats?${params.toString()}`);
+            router.push(`${basePath}?${params.toString()}`);
           }}
         >
           {academicYears.map((academicYear) => (
