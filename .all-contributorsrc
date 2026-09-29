@@ -36,6 +36,19 @@
         "review",
         "test"
       ]
+    },
+    {
+      "login": "alessdangelo",
+      "name": "aless / fi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61836900?v=4",
+      "profile": "https://github.com/alessdangelo",
+      "contributions": [
+        "code",
+        "bug",
+        "ideas",
+        "projectManagement",
+        "design"
+      ]
     }
   ]
 }
