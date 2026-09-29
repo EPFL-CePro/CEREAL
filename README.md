@@ -86,6 +86,13 @@ If you are willing to contribute to this project in any way, please do ! But res
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://panseri.dev/"><img src="https://avatars.githubusercontent.com/u/30987143?v=4?s=100" width="100px;" alt="Azecko"/><br /><sub><b>Azecko</b></sub></a><br /><a href="#code-Azecko" title="Code">💻</a> <a href="#bug-Azecko" title="Bug reports">🐛</a> <a href="#design-Azecko" title="Design">🎨</a> <a href="#data-Azecko" title="Data">🔣</a> <a href="#doc-Azecko" title="Documentation">📖</a> <a href="#ideas-Azecko" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-Azecko" title="Project Management">📆</a> <a href="#review-Azecko" title="Reviewed Pull Requests">👀</a> <a href="#test-Azecko" title="Tests">⚠️</a></td>
+    </tr>
+  </tbody>
+</table>
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
