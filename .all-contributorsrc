@@ -1,4 +1,29 @@
 {
   "projectName": "CEREAL",
-  "projectOwner": "EPFL-CePro"
+  "projectOwner": "EPFL-CePro",
+  "files": [
+    "README.md"
+  ],
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "contributors": [
+    {
+      "login": "Azecko",
+      "name": "Azecko",
+      "avatar_url": "https://avatars.githubusercontent.com/u/30987143?v=4",
+      "profile": "https://panseri.dev/",
+      "contributions": [
+        "code",
+        "bug",
+        "design",
+        "data",
+        "doc",
+        "ideas",
+        "projectManagement",
+        "review",
+        "test"
+      ]
+    }
+  ]
 }
