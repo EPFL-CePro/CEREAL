@@ -46,6 +46,7 @@ export default function App({ user }: RegisterProps) {
     const [isConfirmModal, setIsConfirmModal] = useState(false);
     const [services, setServices] = useState<Service[]>([]);
     const [examTypes, setExamTypes] = useState<ExamType[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -103,18 +104,22 @@ export default function App({ user }: RegisterProps) {
     };
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
+        setIsSubmitting(true)
         if (!data.course) {
             openModal("Course Selection Error", "Please select a course.");
+            setIsSubmitting(false)
             return;
         }
 
         if(!data.service) {
             openModal("Service Selection Error", "Please select a service.");
+            setIsSubmitting(false)
             return;
         }
 
         if (!data.contact) {
             openModal("Contact Selection Error", "Please select a contact.");
+            setIsSubmitting(false)
             return;
         }
 
@@ -124,11 +129,13 @@ export default function App({ user }: RegisterProps) {
 
             if(!examType.dontKnowYet && !examType.date) {
                 openModal("Exam type selection Error", `Please select a date for your exam type "${examType.name}". If you are not sure about the date, please check the "I don't know yet" box.`);
+                setIsSubmitting(false)
                 return;
             }
 
             if(examType.date && examType.dontKnowYet) {
                 openModal("Exam type selection Error", `You have checked the "I don't know yet" box for your "${examType.name}" exam type, but a date is also selected. Please either only check the "I don't know yet" box, or only select a date for the exam.`);
+                setIsSubmitting(false)
                 return;
             }
         }
@@ -163,6 +170,7 @@ export default function App({ user }: RegisterProps) {
                 )
                 if (typeof (insertedExam) !== 'number') {
                     openModal("Registration Error", "An error occurred while registering your exam. Please try again later.");
+                    setIsSubmitting(false)
                     return;
                 }
             }
@@ -186,10 +194,12 @@ export default function App({ user }: RegisterProps) {
                 });
             }
             openModal("Registration Successful", 'Your Exam ' + data.course.exam.code + ' has been registered and a confirmation has been sent to your email.');
+            setIsSubmitting(false)
             reset();
         } catch (err) {
             console.error(err);
             openModal("Unexpected Error", 'An unexpected error occurred while registering the exam.');
+            setIsSubmitting(false)
         }
     }
 
@@ -304,7 +314,19 @@ export default function App({ user }: RegisterProps) {
                 <label>Additional remarks</label>
                 <textarea {...register("remark")} placeholder="Additional remarks (optional)" />
 
-                <input className="btn btn-primary hover:cursor-pointer" type="submit" value="Submit exam registration" />
+                <button
+                    className="btn btn-primary hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
+                    type="submit"
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting && (
+                        <span
+                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                            aria-hidden="true"
+                        />
+                    )}
+                    <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
+                </button>
             </form>
         </div >
 
