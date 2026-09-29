@@ -232,8 +232,6 @@ export default function App({ user }: RegisterProps) {
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data">
                 {/* register your input into the hook by invoking the "register" function */}
-                <label>Your email address</label>
-                <ReactSelect control={control} label={"registeredBy"} name={"contact"} isMultiChoice={false} instanceId={2} user={user} disabled={true}/>
                 <label>Exam semester <RedAsterisk /></label>
                 <div className="flex gap-1" key={1}>
                         <input
