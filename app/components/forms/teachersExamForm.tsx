@@ -111,14 +111,8 @@ export default function App({ user }: RegisterProps) {
             return;
         }
 
-        if(!data.service) {
-            openModal("Service Selection Error", "Please select a service.");
-            setIsSubmitting(false)
-            return;
-        }
-
-        if (!data.contact) {
-            openModal("Contact Selection Error", "Please select a contact.");
+        if (!data.examType.some((examType) => examType.checked)) {
+            openModal("Exam type selection Error", "Please select at least one exam type.");
             setIsSubmitting(false)
             return;
         }
@@ -138,6 +132,18 @@ export default function App({ user }: RegisterProps) {
                 setIsSubmitting(false)
                 return;
             }
+        }
+
+        if(!data.service) {
+            openModal("Service Selection Error", "Please select a service.");
+            setIsSubmitting(false)
+            return;
+        }
+
+        if (!data.contact) {
+            openModal("Contact Selection Error", "Please select a contact.");
+            setIsSubmitting(false)
+            return;
         }
 
         try {
