@@ -57,8 +57,8 @@ Best
 
 CePro
 `,
-            to: "{{registrant.email}}",
-            cc: "cepro-exams@epfl.ch",
+            to: "{{teachers}}",
+            cc: "{{contactEmail}}, {{registrant.email}}, cepro-exams@epfl.ch",
             replyTo: "",
         },
     },

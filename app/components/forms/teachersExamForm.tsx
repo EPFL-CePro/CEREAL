@@ -15,6 +15,7 @@ import { fetchPersonBySciper } from "@/app/lib/api";
 import { getCurrentAcademicYear } from "@/app/lib/academicYear";
 import Link from "next/link";
 import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
+import { EPFLUser } from "@/types/user";
 
 interface RegisterProps {
     user: AppUser
@@ -153,6 +154,8 @@ export default function App({ user }: RegisterProps) {
 
             const service = await getServiceById(data.service)
 
+            let teachers: EPFLUser[] = [];
+
             for (let index = 0; index < data.examType.length; index++) {
                 const examType = data.examType[index]
                 if(!examType.checked) continue;
@@ -182,10 +185,19 @@ export default function App({ user }: RegisterProps) {
                     return;
                 }
             }
+
+            await Promise.all(data.course.exam.teachers.map(async (t) => {
+                const fullTeacher = await fetchPersonBySciper(t.sciper || '')
+
+                if(fullTeacher) {
+                    teachers.push(fullTeacher)
+                }
+            }))
+
             if (process.env.NODE_ENV !== "development") {
                 await sendTemplatedMail("exam_services_confirmation", {
                     course: data.course.exam.code,
-                    teachers: data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}${t.sciper ? ` (${t.sciper})` : ''}`).join(', '),
+                    teachers: teachers.map((teacher) => teacher.email).join(', '),
                     contactEmail: contact.email,
                     examTypes: data.examType.filter((examType) => examType.checked).map((examType) => examType.name).join(', '),
                     service: service[0].description,
