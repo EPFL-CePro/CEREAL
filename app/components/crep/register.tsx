@@ -55,7 +55,7 @@ export default function App({ user }: RegisterProps) {
     const { control, register, handleSubmit, formState: { errors }, setError, clearErrors, reset, setValue } = useForm<Inputs>({
         defaultValues: {
             course: null,
-            contact: "",
+            contact: user.sciper,
             authorizedPersons: "",
             paperFormat: "A3",
             paperColor: "greyscale",
@@ -636,7 +636,7 @@ Next time, please register to the printing service earlier to make sur that the 
                 <input type="text" placeholder={"FCXXXX"} maxLength={8} {...register("financialCenter", { required: true })} />
                 {errors.financialCenter && <span className="text-red-600">This field is required</span>}
                 <label>Contact <RedAsterisk /></label>
-                <ReactSelect control={control} label={"contact"} name={"contact"} isMultiChoice={false} instanceId={2} user={user} />
+                <ReactSelect control={control} label={"contact"} name={"contact"} isMultiChoice={false} instanceId={2} />
                 <label>Authorized persons</label>
                 <div className="bg-red-600/30 border-1 border-red-500 rounded-xl p-3 text-sm">
                     Only the persons that will be selected here will be authorized to come pick up the exam at the Repro.<br />

@@ -6,7 +6,6 @@ import type { OptionProps, GroupBase, OptionsOrGroups, Theme, StylesConfig } fro
 import CustomOption from "./CustomOption";
 import { Control, Controller, ControllerRenderProps, Path } from "react-hook-form";
 import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
-import { User } from "next-auth";
 import { Inputs } from "@/types/inputs";
 import { SelectOption } from "@/types/selectOption";
 
@@ -26,13 +25,8 @@ export interface SelectProps {
     isMultiChoice: boolean;
     containCourses?: boolean;
     instanceId?: string | number;
-    user?: AppUser;
     disabled?: boolean;
     academicYear?: string;
-}
-
-export interface AppUser extends User {
-    sciper: string;
 }
 
 async function fetchOasisCourses(academicYear?: string): Promise<SelectOption[]> {
@@ -47,7 +41,6 @@ type SelectFieldProps = {
     isMultiChoice: boolean;
     containCourses?: boolean;
     instanceId?: string | number;
-    user?: AppUser;
     disabled?: boolean;
     academicYear?: string;
 };
@@ -59,7 +52,6 @@ function SelectField({
     isMultiChoice,
     containCourses,
     instanceId,
-    user,
     disabled,
     academicYear
 }: SelectFieldProps) {
@@ -178,18 +170,19 @@ function SelectField({
         }
     }, [containCourses, field.value, isMultiChoice, name]);
 
-    // Default contact user is the logged in user
+    // Resolve the displayed option from the form value (default value, reset(), ...)
     useEffect(() => {
-        if (name !== "contact" || !user?.sciper) return;
+        if (isMultiChoice || containCourses || !field.value) return;
+        if (isSelectOption(selected) && String(selected.value) === String(field.value)) return;
 
         let cancelled = false;
 
         (async () => {
             try {
-                const person = await fetchPersonBySciper(user.sciper);
+                const person = await fetchPersonBySciper(String(field.value));
                 if (!person || cancelled) return;
 
-                const option: SelectOption = {
+                setSelected({
                     value: Number(person.id),
                     label:
                         `${person.firstname} ${person.lastname}`.trim() ||
@@ -201,21 +194,16 @@ function SelectField({
                         email: person.email,
                         sciper: person.id,
                     },
-                };
-
-                if (!field.value) {
-                    setSelected(option);
-                    field.onChange(option.value);
-                }
+                });
             } catch (e) {
-                console.error("Failed to fetch current user person", e);
+                console.error("Failed to resolve person", e);
             }
         })();
 
         return () => {
             cancelled = true;
         };
-    }, [name, user?.sciper, field]);
+    }, [containCourses, field.value, isMultiChoice, selected]);
 
     const ensureCoursesLoaded = useCallback(
         async (query = "") => {
@@ -271,6 +259,7 @@ function SelectField({
                 theme={theme}
                 styles={customStyles}
                 isMulti={isMultiChoice}
+                isClearable
                 classNamePrefix="custom-option"
                 components={{
                     Option:
@@ -323,6 +312,7 @@ function SelectField({
             theme={theme}
             styles={customStyles}
             isMulti={isMultiChoice}
+            isClearable
             classNamePrefix="custom-option"
             components={{
                 Option:
@@ -389,7 +379,6 @@ export default function SelectController({
     isMultiChoice,
     containCourses,
     instanceId,
-    user,
     disabled,
     academicYear
 }: SelectProps) {
@@ -405,7 +394,6 @@ export default function SelectController({
                     isMultiChoice={isMultiChoice}
                     containCourses={containCourses}
                     instanceId={instanceId}
-                    user={user}
                     disabled={disabled}
                     academicYear={academicYear}
                 />
