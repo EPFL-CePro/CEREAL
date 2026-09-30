@@ -14,6 +14,7 @@ import { ExamType } from "@/types/examType";
 import { fetchPersonBySciper } from "@/app/lib/api";
 import { getCurrentAcademicYear } from "@/app/lib/academicYear";
 import Link from "next/link";
+import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 
 interface RegisterProps {
     user: AppUser
@@ -237,6 +238,7 @@ export default function App({ user }: RegisterProps) {
             </div>
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
+                onKeyDown={preventEnterSubmit}
                 encType="multipart/form-data">
                 {/* register your input into the hook by invoking the "register" function */}
                 <label>Exam semester <RedAsterisk /></label>
