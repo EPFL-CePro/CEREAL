@@ -189,7 +189,7 @@ export default function App({ user }: RegisterProps) {
             await Promise.all(data.course.exam.teachers.map(async (t) => {
                 const fullTeacher = await fetchPersonBySciper(t.sciper || '')
 
-                if(fullTeacher) {
+                if(fullTeacher.email) {
                     teachers.push(fullTeacher)
                 }
             }))
