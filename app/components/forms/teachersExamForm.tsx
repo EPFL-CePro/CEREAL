@@ -154,7 +154,7 @@ export default function App({ user }: RegisterProps) {
 
             const service = await getServiceById(data.service)
 
-            let teachers: EPFLUser[] = [];
+            const teachers: EPFLUser[] = [];
 
             for (let index = 0; index < data.examType.length; index++) {
                 const examType = data.examType[index]
