@@ -61,6 +61,7 @@ export default function App({ user }: RegisterProps) {
 
     const { control, register, handleSubmit, reset } = useForm<Inputs>({
         defaultValues: {
+            contact: user.sciper,
             examType: [],
         }
     })
