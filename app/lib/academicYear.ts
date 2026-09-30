@@ -3,7 +3,7 @@ export const MIN_ACADEMIC_YEAR = "2025-2026";
 export function getCurrentAcademicYear(date = new Date()) {
     const month = date.getMonth();
 
-    if (month >= 1 && month <= 8) {
+    if (month >= 0 && month <= 7) {
         return `${date.getFullYear() - 1}-${date.getFullYear()}`;
     }
 
