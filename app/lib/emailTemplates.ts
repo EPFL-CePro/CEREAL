@@ -50,8 +50,8 @@ Your subscription to our exam services has been successfully registered:
 If you have asked to discuss with us which service to use, we will get back to you shortly.
 Your comments will also be taken into account and we will do what is necessary to take them into account and keep you informed if necessary.
 
-You can already browse our moodle pages, which contain all the information you need to prepare and organise your exam.
-https://moodle.epfl.ch/course/view.php?id=16420
+You can already browse our documentation, which contain all the information you need to prepare and organise your exam.
+https://exadoc.epfl.ch/
 
 Best
 
