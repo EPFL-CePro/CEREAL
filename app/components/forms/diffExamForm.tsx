@@ -8,6 +8,7 @@ import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database";
 import { User } from "next-auth";
 import { sendTemplatedMail } from "@/app/lib/mail";
 import { RegisterModal } from "./RegisterModal";
+import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 
 interface diffExamFormProps {
     user: AppUser
@@ -237,6 +238,7 @@ export default function App({ user }: diffExamFormProps) {
             <h1 className="text-3xl font-semibold mb-8 text-center" >CePro — Absence submission & Deferred exams subscription</h1>
             <form className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
+                onKeyDown={preventEnterSubmit}
                 encType="multipart/form-data">
                 <label>Beginning of the absence (according to absence file)</label>
                 <input type="date" {...register("startingAbsenceDate", { onChange: (e) => setBeginAbsenceDate(parseDateInputValue(e.target.value)) })}/>

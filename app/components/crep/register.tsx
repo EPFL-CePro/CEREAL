@@ -15,6 +15,7 @@ import { AuthorizedPersons } from "@/types/user";
 import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { limitTextToLines } from "@/app/lib/remarks";
 import { businessDaysBetween } from "@/app/lib/businessDays";
+import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 
 interface RegisterProps {
     user: AppUser
@@ -484,6 +485,7 @@ Next time, please register to the printing service earlier to make sur that the 
             <h1 className="text-3xl font-semibold" >Exam Printing Order</h1>
             <form className="w-2/4 [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
                 onSubmit={handleSubmit(onSubmit)}
+                onKeyDown={preventEnterSubmit}
                 encType="multipart/form-data">
                 {/* register your input into the hook by invoking the "register" function */}
                 <label>Select your exam <RedAsterisk /></label>
