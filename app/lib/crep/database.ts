@@ -80,9 +80,10 @@ export async function getAllNonAdminExams() {
     })
 
     connection.connect()
+    const allowedStatuses = [...examNotAdminStatus.map(status => status.value), "reserved"];
     
     return new Promise(function(resolve) {
-        connection.query(`SELECT * from crep WHERE status IN (${examNotAdminStatus.map(obj => `"${obj.value}"`).join(", ")});`, (err, rows) => {
+        connection.query("SELECT * from crep WHERE status IN (" + allowedStatuses.map(() => "?").join(", ") + ");", allowedStatuses, (err, rows) => {
             if (err) throw err
             resolve(rows);
         })

@@ -70,9 +70,12 @@ export default function Calendar({ user }: CalendarProps) {
 
         const currentEnd = new Date(currentStart);
         currentEnd.setHours(currentStart.getHours() + 1);
-        const eventColor = availableStatus.find(status => status.value === e.status)?.fcColor;
+        const hiddenReservedExam = !user.isAdmin && e.status == "reserved";
+        const eventColor = hiddenReservedExam
+          ? "oklch(0.4997 0 0)"
+          : availableStatus.find(status => status.value === e.status)?.fcColor;
         return {
-          title: `${e.exam_code} - ${e.exam_name}`,
+          title: hiddenReservedExam ? "" : `${e.exam_code} - ${e.exam_name}`,
           start: formatDateTimeInputValue(fromDatabaseDateTime(e.print_date)),
           end: formatDateTimeInputValue(getEndDateOfPrinting(e.print_date, e.exam_students)),
           description: e.exam_name,
@@ -100,6 +103,7 @@ export default function Calendar({ user }: CalendarProps) {
           priceUnit: e.price_unit,
           priceTotal: e.price_total,
           orderNumber: e.order_number,
+          hiddenReservedExam,
         }
       })
       setExams(filteredData);
@@ -220,7 +224,7 @@ export default function Calendar({ user }: CalendarProps) {
 
   function openExamModal(calendarEvent: EventApi, examsList: EventInput[]) {
     const clickedExam = examsList.find((e: EventInput) => e.id == calendarEvent.id);
-    if (!clickedExam?.contact) return;
+    if (clickedExam?.hiddenReservedExam || !clickedExam?.contact) return;
 
     const contact = JSON.parse(clickedExam.contact);
     const folderName = `${clickedExam.id}_${clickedExam.code}_${contact.lastname}_${formatDateYYYYMMDD(clickedExam.desiredDate)}`;
@@ -351,7 +355,7 @@ export default function Calendar({ user }: CalendarProps) {
         <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-start">
           <div className="flex-min-2 md:min-w-64 w-full md:w-auto">
             <ExamSearch
-              exams={Array.isArray(exams) ? (exams as EventInput[]) : []}
+              exams={Array.isArray(exams) ? (exams as EventInput[]).filter((exam) => !exam.hiddenReservedExam) : []}
               onSelect={handleSearchSelect}
             />
           </div>
@@ -398,6 +402,7 @@ export default function Calendar({ user }: CalendarProps) {
           listWeek: { buttonText: 'List' },
         }}
         eventClick={(info) => {
+          if (info.event.extendedProps.hiddenReservedExam) return;
           if (!Array.isArray(exams)) return;
           openExamModal(info.event, exams as EventInput[]);
         }}
@@ -420,13 +425,15 @@ export default function Calendar({ user }: CalendarProps) {
             : (exams as EventInput[]).filter((ev) => allSelectedFiltersValues.includes(ev.status));
 
           const prepared = (filteredEvents as EventInput[]).map((ev: EventInput) => {
-            const color = statusColorMap.get(ev.status) || "#000000";
+            const color = ev.hiddenReservedExam
+              ? "oklch(0.4997 0 0)"
+              : statusColorMap.get(ev.status) || "#000000";
 
             const eventStartPrintDate = new Date(ev.start as string);
             const today = new Date();
             const isToday = eventStartPrintDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0);
             const isBreathingPrint = isToday && ev.status === "toPrint";
-            const isMovable = ["registered", "registered-warning", "registered-error", "toPrint"].includes(ev.status);
+            const isMovable = ["registered", "registered-warning", "registered-error", "toPrint", "reserved"].includes(ev.status) && user.isAdmin;
 
             return {
               ...ev,
@@ -435,7 +442,7 @@ export default function Calendar({ user }: CalendarProps) {
               classNames: [
                 isBreathingPrint ? "fc-event-breathing-pink" : ""
               ].filter(Boolean),
-              extendedProps: { ...(ev.extendedProps || {}), status: ev.status, remark: ev.remark, reproRemark: ev.reproRemark, examDate: ev.examDate, boxes: ev.boxes },
+              extendedProps: { ...(ev.extendedProps || {}), status: ev.status, remark: ev.remark, reproRemark: ev.reproRemark, examDate: ev.examDate, boxes: ev.boxes, hiddenReservedExam: ev.hiddenReservedExam },
               startEditable: isMovable,
             };
           });
