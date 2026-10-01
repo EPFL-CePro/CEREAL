@@ -20,7 +20,8 @@ export const examStatus = [
     { value: '2scan', label: '2Scan', color: '', hexColor: '#020617', fcColor: '#000000', needsAdmin: true },
     { value: 'scanned', label: 'Scanned', color: '', hexColor: '#020617', fcColor: '#0000000', needsAdmin: true },
     { value: 'wait_teach', label: 'Wait-Teach', color: '', hexColor: '#020617', fcColor: '#000000', needsAdmin: true },
-    { value: 'to_contact', label: 'To-Contact', color: '', hexColor: '#020617', fcColor: '#000000', needsAdmin: true }
+    { value: 'to_contact', label: 'To-Contact', color: '', hexColor: '#020617', fcColor: '#000000', needsAdmin: true },
+    { value: 'reserved', label: 'Reserved', color: '', hexColor: '#636363', fcColor: 'oklch(0.4997 0 0)', needsAdmin: true }
 ];
 
 export const examNotAdminStatus = examStatus.filter(status => !status.needsAdmin);
@@ -31,7 +32,8 @@ export const examPrePrintStatus = [
     'registered',
     'registered-warning',
     'registered-error',
-    'toPrint'
+    'toPrint',
+    'reserved',
 ];
 
 export const examBlockingPrintStatus = [
@@ -40,6 +42,7 @@ export const examBlockingPrintStatus = [
     'registered-error',
     'toPrint',
     'printing',
+    'reserved',
 ];
 
 export const getAllowedExamStatus = (isAdmin: boolean) => {

@@ -72,6 +72,7 @@ export default function App({ user }: RegisterProps) {
     const [modalResolver, setModalResolver] = useState<((confirmed: boolean) => void) | null>(null);
     const [isConfirmModal, setIsConfirmModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hideFiles, setHideFiles] = useState(false);
 
     const openModal = (title: string, message: string) => {
         setIsConfirmModal(false);
@@ -156,7 +157,7 @@ export default function App({ user }: RegisterProps) {
         }
 
         // check uploaded files not empty
-        if (selectedFiles.length === 0) {
+        if (selectedFiles.length === 0 && !hideFiles) {
             setError("files", {
                 type: "validate",
                 message: "Please upload at least one file",
@@ -360,6 +361,10 @@ export default function App({ user }: RegisterProps) {
 
             const filesNamesArray = selectedFiles.map((file) => file.name)
 
+            if(hideFiles) {
+                status = 'reserved'
+            }
+
             const insertedExam = await insertExamForPrint(
                 {
                     exam_name: exam_name,
@@ -379,7 +384,7 @@ export default function App({ user }: RegisterProps) {
                     registered_by: user.email || '',
                     need_scan: data.needScan,
                     financial_center: data.financialCenter,
-                    files: JSON.stringify(filesNamesArray),
+                    files: !hideFiles ? JSON.stringify(filesNamesArray) : '[]',
                     desired_date: data.desiredDate,
                     print: data.print,
                 }
@@ -390,23 +395,26 @@ export default function App({ user }: RegisterProps) {
                 return;
             }
 
-            // send files to backend API
-            const folder_name = `${insertedExam}_${exam_code}_${contact_name}_${data.desiredDate}`;
-            const formData = new FormData();
-            formData.append("folder_name", folder_name);
+            if(!hideFiles) {
+                // send files to backend API
+                const folder_name = `${insertedExam}_${exam_code}_${contact_name}_${data.desiredDate}`;
+                const formData = new FormData();
+                formData.append("folder_name", folder_name);
 
-            selectedFiles.forEach((file) => {
-                formData.append("files", file);
-            });
+                selectedFiles.forEach((file) => {
+                    formData.append("files", file);
+                });
 
-            const res = await fetch("/api/upload-exam-files", {
-                method: "POST",
-                body: formData,
-            });
-            if (!res.ok) {
-                console.error(await res.text());
-                openModal("File Upload Error", "An error occurred while uploading exam files. Please try again.");
-                return;
+                const res = await fetch("/api/upload-exam-files", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!res.ok) {
+                    console.error(await res.text());
+                    openModal("File Upload Error", "An error occurred while uploading exam files. Please try again.");
+                    return;
+                }
+                
             }
            /*
             The mail checks if status is `registered-warning` or `registered-error`, and displays a message for the user and the CePro team to let them know about the exam printing situation.
@@ -433,7 +441,7 @@ Next time, please register to the printing service earlier to make sur that the 
                     desiredDate: data.desiredDate,
                     contact: `${contact?.firstname} ${contact?.lastname} (${contact?.email})`,
                     authorizedPersonsLine: authorizedPersons.length > 0 ? `- Authorized persons: ${authorizedPersons.map(user => `${user.email}`).join(', ')}` : '',
-                    files: filesNamesArray.join(', '),
+                    files: !hideFiles ? filesNamesArray.join(', ') : 'None yet',
                     remarkLine: data.remark ? `- Additional remarks: ${data.remark}` : '',
                     "registrant.email": user.email || '',
                 });
@@ -463,6 +471,7 @@ Next time, please register to the printing service earlier to make sur that the 
             openModal("Unexpected Error", 'An unexpected error occurred while registering the exam.');
         } finally {
             setIsSubmitting(false);
+            setHideFiles(false);
         }
     }
 
@@ -659,17 +668,30 @@ Next time, please register to the printing service earlier to make sur that the 
                     }}
                 />
 
-                <label>Attach exam file(s) to print <RedAsterisk /></label>
-                <div className="relative w-full">
-                    <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
-                        Select file...
+                {user.isAdmin && (
+                    <div className="flex gap-2 items-center h-12">
+                        <label htmlFor="reserved">Reserved, no files yet</label>
+                        <input type="checkbox" id="reserved" name="reserved" onChange={(e) => {
+                            setHideFiles(e.target.checked)
+                            clearErrors("files")
+                        }}/>  
                     </div>
-                    <input type="file" multiple onChange={handleFilesChange}
-                        className="absolute inset-0 opacity-0 cursor-pointer" />
+                )}
+
+                <div className={`${hideFiles && 'hidden'}`}>
+                    <label>Attach exam file(s) to print <RedAsterisk /></label>
+                    <div className="relative w-full">
+                        <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
+                            Select file...
+                        </div>
+                        <input type="file" multiple onChange={handleFilesChange}
+                            className="absolute inset-0 opacity-0 cursor-pointer" />
+                    </div>
                 </div>
 
+
                 {/* Preview / list of selected files */}
-                <div className="mt-2 border border-slate-300 rounded-md p-2 bg-background"
+                <div className={`${hideFiles && 'hidden'} mt-2 border border-slate-300 rounded-md p-2 bg-background`}
                     style={{ "--background": "#f0f0f0" } as React.CSSProperties}>
                     {selectedFiles.length === 0 && (
                         <span className="text-sm text-slate-500">
