@@ -393,6 +393,7 @@ export async function updateCrepExamFields(
         'desired_date', 'exam_date', 'financial_center',
         'exam_students', 'exam_pages', 'paper_format',
         'paper_color', 'print', 'need_scan', 'authorized_persons',
+        'order_number',
     ];
     const entries = Object.entries(fields).filter(([col]) => allowedColumns.includes(col));
     if (entries.length === 0) return;
