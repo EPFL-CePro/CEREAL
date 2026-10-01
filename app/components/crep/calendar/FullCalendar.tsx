@@ -99,6 +99,7 @@ export default function Calendar({ user }: CalendarProps) {
           boxes: e.boxes,
           priceUnit: e.price_unit,
           priceTotal: e.price_total,
+          orderNumber: e.order_number,
         }
       })
       setExams(filteredData);
@@ -244,6 +245,7 @@ export default function Calendar({ user }: CalendarProps) {
     calendarEvent.setExtendedProp('boxes', clickedExam.boxes);
     calendarEvent.setExtendedProp('priceUnit', clickedExam.priceUnit);
     calendarEvent.setExtendedProp('priceTotal', clickedExam.priceTotal);
+    calendarEvent.setExtendedProp('orderNumber', clickedExam.orderNumber);
     setSelectedEvent(calendarEvent);
 
     const dialog = document.getElementById("modal") as HTMLDialogElement | null;
@@ -330,7 +332,7 @@ export default function Calendar({ user }: CalendarProps) {
       fcColor: string;
       needsAdmin: boolean;
     }[]) {
-    const examsPart = Array.isArray(examsArr) ? examsArr.map(e => `${e.id}:${e.status}:${e.start}:${e.end}:${e.boxes}`).join("|") : "";
+    const examsPart = Array.isArray(examsArr) ? examsArr.map(e => `${e.id}:${e.status}:${e.start}:${e.end}:${e.boxes}:${e.orderNumber}`).join("|") : "";
     const filtersPart = (filtersArr || []).map(f => f.value).join(",");
     const statusPart = (examStatusArr || []).map(s => `${s.value}:${s.fcColor}`).join(",");
 

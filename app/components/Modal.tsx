@@ -107,7 +107,9 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const [printSide, setPrintSide] = useState(() => extendedProps.print ?? "recto-verso")
     const [needScan, setNeedScan] = useState<boolean>(() => !!extendedProps.needScan)
     const [authorizedPersons, setAuthorizedPersons] = useState<AuthorizedPersons[]>(() => extendedProps.authorizedPersons ?? [])
+    const [orderNumber, setOrderNumber] = useState(() => extendedProps.orderNumber ?? "")
     const modalRef = useRef<HTMLFormElement | null>(null);
+    const printCouponRef = useRef<HTMLDivElement | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const canEditModal = user.isAdmin || user.hasCrepAccess
@@ -120,6 +122,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 e.status = selectStatus
                 e.reproRemark = reproRemark
                 e.boxes = boxes
+                e.orderNumber = orderNumber
                 if (canEditModal) {
                     e.desiredDate = desiredDate ? new Date(desiredDate) : desiredDate
                     e.examDate = examDate ? new Date(examDate) : examDate
@@ -156,6 +159,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 print: printSide,
                 need_scan: needScan,
                 authorized_persons: JSON.stringify(authorizedPersons),
+                order_number: orderNumber,
             })
         }
 
@@ -269,6 +273,9 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const endDateValue = getDatePartFromDateTimeString(eventSnapshot?.endStr) || (eventSnapshot?.end ? formatDateInputValue(eventSnapshot.end) : '');
     const endTimeValue = getTimePartFromDateTimeString(eventSnapshot?.endStr) || (eventSnapshot?.end ? formatTimeInputValue(eventSnapshot.end) : '');
     const files = extendedProps.files ?? [];
+    const bindingLabel = paperFormat == "A3" ? "Saddle stitch (A3)" : "Stapple (A4)";
+    const authorizedPersonsText = authorizedPersons.length > 0 ? authorizedPersons.map((authorizedPerson) => authorizedPerson.email).join("\n") : "None";
+
 
     return (
         <form
@@ -284,28 +291,34 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     </svg>
                 </button>
                 {/* status selector for non-admin users. ToDo: Create a component instead?*/}
-                <div id="status-selector" className="mt-4 flex flex-row flex-wrap gap-4">
-                    {examNotAdminStatus && examNotAdminStatus.map((status) => (
-                        <div key={status.value} id={status.value} className={`btn rounded-full border-2 border-solid border-${status.color} h-8 ${selectStatus === status.value ? `bg-${status.color} text-white` : "btn-secondary text-gray-800"}`} onClick={
-                            (e) => {
-                                const currentColor = examNotAdminStatus?.find(s => s.value === selectStatus)?.color;
-                                // Remove previous color class from all siblings
-                                if (currentColor) {
-                                    e.currentTarget.parentElement?.childNodes.forEach((child) => {
-                                        if (child instanceof HTMLElement) {
-                                            child.classList.remove(currentColor ? `bg-${currentColor}` : "", "text-white");
-                                        }
-                                    });
+                <div className="flex items-center justify-between">
+                    <div id="status-selector" className="mt-4 flex flex-row flex-wrap gap-4">
+                        {examNotAdminStatus && examNotAdminStatus.map((status) => (
+                            <div key={status.value} id={status.value} className={`btn rounded-full border-2 border-solid border-${status.color} h-8 ${selectStatus === status.value ? `bg-${status.color} text-white` : "btn-secondary text-gray-800"}`} onClick={
+                                (e) => {
+                                    const currentColor = examNotAdminStatus?.find(s => s.value === selectStatus)?.color;
+                                    // Remove previous color class from all siblings
+                                    if (currentColor) {
+                                        e.currentTarget.parentElement?.childNodes.forEach((child) => {
+                                            if (child instanceof HTMLElement) {
+                                                child.classList.remove(currentColor ? `bg-${currentColor}` : "", "text-white");
+                                            }
+                                        });
+                                    }
+                                    // Add new color class to the clicked element and apply new status
+                                    e.currentTarget.classList.add(`bg-${status.color}`, "text-white");
+                                    setSelectStatus(status.value);
                                 }
-                                // Add new color class to the clicked element and apply new status
-                                e.currentTarget.classList.add(`bg-${status.color}`, "text-white");
-                                setSelectStatus(status.value);
-                            }
-                        }>
-                            <input className="hidden" type="radio" name="status" id={status.value} value={status.value} defaultChecked={selectStatus === status.value} />
-                            <label className="text-sm cursor-pointer" htmlFor={status.value}>{status.label}</label>
-                        </div>
-                    ))}
+                            }>
+                                <input className="hidden" type="radio" name="status" id={status.value} value={status.value} defaultChecked={selectStatus === status.value} />
+                                <label className="text-sm cursor-pointer" htmlFor={status.value}>{status.label}</label>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                        <label className="font-semibold" htmlFor="orderNumber">Order number : </label>
+                        <input className="h-10 min-w-72 rounded-sm border border-gray-400 px-4 py-2 text-center" type="text" name="orderNumber" id="orderNumber" value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)}/>
+                    </div>
                 </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 print:block print:overflow-visible print:px-8 md:px-8 md:py-6">
@@ -488,6 +501,110 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 className="print-authorized-files hidden px-8 py-6"
                 labelSuffix="Print"
             />
+            <div ref={printCouponRef} className="hidden print:block print:bg-white print:text-black print:font-sans print:text-[14px] print:leading-tight">
+                <section className="print:flex print:min-h-[297mm] print:w-[210mm] print:flex-col print:p-[10mm] print:break-after-page">
+                    <div className="mb-7 flex items-start justify-end gap-6">
+                        <div className="flex items-center gap-3 pt-1">
+                            <div className="text-base font-bold">Numéro de commande:</div>
+                            <div>
+                                <div className="min-w-72 border border-gray-700 px-8 py-4 text-center text-lg">{orderNumber}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h1 className="mb-4 inline-block border-b border-black pb-1 text-lg font-bold">{eventSnapshot?.title}</h1>
+
+                    <div className="mb-5 grid grid-cols-2 gap-x-20 gap-y-4">
+                        <div>
+                            <div className="font-bold">Folder name</div>
+                            <div>{extendedProps.folderName}</div>
+                        </div>
+                        <div />
+                        <div>
+                            <div className="font-bold">Number of copies</div>
+                            <div>{copiesNumber}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Pages per copy</div>
+                            <div>{pagesPerCopy}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Bindings</div>
+                            <div>{bindingLabel}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Print</div>
+                            <div>{paperColor} {printSide}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Needs to be scanned</div>
+                            <div>{needScan ? "Yes" : "No"}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Contact</div>
+                            <div>{extendedProps.contact.firstname} {extendedProps.contact.lastname} ({extendedProps.contact.email})</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Files</div>
+                            <div>{files.length > 0 ? files.map((file: string) => <div key={file}>{file}</div>) : "None"}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Price</div>
+                            <div>Unit : {priceUnit || "0"}</div>
+                            <div>Total : {priceTotal || "0"}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-auto">
+                        <div className="mb-10">
+                            <div className="mb-1 text-lg font-bold">Comment</div>
+                            <div className="h-[62mm] whitespace-pre-wrap rounded-lg border border-gray-700 p-2">{remark}</div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-x-20 text-lg font-bold">
+                            <div>Delivered on:</div>
+                            <div>Signature:</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="print:flex print:min-h-[297mm] print:w-[210mm] print:flex-col print:p-[10mm]">
+                    <h1 className="mb-6 inline-block border-b border-black pb-1 text-lg font-bold">{eventSnapshot?.title}</h1>
+
+                    <div className="mb-8 grid grid-cols-2 gap-x-20 gap-y-5">
+                        <div>
+                            <div className="font-bold">Financial center</div>
+                            <div>{financialCenter}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Contact</div>
+                            <div>{extendedProps.contact.firstname} {extendedProps.contact.lastname} ({extendedProps.contact.email})</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Desired delivery date</div>
+                            <div>{desiredDate}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Exam date</div>
+                            <div>{examDate}</div>
+                        </div>
+                        <div>
+                            <div className="font-bold">Number of boxes</div>
+                            <div>{boxes || "0"}</div>
+                        </div>
+                        <div />
+                        <div>
+                            <div className="font-bold">Authorized persons</div>
+                            <div className="whitespace-pre-line">{authorizedPersonsText}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-auto">
+                        <div className="mb-1 text-lg font-bold">Comment</div>
+                        <div className="h-[62mm] whitespace-pre-wrap rounded-lg border border-gray-700 p-2">{remark}</div>
+                    </div>
+                </section>
+            </div>
             <div id="modal-toolbar" className="shrink-0 border-t border-black/5 px-5 py-4 md:px-8 md:py-6 flex flex-row justify-between flex-wrap xxl:flex-nowrap gap-y-2 bg-background">
                 <div className="flex flex-row gap-4 flex-wrap md:flex-nowrap gap-y-2 ">
                     {/* ToDo : use a component */}
@@ -505,7 +622,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             </select>
                         </>
                     )}
-                    <PrintButton ref={modalRef} documentTitle={extendedProps.folderName} />
+                    <PrintButton ref={printCouponRef} documentTitle={extendedProps.folderName} />
                 </div>
                 <div className="flex flex-row gap-4">
                     <button className="btn btn-secondary">Cancel</button>

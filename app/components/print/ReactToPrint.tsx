@@ -1,7 +1,7 @@
 import { useReactToPrint } from "react-to-print";
 
 interface PrintButtonProps {
-    ref: React.RefObject<HTMLFormElement | null>;
+    ref: React.RefObject<HTMLElement | null>;
     documentTitle: string;
 }
 
