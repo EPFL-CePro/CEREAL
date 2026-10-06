@@ -491,7 +491,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         <div>
           <input
             type="date"
-            defaultValue={row.original.exam_date ? (row.original.exam_date as Date).toISOString().split('T')[0] : ''}
+            defaultValue={row.original.exam_date ? new Date(row.original.exam_date as string | Date).toISOString().split('T')[0] : ''}
             className={`${compactInputClassName} w-[8.5rem]`}
             onChange={async (e) => {
               await updateExamDate(row.original.id, e.target.value)
