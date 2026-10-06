@@ -28,7 +28,6 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
-    expires_at?: number;
     oid?: string;
     tid?: string;
     uniqueid?: string;

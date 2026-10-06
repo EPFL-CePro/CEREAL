@@ -11,7 +11,7 @@ const decodeJWT = (token: string) => JSON.parse(Buffer.from(token.split('.')[1],
 const getGroups = (groups: unknown): string[] => Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : [];
 const getStringClaim = (claim: unknown): string => typeof claim === 'string' ? claim : '';
 
-const createSessionToken = (token: JWT, idToken: Record<string, unknown>, accessToken: Record<string, unknown>, expiresAt?: number) => {
+const createSessionToken = (token: JWT, idToken: Record<string, unknown>, accessToken: Record<string, unknown>) => {
 	const groups = getGroups(idToken.groups);
 	const firstName = getStringClaim(idToken.given_name);
 	const lastName = getStringClaim(idToken.family_name);
@@ -20,7 +20,6 @@ const createSessionToken = (token: JWT, idToken: Record<string, unknown>, access
 		name: `${firstName} ${lastName}`.trim(),
 		email: typeof idToken.email === 'string' ? idToken.email : token.email,
 		picture: token.picture || '',
-		expires_at: expiresAt,
 		oid: typeof idToken.oid === 'string' ? idToken.oid : '',
 		tid: typeof accessToken.tid === 'string' ? accessToken.tid : '',
 		uniqueid: typeof idToken.uniqueid === 'string' ? idToken.uniqueid : '',
@@ -35,20 +34,16 @@ const createSessionToken = (token: JWT, idToken: Record<string, unknown>, access
 
 const sanitizeExistingToken = (token: JWT) => {
 	const groups = getGroups(token.groups);
-	let expiresAt = typeof token.expires_at === 'number' ? token.expires_at : undefined;
 	let tid = typeof token.tid === 'string' ? token.tid : '';
 
-	if ((!expiresAt || !tid) && typeof token.access_token === 'string') {
-		const accessToken = decodeJWT(token.access_token);
-		expiresAt = expiresAt || accessToken.exp;
-		tid = tid || accessToken.tid || '';
+	if (!tid && typeof token.access_token === 'string') {
+		tid = decodeJWT(token.access_token).tid || '';
 	}
 
 	return {
 		name: token.name || '',
 		email: token.email || '',
 		picture: token.picture || '',
-		expires_at: expiresAt,
 		oid: token.oid || '',
 		tid,
 		uniqueid: token.uniqueid || '',
@@ -64,6 +59,8 @@ const sanitizeExistingToken = (token: JWT) => {
 };
 
 export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
+	// 12h absolute session: rights (Entra groups) are refreshed at each login, which is silent as long as the Microsoft SSO session is valid.
+	session: { maxAge: 12 * 60 * 60 },
 	providers: [
 		MicrosoftEntraID({
 			clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
@@ -84,7 +81,7 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
 					const accessToken = decodeJWT(account.access_token);
 					const idToken = decodeJWT(account.id_token);
 
-					return createSessionToken(token, idToken, accessToken, account.expires_at);
+					return createSessionToken(token, idToken, accessToken);
 				}
 
 				const sanitizedToken = sanitizeExistingToken(token);
@@ -94,11 +91,7 @@ export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
 					sanitizedToken.impersonate = session.user.impersonating ?? null;
 				}
 
-				if (!sanitizedToken.expires_at || Date.now() < sanitizedToken.expires_at * 1000) {
-					return sanitizedToken;
-				}
-
-				return { ...sanitizedToken, error: 'TokenExpired' };
+				return sanitizedToken;
 			} catch (error) {
 				console.error('Error processing tokens:', error);
 				return {
