@@ -14,7 +14,11 @@ type Log = {
     exam_code: string;
     is_read: boolean;
     read_at?: Date | null;
+    changes: LogChanges | null;
 }
+
+// true = big value changed (so we are not stocking it)
+type LogChanges = Record<string, { old: unknown; new: unknown } | true>;
 
 interface AppUser extends User {
     isAdmin?: boolean;
@@ -38,10 +42,15 @@ async function fetchLogs(sciper: string): Promise<Log[]> {
         exam_code: log.exam_code,
         is_read: Boolean(log.is_read),
         read_at: log.read_at ? new Date(log.read_at) : null,
+        changes: typeof log.changes === "string" ? JSON.parse(log.changes) : log.changes,
     }));
     return Array.isArray(mapLogs) ? mapLogs : [];
 }
 
+function formatChange(field: string, change: LogChanges[string]): string {
+    if (change === true) return `${field} modified`;
+    return `${field}: ${change.old ?? "-"} → ${change.new ?? "-"}`;
+}
 
 function defineAction(action: string, returnIcon: boolean): string | JSX.Element {
     if (returnIcon) {
@@ -141,6 +150,13 @@ export default function Notifications({ user }: notifProps) {
                                                 <span className="text-xs  text-gray-400">{n.date_time.toDateString()}</span>
                                             </div>
                                             <span className="text-md">{n.exam_code} {n.exam_name}</span>
+                                            {n.changes && (
+                                                <ul className="text-sm text-gray-600">
+                                                    {Object.entries(n.changes).map(([field, change]) => (
+                                                        <li key={field}>{formatChange(field, change)}</li>
+                                                    ))}
+                                                </ul>
+                                            )}
                                             <div className="flex flex-col sm:flex-row justify-between">
                                                 <span className="text-sm text-gray-500">Delivery Date: {n.delivery_date}</span>
                                                 <span className="text-sm text-gray-500 mr-10">Exam Date: {n.exam_date}</span>
