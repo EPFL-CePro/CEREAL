@@ -74,7 +74,7 @@ CePro
             { token: "desiredDate", desc: "Desired delivery date" },
             { token: "contact", desc: "Contact (firstname lastname (email))" },
             { token: "authorizedPersonsLine", desc: "Authorized persons line, empty if none (computed)" },
-            { token: "files", desc: "Uploaded files names" },
+            { token: "files", desc: "Files to print, one per line, with their print settings" },
             { token: "remarkLine", desc: "Additional remarks line, empty if none (computed)" },
             { token: "registrant.email", desc: "Registrant email (recipient)" },
         ],

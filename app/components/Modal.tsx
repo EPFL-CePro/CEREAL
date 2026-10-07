@@ -1,13 +1,14 @@
 "use client"
 import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useRef, useState } from "react";
-import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal, updateCrepExamFields } from "../lib/crep/database";
+import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal, updateCrepExamFields, updateCrepFileSpecs } from "../lib/crep/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { PrintButton } from "./print/ReactToPrint";
 import { examNotAdminStatus } from "../lib/examStatus";
 import {
     formatDateInputValue,
     formatDateOnlyValue,
+    formatDateTimeInputValue,
     formatDateYYYYMMDD,
     formatTimeInputValue,
     getDatePartFromDateTimeString,
@@ -17,6 +18,9 @@ import { sendTemplatedMail } from "../lib/mail";
 import { AuthorizedPersons } from "@/types/user";
 import { limitTextToLines } from "../lib/remarks";
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor";
+import { CrepFile } from "@/types/crepExam";
+import { FileSpecsFields } from "./crep/FileSpecsFields";
+import { getBindingLabel, validateFilesSpecs } from "../lib/crep/fileSpecs";
 
 interface AppUser extends User {
     isAdmin?: boolean;
@@ -32,7 +36,7 @@ interface ModalProps {
 
 interface AuthorizedPersonsAndFilesProps {
     authorizedPersons?: AuthorizedPersons[];
-    files?: string[];
+    files?: CrepFile[];
     className?: string;
     labelSuffix?: string;
 }
@@ -55,7 +59,7 @@ function AuthorizedPersonsAndFiles({ authorizedPersons = [], files = [], classNa
                 <ul className={`${files.length > 0 && 'ml-6'} list-disc`}>
                     {files.length > 0 ?
                         files.map((file) => (
-                            <li key={file}>{file}</li>
+                            <li key={file.id}>{file.file_name ?? "File not uploaded yet"}</li>
                         )) : 'None'
                     }
                 </ul>
@@ -100,12 +104,8 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const [desiredDate, setDesiredDate] = useState(() => formatDateOnlyValue(extendedProps.desiredDate as string | Date | null | undefined))
     const [examDate, setExamDate] = useState(() => formatDateOnlyValue(extendedProps.examDate as string | Date | null | undefined))
     const [financialCenter, setFinancialCenter] = useState(() => extendedProps.financialCenter ?? "")
-    const [copiesNumber, setCopiesNumber] = useState(() => extendedProps.copiesNumber ?? "")
-    const [pagesPerCopy, setPagesPerCopy] = useState(() => extendedProps.pagesPerCopy ?? "")
-    const [paperFormat, setPaperFormat] = useState(() => extendedProps.paperFormat ?? "A3")
-    const [paperColor, setPaperColor] = useState(() => extendedProps.paperColor ?? "greyscale")
-    const [printSide, setPrintSide] = useState(() => extendedProps.print ?? "recto-verso")
-    const [needScan, setNeedScan] = useState<boolean>(() => !!extendedProps.needScan)
+    // Files of the exam, each one with its own print settings
+    const [files, setFiles] = useState<CrepFile[]>(() => extendedProps.files ?? [])
     const [authorizedPersons, setAuthorizedPersons] = useState<AuthorizedPersons[]>(() => extendedProps.authorizedPersons ?? [])
     const [orderNumber, setOrderNumber] = useState(() => extendedProps.orderNumber ?? "")
     const modalRef = useRef<HTMLFormElement | null>(null);
@@ -127,12 +127,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     e.desiredDate = desiredDate ? new Date(desiredDate) : desiredDate
                     e.examDate = examDate ? new Date(examDate) : examDate
                     e.financialCenter = financialCenter
-                    e.copiesNumber = copiesNumber
-                    e.pagesPerCopy = pagesPerCopy
-                    e.paperFormat = paperFormat
-                    e.paperColor = paperColor
-                    e.print = printSide
-                    e.needScan = needScan
+                    e.files = files
                     e.authorizedPersons = JSON.stringify(authorizedPersons)
                 }
             }
@@ -152,15 +147,17 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                 desired_date: desiredDate,
                 exam_date: examDate,
                 financial_center: financialCenter,
-                exam_students: copiesNumber,
-                exam_pages: pagesPerCopy,
-                paper_format: paperFormat,
-                paper_color: paperColor,
-                print: printSide,
-                need_scan: needScan,
                 authorized_persons: JSON.stringify(authorizedPersons),
                 order_number: orderNumber,
             })
+
+            // The printing duration depends on the number of copies of the files, so the end of the printing is updated
+            const printDuration = await updateCrepFileSpecs(Number(eventId), files)
+            const updatedExam = updatedExams.find((e: EventInput) => e.id == eventId)
+            if (updatedExam?.start) {
+                updatedExam.end = formatDateTimeInputValue(new Date(new Date(updatedExam.start as string).getTime() + printDuration * 60000))
+            }
+            event?.setExtendedProp('files', files)
         }
 
         event?.setExtendedProp('authorizedPersons', authorizedPersons)
@@ -272,8 +269,6 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
     const startTimeValue = getTimePartFromDateTimeString(eventSnapshot?.startStr) || (eventSnapshot?.start ? formatTimeInputValue(eventSnapshot.start) : '');
     const endDateValue = getDatePartFromDateTimeString(eventSnapshot?.endStr) || (eventSnapshot?.end ? formatDateInputValue(eventSnapshot.end) : '');
     const endTimeValue = getTimePartFromDateTimeString(eventSnapshot?.endStr) || (eventSnapshot?.end ? formatTimeInputValue(eventSnapshot.end) : '');
-    const files = extendedProps.files ?? [];
-    const bindingLabel = paperFormat == "A3" ? "Saddle stitch (A3)" : "Stapple (A4)";
     const authorizedPersonsText = authorizedPersons.length > 0 ? authorizedPersons.map((authorizedPerson) => authorizedPerson.email).join("\n") : "None";
 
 
@@ -356,58 +351,20 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                                 <input className="exam-date basis-full xl:basis-auto w-full" type="text" name="folderName" disabled defaultValue={extendedProps.folderName} />
                             </div>
                         </div>
-                        <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
-                                <label className="font-semibold w-full" htmlFor="copiesNumber">Number of copies</label>
-                                <input className="copies-number basis-full xl:basis-auto" type={canEditModal ? "number" : "text"} min={1} name="copiesNumber" disabled={!canEditModal} value={copiesNumber} onChange={(e) => setCopiesNumber(e.target.value)} />
-                            </div>
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
-                                <label className="font-semibold w-full" htmlFor="pagesPerCopy">Pages per copy</label>
-                                <input className="pages-copy basis-full xl:basis-auto" type={canEditModal ? "number" : "text"} min={1} name="pagesPerCopy" disabled={!canEditModal} value={pagesPerCopy} onChange={(e) => setPagesPerCopy(e.target.value)} />
-                            </div>
+                        <div className="flex flex-col gap-2 print:hidden">
+                            <label className="font-semibold w-full">Files ({files.length})</label>
+                            {files.length > 0 ? files.map((file, index) => (
+                                <div key={file.id} className="flex flex-col gap-3 rounded-lg border border-gray-300 p-3">
+                                    <span className="font-mono text-sm">{file.file_name ?? "File not uploaded yet"}</span>
+                                    <FileSpecsFields
+                                        value={file}
+                                        disabled={!canEditModal}
+                                        onChange={(specs) => setFiles((currentFiles) => currentFiles.map((currentFile, i) => i === index ? { ...currentFile, ...specs } : currentFile))}
+                                    />
+                                </div>
+                            )) : 'None'}
                         </div>
                         <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
-                                <label className="font-semibold w-full" htmlFor="paperFormat">Bindings</label>
-                                {canEditModal ? (
-                                    <select className="paper-format basis-full xl:basis-auto" name="paperFormat" value={paperFormat} onChange={(e) => setPaperFormat(e.target.value)}>
-                                        <option value="A3">Saddle stitch (A3)</option>
-                                        <option value="A4">Stapple (A4)</option>
-                                    </select>
-                                ) : (
-                                    <input className="paper-format basis-full xl:basis-auto" type="text" name="paperFormat" disabled defaultValue={extendedProps.paperFormat && extendedProps.paperFormat == 'A3' ? 'Saddle stitch (A3)' : 'Stapple (A4)'} />
-                                )}
-                            </div>
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
-                                <label className="font-semibold w-full" htmlFor="paperColor">Print</label>
-                                {canEditModal ? (
-                                    <div className="flex flex-row flex-wrap gap-2 basis-full xl:basis-auto">
-                                        <select className="paper-color" name="paperColor" value={paperColor} onChange={(e) => setPaperColor(e.target.value)}>
-                                            <option value="greyscale">Greyscale</option>
-                                            <option value="color">Color</option>
-                                        </select>
-                                        <select className="print-side" name="print" value={printSide} onChange={(e) => setPrintSide(e.target.value)}>
-                                            <option value="recto">Recto</option>
-                                            <option value="recto-verso">Recto-verso</option>
-                                        </select>
-                                    </div>
-                                ) : (
-                                    <input className="paper-color basis-full xl:basis-auto" type="text" name="paperColor" disabled defaultValue={`${extendedProps.paperColor}, ${extendedProps.print}`} />
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-sm flex-1">
-                                <label className="font-semibold w-full" htmlFor="needScan">Needs to be scanned</label>
-                                {canEditModal ? (
-                                    <select className="need-scan basis-full xl:basis-auto" name="needScan" value={needScan ? 'true' : 'false'} onChange={(e) => setNeedScan(e.target.value === 'true')}>
-                                        <option value="true">Yes</option>
-                                        <option value="false">No</option>
-                                    </select>
-                                ) : (
-                                    <input className="need-scan basis-full xl:basis-auto" type="text" name="needScan" disabled defaultValue={extendedProps.needScan ? 'Yes' : 'No'} />
-                                )}
-                            </div>
                             <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
                                 <label className="font-semibold w-full" htmlFor="contact">Contact</label>
                                 <input className="contact basis-full xl:basis-auto w-full" type="text" name="contact" disabled defaultValue={`${extendedProps.contact.firstname} ${extendedProps.contact.lastname} (${extendedProps.contact.email})`} />
@@ -419,16 +376,6 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                                 onChange={setAuthorizedPersons}
                                 disabled={!canEditModal}
                             />
-                            <div className="date-input flex flex-row flex-wrap gap-4 gap-y-1 [&_input]:rounded-lg flex-1">
-                                <label className="font-semibold w-full" htmlFor="files">Files</label>
-                                <ul className={`${files.length > 0 && 'ml-6'} list-disc`}>
-                                    {files.length > 0 ?
-                                        files.map((file: string) => (
-                                            <li key={file}>{file}</li>
-                                        )) : 'None'
-                                    }
-                                </ul>
-                            </div>
                         </div>
                     </div>
                     <div className="flex flex-row justify-between gap-x-12 flex-wrap gap-y-0 md:flex-nowrap sm:gap-y-2 items-start">
@@ -519,40 +466,43 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                             <div className="font-bold">Folder name</div>
                             <div>{extendedProps.folderName}</div>
                         </div>
-                        <div />
-                        <div>
-                            <div className="font-bold">Number of copies</div>
-                            <div>{copiesNumber}</div>
-                        </div>
-                        <div>
-                            <div className="font-bold">Pages per copy</div>
-                            <div>{pagesPerCopy}</div>
-                        </div>
-                        <div>
-                            <div className="font-bold">Bindings</div>
-                            <div>{bindingLabel}</div>
-                        </div>
-                        <div>
-                            <div className="font-bold">Print</div>
-                            <div>{paperColor} {printSide}</div>
-                        </div>
-                        <div>
-                            <div className="font-bold">Needs to be scanned</div>
-                            <div>{needScan ? "Yes" : "No"}</div>
-                        </div>
                         <div>
                             <div className="font-bold">Contact</div>
                             <div>{extendedProps.contact.firstname} {extendedProps.contact.lastname} ({extendedProps.contact.email})</div>
-                        </div>
-                        <div>
-                            <div className="font-bold">Files</div>
-                            <div>{files.length > 0 ? files.map((file: string) => <div key={file}>{file}</div>) : "None"}</div>
                         </div>
                         <div>
                             <div className="font-bold">Price</div>
                             <div>Unit : {priceUnit || "0"}</div>
                             <div>Total : {priceTotal || "0"}</div>
                         </div>
+                    </div>
+
+                    <div className="mb-5">
+                        <div className="mb-1 font-bold">Files</div>
+                        <table className="w-full border-separate border-spacing-0 border-t border-l border-gray-700 text-left [&_td]:border-r [&_td]:border-b [&_td]:border-gray-700 [&_td]:px-2 [&_td]:py-1 [&_th]:border-r [&_th]:border-b [&_th]:border-gray-700 [&_th]:px-2 [&_th]:py-1">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Copies</th>
+                                    <th>Pages</th>
+                                    <th>Bindings</th>
+                                    <th>Print</th>
+                                    <th>Scan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {files.map((file) => (
+                                    <tr key={file.id}>
+                                        <td className="break-all">{file.file_name ?? "File not uploaded yet"}</td>
+                                        <td>{file.exam_students}</td>
+                                        <td>{file.exam_pages}</td>
+                                        <td>{getBindingLabel(file.paper_format)}</td>
+                                        <td>{file.paper_color} {file.print}</td>
+                                        <td>{file.need_scan ? "Yes" : "No"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
                     <div className="mt-auto">
@@ -633,9 +583,10 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         setIsSubmitting(true);
 
                         const previousStatus = extendedProps.status;
-                        // Enforcing the A3 rule that pages per copy must be multiple of 4, as when submitting the form.
-                        if (canEditModal && paperFormat === 'A3' && Number(pagesPerCopy) % 4 !== 0) {
-                            window.alert("When printing in A3, the number of pages per copy must be a multiple of 4.");
+                        // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
+                        const filesError = canEditModal ? validateFilesSpecs(files) : null;
+                        if (filesError) {
+                            window.alert(filesError);
                             setSelectStatus(previousStatus);
                             setIsSubmitting(false);
                             return;

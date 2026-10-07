@@ -6,25 +6,17 @@ import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { DateRangePicker } from "rsuite";
 import { DateRange } from "rsuite/esm/DateRangePicker";
+import { CrepExam } from "@/types/crepExam";
 
 interface AppUser extends User {
     isAdmin?: boolean;
 }
 
-interface Exam {
-    id: number;
-    contact: string;
-    created_on: Date;
-    desired_date: Date;
-    exam_code: string;
-    exam_date: Date;
-    exam_name: string;
-    exam_pages: number;
-    exam_students: number;
-    print_date: Date;
-    remark: string;
-    repro_remark: string;
-    status: string;
+// Quotes the value if it contains a character that would break the CSV.
+// `;` is included because spreadsheets with a French locale also use it as a separator.
+function csvCell(value: unknown): string {
+    const text = String(value ?? "");
+    return /[",;\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 interface ExportModalProps {
@@ -36,11 +28,11 @@ export function ExportModal({ setModalOpen, user }: ExportModalProps) {
     const availableStatus = getAllowedExamStatus(user.isAdmin || false);
     const [checkedStatus, setCheckedStatus] = useState<string[]>([]);
     const [betweenDates, setBetweenDates] = useState<DateRange>();
-    const [exams, setExams] = useState<Exam[]>([]);
+    const [exams, setExams] = useState<CrepExam[]>([]);
 
     useEffect(() =>  {
         (async function() {
-            const allExams = await getAllCrepExams() as Exam[];
+            const allExams = await getAllCrepExams() as CrepExam[];
             setExams(allExams);
         })();
     }, [])
@@ -71,18 +63,31 @@ export function ExportModal({ setModalOpen, user }: ExportModalProps) {
     
     async function exportData() {
         const betweenDatesExams = betweenDates ? await getAllExamsBetweenDates(betweenDates[0], betweenDates[1]) : [];
-        const checkedStatusExams = checkedStatus.length > 0 ? await getAllExamsByStatus(checkedStatus) as Exam[] : [];
+        const checkedStatusExams = checkedStatus.length > 0 ? await getAllExamsByStatus(checkedStatus) as CrepExam[] : [];
         const uniqueExams = Array.from(
             new Map([...betweenDatesExams, ...checkedStatusExams].map(e => [e.id, e])).values()
         );
         if(uniqueExams.length == 0) return;
         const allCoursesWithTeachers = await fetchCourses();
         const checkedExamsCSV =
-`ID,Code,Nom,Enseignants,Contact,Date examen,Date désirée,Date enregistrement,Nombre de copies,Nombre de pages
-${uniqueExams.map((exam:Exam) => {
+`ID,Code,Nom,Enseignants,Contact,Date examen,Date désirée,Date enregistrement,Fichiers,Nombre de copies,Nombre de pages
+${uniqueExams.map((exam:CrepExam) => {
     const examFromOasis = allCoursesWithTeachers.find(e => e.exam.code === exam.exam_code);
     const contact = JSON.parse(exam.contact);
-    return `${exam.id},${examFromOasis?.exam.code},${examFromOasis?.exam.title},${examFromOasis?.exam.teachers.map(teacher => `${teacher.firstname} ${teacher.name}`).join('; ')},${contact.email},${exam.exam_date.toLocaleDateString('fr')},${exam.desired_date.toLocaleDateString('fr')},${exam.created_on.toLocaleDateString('fr')},${exam.exam_students},${exam.exam_pages}`
+    // One line per exam : the values of every file are listed in the same order, separated by " | "
+    return [
+        exam.id,
+        examFromOasis?.exam.code,
+        examFromOasis?.exam.title,
+        examFromOasis?.exam.teachers.map(teacher => [teacher.firstname, teacher.name].filter(Boolean).join(' ')).filter(Boolean).join('; '),
+        contact.email,
+        exam.exam_date.toLocaleDateString('fr'),
+        exam.desired_date.toLocaleDateString('fr'),
+        exam.created_on.toLocaleDateString('fr'),
+        exam.files.map((file) => file.file_name ?? '-').join(' | '),
+        exam.files.map((file) => file.exam_students).join(' | '),
+        exam.files.map((file) => file.exam_pages).join(' | '),
+    ].map(csvCell).join(',')
 }).join(`\n`)}
 `
         const blob = new Blob([checkedExamsCSV]);

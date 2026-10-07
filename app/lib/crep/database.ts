@@ -1,10 +1,63 @@
 'use server';
 
-import mysql, { ResultSetHeader } from 'mysql2';
+import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { Connection as PromiseConnection } from 'mysql2/promise';
 import { examBlockingPrintStatus, examNotAdminStatus } from '../examStatus';
-import { CrepExam } from '@/types/crepExam';
+import { CrepExam, CrepFile, CrepFileSpecs } from '@/types/crepExam';
 import { formatDateTimeForDatabase } from '../dateTime';
 import { getAcademicYearDateRange } from '@/app/lib/academicYear';
+import { getPrintingDurationInMinutes } from './printingDuration';
+import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from './fileSpecs';
+
+type NewCrepFile = CrepFileSpecs & { file_name: string | null };
+
+function createPromiseConnection(): PromiseConnection {
+    return mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    }).promise();
+}
+
+// Adds the files (table `crep_file`) of every exam to `exam.files`
+async function attachFiles(exams: CrepExam[]): Promise<CrepExam[]> {
+    if (exams.length === 0) return exams;
+
+    const connection = createPromiseConnection();
+    try {
+        const [rows] = await connection.query<RowDataPacket[]>(
+            'SELECT * FROM crep_file WHERE crep_id IN (?) ORDER BY id;',
+            [exams.map((exam) => exam.id)]
+        );
+        const files = (rows as CrepFile[]).map((file) => ({ ...file, need_scan: Boolean(file.need_scan) }));
+
+        return exams.map((exam) => ({ ...exam, files: files.filter((file) => file.crep_id === exam.id) }));
+    } finally {
+        await connection.end();
+    }
+}
+
+async function insertFiles(connection: PromiseConnection, crepId: number, files: NewCrepFile[]) {
+    await connection.query(
+        'INSERT INTO crep_file (crep_id, file_name, exam_students, exam_pages, paper_format, paper_color, print, need_scan) VALUES ?;',
+        [files.map((file) => {
+            const specs = pickFileSpecs(file);
+            return [crepId, file.file_name, specs.exam_students, specs.exam_pages, specs.paper_format, specs.paper_color, specs.print, specs.need_scan];
+        })]
+    );
+}
+
+// Recomputes `crep.print_duration` from the copies of all the files of the exam, returns the new duration
+async function refreshPrintDuration(connection: PromiseConnection, crepId: number): Promise<number> {
+    const [rows] = await connection.query<RowDataPacket[]>(
+        'SELECT COALESCE(SUM(exam_students), 0) AS copies FROM crep_file WHERE crep_id = ?;',
+        [crepId]
+    );
+    const printDuration = getPrintingDurationInMinutes(Number(rows[0].copies));
+    await connection.query('UPDATE crep SET print_duration = ? WHERE id = ?;', [printDuration, crepId]);
+    return printDuration;
+}
 
 export async function getAllCrepExams() {
     const connection = mysql.createConnection({
@@ -19,7 +72,7 @@ export async function getAllCrepExams() {
     return new Promise(function(resolve) {
         connection.query('SELECT * from crep;', (err, rows) => {
             if (err) throw err
-            resolve(rows);
+            resolve(attachFiles(rows as CrepExam[]));
         })
         connection.end()
     })
@@ -39,7 +92,7 @@ export async function getAllCrepExamsForRepro(email: string) {
         connection.query(`SELECT * from crep WHERE status = 'toPrint' OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`, [email],
             (err, rows) => {
             if (err) throw err
-            resolve(rows);
+            resolve(attachFiles(rows as CrepExam[]));
         })
         connection.end()
     })
@@ -64,7 +117,7 @@ export async function getCrepExamsByAcademicYear(academicYear: string): Promise<
             [formatDateTimeForDatabase(range.start), formatDateTimeForDatabase(range.end)],
             (err:mysql.QueryError | null, rows) => {
                 if (err) throw err
-                resolve(rows as CrepExam[]);
+                resolve(attachFiles(rows as CrepExam[]));
             }
         )
         connection.end()
@@ -85,7 +138,7 @@ export async function getAllNonAdminExams() {
     return new Promise(function(resolve) {
         connection.query("SELECT * from crep WHERE status IN (" + allowedStatuses.map(() => "?").join(", ") + ");", allowedStatuses, (err, rows) => {
             if (err) throw err
-            resolve(rows);
+            resolve(attachFiles(rows as CrepExam[]));
         })
         connection.end()
     })
@@ -180,7 +233,7 @@ export async function getAllExamsByStatus(status: Array<string>): Promise<CrepEx
     return new Promise(function(resolve) {
         connection.query(`SELECT * from crep WHERE status IN (${status.map(obj => `"${obj}"`).join(", ")});`, (err:mysql.QueryError, rows:CrepExam[]) => {
             if (err) throw err
-            resolve(rows);
+            resolve(attachFiles(rows));
         })
         connection.end()
     })
@@ -199,7 +252,7 @@ export async function getAllExamsBetweenDates(beginDate: Date, endDate: Date): P
     return new Promise(function(resolve) {
         connection.query(`SELECT * from crep WHERE print_date between '${formatDateTimeForDatabase(beginDate)}' and '${formatDateTimeForDatabase(endDate)}'`, (err:mysql.QueryError, rows:CrepExam[]) => {
             if (err) throw err
-            resolve(rows);
+            resolve(attachFiles(rows));
         })
         connection.end()
     })
@@ -209,63 +262,137 @@ export async function insertExamForPrint(exam: {
     exam_code: string;
     exam_date: string | Date;
     exam_name: string;
-    exam_pages: number;
-    exam_students: number;
     print_date?: string | Date;
-    paper_format?: string;
-    paper_color?: string;
     contact?: string;
     authorized_persons?: string;
     remark?: string | null;
     repro_remark?: string | null;
     status?: string;
     registered_by: string;
-    need_scan: boolean;
     financial_center: string;
-    files: string;
     desired_date: string | Date;
-    print: string;
-}): Promise<number> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    });
+}, files: NewCrepFile[]): Promise<number> {
+    if (files.length === 0) throw new Error("An exam needs at least one file");
+    const filesError = validateFilesSpecs(files);
+    if (filesError) throw new Error(filesError);
 
-    connection.connect();
+    const connection = createPromiseConnection();
 
-    return new Promise((resolve, reject) => {
-        const sql = `INSERT INTO crep (exam_code, exam_date, exam_name, exam_pages, exam_students, print_date, paper_format, paper_color, contact, authorized_persons, remark, repro_remark, status, registered_by, need_scan, financial_center, files, desired_date, print) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+    try {
+        await connection.beginTransaction();
 
-        const params = [
-            exam.exam_code,
-            exam.exam_date,
-            exam.exam_name,
-            exam.exam_pages,
-            exam.exam_students,
-            exam.print_date,
-            exam.paper_format,
-            exam.paper_color,
-            exam.contact,
-            exam.authorized_persons,
-            exam.remark || null,
-            exam.repro_remark || null,
-            exam.status || 'registered',
-            exam.registered_by,
-            exam.need_scan,
-            exam.financial_center,
-            exam.files,
-            exam.desired_date,
-            exam.print
-        ];
+        const [result] = await connection.query<ResultSetHeader>(
+            `INSERT INTO crep (exam_code, exam_date, exam_name, print_date, print_duration, contact, authorized_persons, remark, repro_remark, status, registered_by, financial_center, desired_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+                exam.exam_code,
+                exam.exam_date,
+                exam.exam_name,
+                exam.print_date,
+                getPrintingDurationInMinutes(getTotalCopies(files)),
+                exam.contact,
+                exam.authorized_persons,
+                exam.remark || null,
+                exam.repro_remark || null,
+                exam.status || 'registered',
+                exam.registered_by,
+                exam.financial_center,
+                exam.desired_date,
+            ]
+        );
+        const crepId = result.insertId;
 
-        connection.query(sql, params, (err, result) => {
-            if (err) return reject(err);
-            resolve((result as ResultSetHeader).insertId as number);
-        });
-        connection.end();
-    });
+        // The files inserted at registration are not logged one by one (see the `crep_file_after_insert` trigger)
+        await connection.query('SET @crep_registering = 1;');
+        await insertFiles(connection, crepId, files);
+        await connection.query('SET @crep_registering = NULL;');
+
+        await connection.commit();
+        return crepId;
+    } catch (err) {
+        await connection.rollback();
+        throw err;
+    } finally {
+        await connection.end();
+    }
+}
+
+export async function addCrepFiles(crepId: number, files: NewCrepFile[]): Promise<void> {
+    const filesError = validateFilesSpecs(files);
+    if (filesError) throw new Error(filesError);
+
+    const connection = createPromiseConnection();
+
+    try {
+        await connection.beginTransaction();
+        await insertFiles(connection, crepId, files);
+        await refreshPrintDuration(connection, crepId);
+        await connection.commit();
+    } catch (err) {
+        await connection.rollback();
+        throw err;
+    } finally {
+        await connection.end();
+    }
+}
+
+// Only updates the print settings of the files, returns the printing duration of the exam
+export async function updateCrepFileSpecs(crepId: number, files: (CrepFileSpecs & { id: number })[]): Promise<number> {
+    const filesError = validateFilesSpecs(files);
+    if (filesError) throw new Error(filesError);
+
+    const connection = createPromiseConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [currentFiles] = await connection.query<RowDataPacket[]>('SELECT id, exam_students FROM crep_file WHERE crep_id = ?;', [crepId]);
+        let copiesChanged = false;
+
+        for (const file of files) {
+            const specs = pickFileSpecs(file);
+            const currentFile = currentFiles.find(({ id }) => id === file.id);
+            if (!currentFile) continue;
+            if (currentFile.exam_students !== specs.exam_students) copiesChanged = true;
+
+            await connection.query(
+                'UPDATE crep_file SET exam_students = ?, exam_pages = ?, paper_format = ?, paper_color = ?, print = ?, need_scan = ? WHERE id = ? AND crep_id = ?;',
+                [specs.exam_students, specs.exam_pages, specs.paper_format, specs.paper_color, specs.print, specs.need_scan, file.id, crepId]
+            );
+        }
+
+        // The duration is only recomputed if the copies changed, so that the frozen duration of the migrated exams is kept
+        let printDuration: number;
+        if (copiesChanged) {
+            printDuration = await refreshPrintDuration(connection, crepId);
+        } else {
+            const [rows] = await connection.query<RowDataPacket[]>('SELECT print_duration FROM crep WHERE id = ?;', [crepId]);
+            printDuration = Number(rows[0].print_duration);
+        }
+
+        await connection.commit();
+        return printDuration;
+    } catch (err) {
+        await connection.rollback();
+        throw err;
+    } finally {
+        await connection.end();
+    }
+}
+
+export async function deleteCrepFile(crepId: number, fileId: number): Promise<void> {
+    const connection = createPromiseConnection();
+
+    try {
+        await connection.beginTransaction();
+        await connection.query('DELETE FROM crep_file WHERE id = ? AND crep_id = ?;', [fileId, crepId]);
+        await refreshPrintDuration(connection, crepId);
+        await connection.commit();
+    } catch (err) {
+        await connection.rollback();
+        throw err;
+    } finally {
+        await connection.end();
+    }
 }
 
 export async function getAllExamsForDate(date:string): Promise <CrepExam[]> {
@@ -281,7 +408,7 @@ export async function getAllExamsForDate(date:string): Promise <CrepExam[]> {
     return new Promise(function(resolve) {
         connection.query('SELECT * FROM crep WHERE DATE(print_date) = DATE(?);', [date], (err, rows) => {
             if (err) throw err
-            resolve(rows as CrepExam[]);
+            resolve(attachFiles(rows as CrepExam[]));
         })
         connection.end()
     })
@@ -303,7 +430,7 @@ export async function getBlockingExamsForDate(date:string): Promise <CrepExam[]>
             [date, examBlockingPrintStatus],
             (err, rows) => {
                 if (err) throw err
-                resolve(rows as CrepExam[]);
+                resolve(attachFiles(rows as CrepExam[]));
             }
         )
         connection.end()
@@ -392,9 +519,7 @@ export async function updateCrepExamFields(
 ) {
     const allowedColumns = [
         'desired_date', 'exam_date', 'financial_center',
-        'exam_students', 'exam_pages', 'paper_format',
-        'paper_color', 'print', 'need_scan', 'authorized_persons',
-        'order_number',
+        'authorized_persons', 'order_number',
     ];
     const entries = Object.entries(fields).filter(([col]) => allowedColumns.includes(col));
     if (entries.length === 0) return;
@@ -436,7 +561,7 @@ export async function getCrepExamsByContactEmail(email: string): Promise<CrepExa
             [email],
             (err, rows) => {
                 if (err) throw err
-                resolve(rows as CrepExam[]);
+                resolve(attachFiles(rows as CrepExam[]));
             }
         )
         connection.end()
@@ -457,26 +582,7 @@ export async function getCrepExamById(id: string): Promise<CrepExam | null> {
         connection.query('SELECT * FROM crep WHERE id = ? LIMIT 1;', [id], (err, rows) => {
             if (err) throw err
             const arr = rows as CrepExam[];
-            resolve(arr.length > 0 ? arr[0] : null);
-        })
-        connection.end()
-    })
-}
-
-export async function updateCrepExamFiles(id: string, filesJson: string): Promise<void> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET files = ? WHERE id = ?;', [filesJson, id], (err) => {
-            if (err) throw err
-            resolve();
+            resolve(arr.length > 0 ? attachFiles(arr).then(([exam]) => exam) : null);
         })
         connection.end()
     })
