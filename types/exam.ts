@@ -16,7 +16,7 @@ export type Exam = {
     // deadline_repro: string | Date;
     remark?: string | null;
     responsible_id: number | null;
-    contact: string;
+    contact: { sciper: string, email: string, firstname: string, lastname: string };
 }
 
 export type NewExam = Omit<Exam, 'id'>;
