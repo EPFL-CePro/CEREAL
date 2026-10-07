@@ -47,7 +47,6 @@ export default async function ExamProfilePage({
     );
   }
 
-  const files: string[] = JSON.parse(exam.files);
   const editable = examPrePrintStatus.includes(exam.status);
 
   return (
@@ -69,7 +68,7 @@ export default async function ExamProfilePage({
           </div>
         </div>
 
-        <ExamFilesManager examId={exam.id} files={files} editable={editable} />
+        <ExamFilesManager examId={exam.id} files={exam.files} editable={editable} />
       </div>
 
       <Footer />

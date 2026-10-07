@@ -5,7 +5,6 @@ import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable
 import PrintingDurationHistogram, { PrintingDurationBucket } from "@/app/components/crep/stats/PrintingDurationHistogram";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
 import { getCrepExamsByAcademicYear } from "@/app/lib/crep/database";
-import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
 import { CrepExam } from "@/types/crepExam";
 import { businessDaysBetween } from "@/app/lib/businessDays";
@@ -69,7 +68,7 @@ function getPrintingDurationBuckets(exams: CrepExam[]): PrintingDurationBucket[]
     ];
 
     exams.forEach((exam) => {
-        const duration = getPrintingDurationInMinutes(exam.exam_students);
+        const duration = exam.print_duration;
         const bucket = buckets.find(({ maxMinutes }) => duration <= maxMinutes);
         if (bucket) bucket.count++;
     });

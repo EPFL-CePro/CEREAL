@@ -17,7 +17,6 @@ import { QueryResult } from "mysql2";
 import { Legend } from "../../Legend";
 import { EventApi } from "@fullcalendar/core";
 import { useSearchParams } from "next/navigation";
-import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 
 interface CalendarProps {
   user: AppUser
@@ -27,10 +26,10 @@ interface AppUser extends User {
   isAdmin?: boolean;
 }
 
-function getEndDateOfPrinting(printDate: Date, nbStudents: number): Date {
+function getEndDateOfPrinting(printDate: Date, printDurationInMinutes: number): Date {
   return new Date(
     fromDatabaseDateTime(printDate).getTime() +
-      getPrintingDurationInMinutes(nbStudents) * 60000
+      printDurationInMinutes * 60000
   );
 }
 
@@ -77,7 +76,7 @@ export default function Calendar({ user }: CalendarProps) {
         return {
           title: hiddenReservedExam ? "" : `${e.exam_code} - ${e.exam_name}`,
           start: formatDateTimeInputValue(fromDatabaseDateTime(e.print_date)),
-          end: formatDateTimeInputValue(getEndDateOfPrinting(e.print_date, e.exam_students)),
+          end: formatDateTimeInputValue(getEndDateOfPrinting(e.print_date, e.print_duration)),
           description: e.exam_name,
           durationEditable: false,
           id: e.id,
@@ -88,17 +87,11 @@ export default function Calendar({ user }: CalendarProps) {
           reproRemark: e.repro_remark,
           financialCenter: e.financial_center,
           examDate: e.exam_date,
-          copiesNumber: e.exam_students,
-          pagesPerCopy: e.exam_pages,
-          paperFormat: e.paper_format,
-          paperColor: e.paper_color,
-          needScan: e.need_scan,
           contact: e.contact,
           authorizedPersons: e.authorized_persons,
           files: e.files,
           desiredDate: e.desired_date,
           code: e.exam_code,
-          print: e.print,
           boxes: e.boxes,
           priceUnit: e.price_unit,
           priceTotal: e.price_total,
@@ -234,18 +227,12 @@ export default function Calendar({ user }: CalendarProps) {
     calendarEvent.setExtendedProp('reproRemark', clickedExam.reproRemark);
     calendarEvent.setExtendedProp('financialCenter', clickedExam.financialCenter);
     calendarEvent.setExtendedProp('examDate', clickedExam.examDate);
-    calendarEvent.setExtendedProp('copiesNumber', clickedExam.copiesNumber);
-    calendarEvent.setExtendedProp('pagesPerCopy', clickedExam.pagesPerCopy);
-    calendarEvent.setExtendedProp('paperFormat', clickedExam.paperFormat);
-    calendarEvent.setExtendedProp('paperColor', clickedExam.paperColor);
-    calendarEvent.setExtendedProp('needScan', clickedExam.needScan);
     calendarEvent.setExtendedProp('contact', JSON.parse(clickedExam.contact));
     calendarEvent.setExtendedProp('authorizedPersons', JSON.parse(clickedExam.authorizedPersons)); // Necessary since it's an Array of objects.
-    calendarEvent.setExtendedProp('files', JSON.parse(clickedExam.files)); // Necessary since it's an Array of strings.
+    calendarEvent.setExtendedProp('files', clickedExam.files); // Array of `CrepFile`, each file with its own print settings
     calendarEvent.setExtendedProp('desiredDate', clickedExam.desiredDate);
     calendarEvent.setExtendedProp('folderName', folderName);
     calendarEvent.setExtendedProp('printSchedule', clickedExam.start);
-    calendarEvent.setExtendedProp('print', clickedExam.print);
     calendarEvent.setExtendedProp('boxes', clickedExam.boxes);
     calendarEvent.setExtendedProp('priceUnit', clickedExam.priceUnit);
     calendarEvent.setExtendedProp('priceTotal', clickedExam.priceTotal);

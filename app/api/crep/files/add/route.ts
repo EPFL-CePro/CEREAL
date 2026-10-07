@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getAllCrepExamsForRepro, getCrepExamById, updateCrepExamFiles } from "@/app/lib/crep/database";
+import { addCrepFiles } from "@/app/lib/crep/database";
 import { getExamFolderName, uploadExamFiles } from "@/app/lib/crep/upload";
-import { examPrePrintStatus } from "@/app/lib/examStatus";
-import { CrepExam } from "@/types/crepExam";
+import { checkCrepFileAccess } from "@/app/lib/crep/fileAccess";
+import { validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
+import { CrepFileSpecs } from "@/types/crepExam";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const formData = await req.formData();
   const examId = formData.get("examId");
   const files = formData.getAll("files") as File[];
+  const specsJson = formData.get("specs");
 
   if (!examId || typeof examId !== "string") {
     return NextResponse.json({ error: "Missing examId" }, { status: 400 });
@@ -24,33 +23,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
   }
 
-  const exam = await getCrepExamById(examId);
-  if (!exam) {
-    return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+  // Print settings of every file, in the same order as `files`
+  let specs: CrepFileSpecs[];
+  try {
+    specs = typeof specsJson === "string" ? JSON.parse(specsJson) : [];
+  } catch {
+    return NextResponse.json({ error: "Invalid print settings" }, { status: 400 });
+  }
+  if (!Array.isArray(specs) || specs.length !== files.length) {
+    return NextResponse.json({ error: "Missing print settings" }, { status: 400 });
   }
 
-  const contact = JSON.parse(exam.contact) as { email: string };
+  const access = await checkCrepFileAccess(session, examId);
+  if (!access.exam) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+  const { exam } = access;
 
-  let canAccessAsRepro = false;
-  if (session.user.hasCrepAccess && !session.user.isAdmin) {
-    const reproExams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[];
-    canAccessAsRepro = reproExams.some((reproExam) => reproExam.id === exam.id);
+  const newFiles = files.map((file, index) => ({ ...specs[index], file_name: file.name }));
+  const filesError = validateFilesSpecs(newFiles);
+  if (filesError) {
+    return NextResponse.json({ error: filesError }, { status: 400 });
   }
 
-  if (contact.email !== session.user.email && !session.user.isAdmin && !canAccessAsRepro) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (!examPrePrintStatus.includes(exam.status)) {
-    return NextResponse.json(
-      { error: "Exam files can no longer be modified at this status" },
-      { status: 409 }
-    );
-  }
-
-  const existing: string[] = JSON.parse(exam.files);
+  const existing = exam.files.map((file) => file.file_name);
   const incomingNames = files.map((f) => f.name);
-  const collisions = incomingNames.filter((n) => existing.includes(n));
+  const collisions = incomingNames.filter((n, index) => existing.includes(n) || incomingNames.indexOf(n) !== index);
   if (collisions.length > 0) {
     return NextResponse.json(
       { error: "Filename collision", collisions },
@@ -65,8 +63,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to save files" }, { status: 500 });
   }
 
-  const updated = [...existing, ...incomingNames];
-  await updateCrepExamFiles(examId, JSON.stringify(updated));
+  await addCrepFiles(exam.id, newFiles);
 
-  return NextResponse.json({ ok: true, files: updated });
+  return NextResponse.json({ ok: true });
 }

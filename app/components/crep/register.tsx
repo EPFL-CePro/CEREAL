@@ -16,6 +16,9 @@ import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { limitTextToLines } from "@/app/lib/remarks";
 import { businessDaysBetween } from "@/app/lib/businessDays";
 import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
+import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
+import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
+import { FileSpecsFields } from "./FileSpecsFields";
 
 interface RegisterProps {
     user: AppUser
@@ -26,28 +29,8 @@ interface AppUser extends User {
     sciper: string;
 }
 
-interface Exam {
-    id: number;
-    exam_code: string;
-    exam_date: Date;
-    exam_name: string;
-    exam_pages: number;
-    exam_students: number;
-    print_date: Date;
-    remark: string;
-    repro_remark: string;
-    status: string;
-    paper_format: string;
-    paper_color: string;
-    contact: string;
-    authorized_persons: string;
-    registered_by: string;
-    need_scan: boolean;
-    financial_center: string;
-}
-
 interface Gap {
-    between: [Exam, Exam]; // before exam, end exam
+    between: [CrepExam, CrepExam]; // before exam, end exam
     gapMinutes: number; // gap between the two exams in minutes
 };
 
@@ -58,14 +41,14 @@ export default function App({ user }: RegisterProps) {
             course: null,
             contact: user.sciper,
             authorizedPersons: "",
-            paperFormat: "A3",
-            paperColor: "greyscale",
-            needScan: true,
             remark: "",
-            print: "recto-verso",
         },
     })
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    // One card per file, each file having its own print settings
+    const [selectedFiles, setSelectedFiles] = useState<{ file: File, specs: CrepFileSpecs }[]>([]);
+    // Print settings of a reserved exam, whose files are not uploaded yet
+    const [reservedSpecs, setReservedSpecs] = useState<CrepFileSpecs>(defaultFileSpecs);
+    const [filesError, setFilesError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [modalTitle, setModalTitle] = useState("Registration Successful");
     const [modalMessage, setModalMessage] = useState("Your exam has been successfully registered.");
@@ -105,42 +88,34 @@ export default function App({ user }: RegisterProps) {
 
         const newFiles = Array.from(e.target.files);
 
-        setSelectedFiles((prev) => {
-            const merged = [...prev];
-
-            // optional: avoid duplicates (same name + size + lastModified)
-            newFiles.forEach((file) => {
-                const alreadyThere = merged.some(
-                    (f) =>
-                        f.name === file.name &&
-                        f.size === file.size &&
-                        f.lastModified === file.lastModified
-                );
-                if (!alreadyThere) {
-                    merged.push(file);
-                }
-            });
-
-            return merged;
+        // Two files of the same exam can not have the same name (they are stored in the same folder)
+        const duplicates = newFiles.filter((file) => selectedFiles.some((selected) => selected.file.name === file.name));
+        const merged = [...selectedFiles];
+        newFiles.forEach((file) => {
+            if (merged.some((selected) => selected.file.name === file.name)) return;
+            // Print settings are pre-filled with the ones of the previous file
+            const previousSpecs = merged.length > 0 ? merged[merged.length - 1].specs : defaultFileSpecs;
+            merged.push({ file, specs: { ...previousSpecs } });
         });
+        setSelectedFiles(merged);
 
-        clearErrors("files");
+        setFilesError(duplicates.length > 0
+            ? `A file with the same name has already been selected : ${duplicates.map((file) => file.name).join(", ")}. Please rename it before adding it.`
+            : null
+        );
 
         // allow selecting the same file again later
         e.target.value = "";
     };
 
     const handleRemoveFile = (index: number) => {
-        setSelectedFiles(prev => {
-            const updated = prev.filter((_, i) => i !== index);
-            if (updated.length === 0) {
-                setError("files", {
-                    type: "validate",
-                    message: "Please upload at least one file",
-                });
-            }
-            return updated;
-        });
+        const updated = selectedFiles.filter((_, i) => i !== index);
+        setSelectedFiles(updated);
+        setFilesError(updated.length === 0 ? "Please upload at least one file" : null);
+    };
+
+    const handleFileSpecsChange = (index: number, specs: CrepFileSpecs) => {
+        setSelectedFiles((prev) => prev.map((selected, i) => i === index ? { ...selected, specs } : selected));
     };
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
@@ -158,13 +133,22 @@ export default function App({ user }: RegisterProps) {
 
         // check uploaded files not empty
         if (selectedFiles.length === 0 && !hideFiles) {
-            setError("files", {
-                type: "validate",
-                message: "Please upload at least one file",
-            });
+            setFilesError("Please upload at least one file");
             openModal("File Upload Error", "You need to upload at least one file before submitting the form.");
             return;
         }
+
+        // Files to print with their print settings. A reserved exam has a single file, not uploaded yet.
+        const printFiles = hideFiles
+            ? [{ file_name: null, ...reservedSpecs }]
+            : selectedFiles.map(({ file, specs }) => ({ file_name: file.name, ...specs }));
+
+        const printFilesError = validateFilesSpecs(printFiles);
+        if (printFilesError) {
+            setFilesError(printFilesError);
+            return;
+        }
+        setFilesError(null);
 
         if (examDate && desiredDate) {
             const exam = new Date(examDate);
@@ -192,11 +176,6 @@ export default function App({ user }: RegisterProps) {
                 // clear any previous date error
                 clearErrors("desiredDate");
             }
-        }
-
-        if(data.paperFormat == "A3" && data.nbPages % 4 != 0) {
-            setError("nbPages", { type: "validate", message: "When printing in A3, number of pages per document must be a multiple of 4." });
-            return;
         }
 
         setIsSubmitting(true);
@@ -231,11 +210,11 @@ export default function App({ user }: RegisterProps) {
             const exam_code = data.course.exam.code;
             const contact_name = contact?.lastname;
 
-            function getEndDateOfPrinting(exam: Exam): Date {
-                return new Date(exam.print_date.getTime() + getPrintingDurationInMinutes(exam.exam_students) * 60000);
+            function getEndDateOfPrinting(exam: CrepExam): Date {
+                return new Date(exam.print_date.getTime() + exam.print_duration * 60000);
             }
 
-            function computeGapsBetweenExams(exams: Exam[]): Gap[] {
+            function computeGapsBetweenExams(exams: CrepExam[]): Gap[] {
                 const sorted = [...exams].sort(
                     (a, b) => a.print_date.getTime() - b.print_date.getTime()
                 );
@@ -292,7 +271,7 @@ export default function App({ user }: RegisterProps) {
                 firstDayDate.setHours(8, 0, 0, 0);
                 printingDate = formatDateTimeForDatabase(firstDayDate);
             } else {
-                const necessaryPrintingDurationInMinutes = getPrintingDurationInMinutes(data.nbStudents);
+                const necessaryPrintingDurationInMinutes = getPrintingDurationInMinutes(getTotalCopies(printFiles));
 
                 for (const date of daysArray.reverse()) {
                     const year = date.getFullYear();
@@ -323,7 +302,7 @@ export default function App({ user }: RegisterProps) {
                             ...exam,
                             print_date: fromDatabaseDateTime(exam.print_date),
                         }));
-                        const gaps = computeGapsBetweenExams(normalizedExamsForDate as Exam[]);
+                        const gaps = computeGapsBetweenExams(normalizedExamsForDate);
                         const enoughGap = gaps.find(gap => gap.gapMinutes >= necessaryPrintingDurationInMinutes);
 
                         if (enoughGap) {
@@ -333,11 +312,8 @@ export default function App({ user }: RegisterProps) {
                         } else {
                             const latestGapOfDay = gaps[gaps.length - 1];
                             const latestExam = latestGapOfDay.between[1];
-                            const latestExamPrintingDurationInMinutes = getPrintingDurationInMinutes(latestExam.exam_students);
-
-                            const latestExamPrintDate = latestExam.print_date;
-                            const endPrintingLatestExam = new Date(latestExamPrintDate.getTime() + latestExamPrintingDurationInMinutes * 60000);
-                            const endPrintingWantedExam = new Date(endPrintingLatestExam.getTime() + getPrintingDurationInMinutes(data.nbStudents) * 60000);
+                            const endPrintingLatestExam = getEndDateOfPrinting(latestExam);
+                            const endPrintingWantedExam = new Date(endPrintingLatestExam.getTime() + necessaryPrintingDurationInMinutes * 60000);
 
                             const printingLimit = new Date(endPrintingLatestExam);
                             printingLimit.setHours(18, 0, 0, 0);
@@ -359,8 +335,6 @@ export default function App({ user }: RegisterProps) {
                 status = 'registered-error'
             }
 
-            const filesNamesArray = selectedFiles.map((file) => file.name)
-
             if(hideFiles) {
                 status = 'reserved'
             }
@@ -371,23 +345,17 @@ export default function App({ user }: RegisterProps) {
                     exam_code: exam_code,
                     exam_date: data.examDate,
                     print_date: printingDate,
-                    exam_students: data.nbStudents,
-                    exam_pages: data.nbPages,
                     contact: JSON.stringify(formattedContact),
                     // contact: data.contact, //if we want the id only
                     authorized_persons: JSON.stringify(authorizedPersons),
-                    paper_format: data.paperFormat,
-                    paper_color: data.paperColor,
                     remark: data.remark,
                     repro_remark: null,
                     status: status,
                     registered_by: user.email || '',
-                    need_scan: data.needScan,
                     financial_center: data.financialCenter,
-                    files: !hideFiles ? JSON.stringify(filesNamesArray) : '[]',
                     desired_date: data.desiredDate,
-                    print: data.print,
-                }
+                },
+                printFiles
             )
 
             if (typeof (insertedExam) !== 'number') {
@@ -401,7 +369,7 @@ export default function App({ user }: RegisterProps) {
                 const formData = new FormData();
                 formData.append("folder_name", folder_name);
 
-                selectedFiles.forEach((file) => {
+                selectedFiles.forEach(({ file }) => {
                     formData.append("files", file);
                 });
 
@@ -441,7 +409,7 @@ Next time, please register to the printing service earlier to make sur that the 
                     desiredDate: data.desiredDate,
                     contact: `${contact?.firstname} ${contact?.lastname} (${contact?.email})`,
                     authorizedPersonsLine: authorizedPersons.length > 0 ? `- Authorized persons: ${authorizedPersons.map(user => `${user.email}`).join(', ')}` : '',
-                    files: !hideFiles ? filesNamesArray.join(', ') : 'None yet',
+                    files: printFiles.map((file) => `\n    - ${describeFile(file)}`).join(''),
                     remarkLine: data.remark ? `- Additional remarks: ${data.remark}` : '',
                     "registrant.email": user.email || '',
                 });
@@ -465,6 +433,8 @@ Next time, please register to the printing service earlier to make sur that the 
             }
             reset();
             setSelectedFiles([]);
+            setReservedSpecs(defaultFileSpecs);
+            setFilesError(null);
             clearErrors();
         } catch (err) {
             console.error(err);
@@ -535,18 +505,18 @@ Next time, please register to the printing service earlier to make sur that the 
                         {errors.desiredDate && <span className="text-red-600">{errors.desiredDate.message}</span>}
                     </div>
                 </div>
-                <div className="flex flex-col justify-between w-full gap-1 [&>*>label]:text-lg">
-                    <div className="flex gap-4">
-                        <div className="flex flex-col w-2/4 gap-3">
-                            <label>Requested students copies <RedAsterisk /></label>
-                            <input className="text-right border border-slate-300 rounded-md p-2" type="number" min={1} {...register("nbStudents", { required: true, min: 1 })} />
-                        </div>
-                        <div className="flex flex-col w-2/4 gap-3">
-                            <label>Pages per document <RedAsterisk /></label>
-                            <input className="text-right border border-slate-300 rounded-md p-2" type="number" min={1} {...register("nbPages", { required: true, min: 1 })} />
-                            {errors.nbPages && <span className="text-red-600">{errors.nbPages.message}</span>}
-                        </div>
+                {user.isAdmin && (
+                    <div className="flex gap-2 items-center h-12">
+                        <label htmlFor="reserved">Reserved, no files yet</label>
+                        <input type="checkbox" id="reserved" name="reserved" checked={hideFiles} onChange={(e) => {
+                            setHideFiles(e.target.checked)
+                            setFilesError(null)
+                        }}/>
                     </div>
+                )}
+                <div className="flex flex-col gap-2">
+                    <label className="text-lg">{hideFiles ? "Print settings" : "Attach exam file(s) to print"} <RedAsterisk /></label>
+                    {!hideFiles && <span className="text-sm text-slate-600">Each file has its own print settings.</span>}
                     <div>
                         <span>I need help{" "}</span>
                         <span className="group relative inline-flex h-5 w-5">
@@ -582,67 +552,77 @@ Next time, please register to the printing service earlier to make sur that the 
                             </div>
                         </span>
                     </div>
-                </div>
-                <label>Print <RedAsterisk /></label>
-                <div>
-                    <div>
-                        <label className="mr-2" htmlFor="recto">Recto</label>
-                        <input type="radio" id="recto" value="recto" {...register("print", { required: true })} />
-                    </div>
-                    <div>
-                        <label className="mr-2" htmlFor="recto-verso">Recto-verso</label>
-                        <input type="radio" id="recto-verso" value="recto-verso" {...register("print", { required: true })} />
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 text-lg">
-                    <span>Bindings <RedAsterisk /></span>
-                    <span className="group relative inline-flex h-5 w-5">
-                        <button
-                            type="button"
-                            aria-label="Show bindings example"
-                            className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-400 text-xs font-semibold leading-none text-slate-700 hover:border-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                        >
-                            ?
-                        </button>
-                        <span className="invisible absolute left-1/2 bottom-5 z-20 w-96 -translate-x-1/2 select-text rounded-md border border-slate-700 bg-white p-2 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src="/bindings.png"
-                                alt="Bindings example"
-                                className="h-auto w-full rounded"
-                            />
+                    <div className="flex items-center gap-2">
+                        <span>Bindings</span>
+                        <span className="group relative inline-flex h-5 w-5">
+                            <button
+                                type="button"
+                                aria-label="Show bindings example"
+                                className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-400 text-xs font-semibold leading-none text-slate-700 hover:border-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                            >
+                                ?
+                            </button>
+                            <span className="invisible absolute left-1/2 bottom-5 z-20 w-96 -translate-x-1/2 select-text rounded-md border border-slate-700 bg-white p-2 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src="/bindings.png"
+                                    alt="Bindings example"
+                                    className="h-auto w-full rounded"
+                                />
+                            </span>
                         </span>
-                    </span>
-                </div>
-                <div>
-                    <div>
-                        <label className="mr-2" htmlFor="stapple">Stapple (A4)</label>
-                        <input type="radio" id="stapple" value="A4" {...register("paperFormat", { required: true })} />
-                    </div>
-                    <div>
-                        <label className="mr-2" htmlFor="saddle-stitch">Saddle stitch (A3)</label>
-                        <input type="radio" id="saddle-stitch" value="A3" {...register("paperFormat", { required: true })} />
                     </div>
                 </div>
-                <label>Paper color <RedAsterisk /></label>
-                <div className="flex items-end align-middle flex-row justify-between [&>div]:flex [&>div]:flex-col [&>div]:gap-2">
-                    <div className="[&>p]:italic">
-                        <p>In black and white</p>
-                        <p>With colors, at your expense</p>
-                    </div>
-                    <div className="[&>div]:flex [&>div]:justify-end [&>div]:gap-3">
-                        <div onClick={(e) => { const input = e.currentTarget.querySelector('input') as HTMLInputElement | null; if (input) { input.click(); } }}>
-                            <input type="radio" defaultChecked value="greyscale" {...register("paperColor", { required: true })} /><label>Greyscale</label>
+
+                <div className={`${hideFiles && 'hidden'}`}>
+                    <div className="relative w-full">
+                        <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
+                            Select file...
                         </div>
-                        <div onClick={(e) => { const input = e.currentTarget.querySelector('input') as HTMLInputElement | null; if (input) { input.click(); } }}>
-                            <input type="radio" value="color" {...register("paperColor", { required: true })} /><label>Color</label>
-                        </div>
+                        <input type="file" multiple onChange={handleFilesChange}
+                            className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
                 </div>
-                <div className="flex gap-3 text-lg">
-                    <label htmlFor="needScan">Needs to be scanned <RedAsterisk /></label>
-                    <input id="needScan" type="checkbox" defaultChecked {...register("needScan")} />
+
+                {/* One card per file, with its own print settings */}
+                <div className={`${hideFiles && 'hidden'} flex flex-col gap-3 border border-slate-300 rounded-md p-2 bg-background`}
+                    style={{ "--background": "#f0f0f0" } as React.CSSProperties}>
+                    {selectedFiles.length === 0 && (
+                        <span className="text-sm text-slate-500">
+                            No files selected yet.
+                        </span>
+                    )}
+
+                    {selectedFiles.map(({ file, specs }, index) => (
+                        <div key={file.name} className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <div>
+                                    <span className="font-medium">{file.name}</span>{" "}
+                                    <span className="text-slate-500">
+                                        ({(file.size / 1024).toFixed(1)} KB)
+                                    </span>
+                                </div>
+                                <button type="button" className="text-red-600 text-xs underline"
+                                    onClick={() => handleRemoveFile(index)} >
+                                    Remove
+                                </button>
+                            </div>
+                            <FileSpecsFields value={specs} onChange={(nextSpecs) => handleFileSpecsChange(index, nextSpecs)} />
+                        </div>
+                    ))}
                 </div>
+
+                {hideFiles && (
+                    <div className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
+                        <span className="text-sm font-medium">File not uploaded yet</span>
+                        <FileSpecsFields value={reservedSpecs} onChange={setReservedSpecs} />
+                    </div>
+                )}
+
+                {filesError && (
+                    <span className="text-red-600">{filesError}</span>
+                )}
+
                 <label>Financial Center <RedAsterisk /></label>
                 <input type="text" placeholder={"FCXXXX"} maxLength={8} {...register("financialCenter", { required: true })} />
                 {errors.financialCenter && <span className="text-red-600">This field is required</span>}
@@ -668,57 +648,6 @@ Next time, please register to the printing service earlier to make sur that the 
                     }}
                 />
 
-                {user.isAdmin && (
-                    <div className="flex gap-2 items-center h-12">
-                        <label htmlFor="reserved">Reserved, no files yet</label>
-                        <input type="checkbox" id="reserved" name="reserved" onChange={(e) => {
-                            setHideFiles(e.target.checked)
-                            clearErrors("files")
-                        }}/>  
-                    </div>
-                )}
-
-                <div className={`${hideFiles && 'hidden'}`}>
-                    <label>Attach exam file(s) to print <RedAsterisk /></label>
-                    <div className="relative w-full">
-                        <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
-                            Select file...
-                        </div>
-                        <input type="file" multiple onChange={handleFilesChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                </div>
-
-
-                {/* Preview / list of selected files */}
-                <div className={`${hideFiles && 'hidden'} mt-2 border border-slate-300 rounded-md p-2 bg-background`}
-                    style={{ "--background": "#f0f0f0" } as React.CSSProperties}>
-                    {selectedFiles.length === 0 && (
-                        <span className="text-sm text-slate-500">
-                            No files selected yet.
-                        </span>
-                    )}
-
-                    {selectedFiles.map((file, index) => (
-                        <div key={file.name + index} className="flex items-center justify-between text-sm py-1">
-                            <div>
-                                <span className="font-medium">{file.name}</span>{" "}
-                                <span className="text-slate-500">
-                                    ({(file.size / 1024).toFixed(1)} KB)
-                                </span>
-                            </div>
-                            <button type="button" className="text-red-600 text-xs underline"
-                                onClick={() => handleRemoveFile(index)} >
-                                Remove
-                            </button>
-                        </div>
-                    ))}
-                </div>
-
-                {errors.files && (
-                    <span className="text-red-600">{errors.files.message}</span>
-                )}
-
                 <button
                     className="btn btn-primary flex items-center justify-center gap-2 hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
                     type="submit"
@@ -732,7 +661,7 @@ Next time, please register to the printing service earlier to make sur that the 
                     )}
                     <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
                 </button>
-                {Object.keys(errors).length > 0 && <span className="text-red-500">The form contains error(s), please see message(s) above to correct every error(s).</span>}
+                {(Object.keys(errors).length > 0 || filesError) && <span className="text-red-500">The form contains error(s), please see message(s) above to correct every error(s).</span>}
             </form >
         </div >
 

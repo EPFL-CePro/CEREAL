@@ -1,64 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getAllCrepExamsForRepro, getCrepExamById, updateCrepExamFiles } from "@/app/lib/crep/database";
+import { deleteCrepFile } from "@/app/lib/crep/database";
 import { deleteExamFile, getExamFolderName } from "@/app/lib/crep/upload";
-import { examPrePrintStatus } from "@/app/lib/examStatus";
-import { CrepExam } from "@/types/crepExam";
+import { checkCrepFileAccess } from "@/app/lib/crep/fileAccess";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const body = await req.json().catch(() => null);
   const examId = body?.examId;
-  const filename = body?.filename;
+  const fileId = Number(body?.fileId);
 
-  if (!examId || typeof filename !== "string" || !filename) {
-    return NextResponse.json({ error: "Missing examId or filename" }, { status: 400 });
+  if (!examId || !Number.isInteger(fileId)) {
+    return NextResponse.json({ error: "Missing examId or fileId" }, { status: 400 });
   }
 
-  const exam = await getCrepExamById(String(examId));
-  if (!exam) {
-    return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+  const access = await checkCrepFileAccess(session, String(examId));
+  if (!access.exam) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+  const { exam } = access;
+
+  const file = exam.files.find((f) => f.id === fileId);
+  if (!file) {
+    return NextResponse.json({ error: "File not found in exam" }, { status: 404 });
   }
 
-  const contact = JSON.parse(exam.contact) as { email: string };
-
-  let canAccessAsRepro = false;
-  if (session.user.hasCrepAccess && !session.user.isAdmin) {
-    const reproExams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[];
-    canAccessAsRepro = reproExams.some((reproExam) => reproExam.id === exam.id);
-  }
-
-  if (contact.email !== session.user.email && !session.user.isAdmin && !canAccessAsRepro) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (!examPrePrintStatus.includes(exam.status)) {
+  if (exam.files.length <= 1) {
     return NextResponse.json(
-      { error: "Exam files can no longer be modified at this status" },
+      { error: "A request needs at least one file. Add the new file before deleting this one." },
       { status: 409 }
     );
   }
 
-  const files: string[] = JSON.parse(exam.files);
-  if (!files.includes(filename)) {
-    return NextResponse.json({ error: "File not found in exam" }, { status: 404 });
+  // A file that is not uploaded yet (reserved exam) only exists in the database
+  if (file.file_name) {
+    try {
+      await deleteExamFile(getExamFolderName(exam), file.file_name);
+    } catch (err) {
+      console.error(err);
+      return NextResponse.json({ error: "Failed to delete file" }, { status: 500 });
+    }
   }
 
-  try {
-    await deleteExamFile(getExamFolderName(exam), filename);
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to delete file" }, { status: 500 });
-  }
+  await deleteCrepFile(exam.id, file.id);
 
-  const updated = files.filter((f) => f !== filename);
-  await updateCrepExamFiles(String(examId), JSON.stringify(updated));
-
-  return NextResponse.json({ ok: true, files: updated });
+  return NextResponse.json({ ok: true });
 }
