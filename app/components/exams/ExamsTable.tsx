@@ -813,12 +813,66 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       ? new Date(selectedExam.exam_date as string | Date).toISOString().split('T')[0]
       : 'Not set'
 
+  function exportToCSV(exams: Exam[]) {
+    // Avoiding weird things in the cell (commas, lists, ...) (mainly for the remark)
+    const csvCell = (value: unknown) => {
+      const text = value == null || value === '' ? 'None' : String(value)
+      return `"${text.replaceAll('"', '""')}"`
+    }
+
+    const headers = [
+      'ID', 'Code', 'Nom', 'Enseignants', 'Contact', 'Date examen', 'Type',
+      'Niveau service', 'Service', 'Status', 'Semestre', 'Nombre étudiants',
+      'Nombre pages', 'Remarque', 'Responsable',
+    ]
+
+    const rows = exams.map((exam) => [
+      exam.id,
+      exam.code,
+      exam.name,
+      teachersByCourse[exam.code]
+        ? teachersByCourse[exam.code]
+            .map((teacher) => `${teacher.firstname} ${teacher.name}`)
+            .join(' | ')
+        : 'No teacher',
+      parseContact(exam.contact)?.email,
+      exam.exam_date ? new Date(exam.exam_date).toLocaleDateString('fr-FR') : 'None',
+      allExamTypes.find((element: ExamType) => element.id == exam.exam_type_id)?.code,
+      allServiceLevels.find((element: ServiceLevel) => element.id == exam.service_level_id)?.name,
+      allServices.find((element: Service) => element.id == exam.service_id)?.code,
+      allExamStatus.find((element: ExamStatus) => element.id == exam.exam_status_id)?.code,
+      exam.exam_semester,
+      exam.nb_students,
+      exam.nb_pages,
+      exam.remark,
+      exam.responsible_id,
+    ])
+
+    const checkedExamsCSV = [headers, ...rows]
+      .map((row) => row.map(csvCell).join(','))
+      .join('\r\n')
+
+    const blob = new Blob([checkedExamsCSV], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `exported_exams_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  function exportExams(exams:Exam[]) {
+    if(window.confirm(`This will export ${exams.length} exam${exams.length > 1 ? 's' : ''} to CSV. Are you sure that you want to continue ?`)) {
+      exportToCSV(exams)
+    }
+  }
+
   return (
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-10 lg:px-14">
       <div className="mx-auto">
         <div className="mb-6 overflow-hidden rounded-[2rem] backdrop-blur">
-          <div className="px-6 py-5 md:px-8">
-            <div className="max-w-7xl ml-auto mr-auto flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative px-6 py-5 md:px-8">
+            <div className="mx-auto max-w-7xl xl:pr-60">
               <div className="flex w-full flex-col gap-4 lg:flex-row">
                 <label className="group flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100 lg:max-w-xl">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 transition group-focus-within:bg-red-100">
@@ -898,6 +952,14 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                   </div>
                 </label>
               </div>
+            </div>
+            <div className="mt-4 flex items-center justify-end xl:absolute xl:right-0 xl:top-1/2 xl:mt-0 xl:-translate-y-1/2">
+              <button
+                className="btn btn-primary text-nowrap"
+                onClick={() => exportExams(table.getPrePaginationRowModel().rows.map((row) => row.original))}
+              >
+                Export (with table filters)
+              </button>
             </div>
           </div>
         </div>
