@@ -98,6 +98,25 @@ export async function getAllCrepExamsForRepro(email: string) {
     })
 }
 
+export async function getOldestCrepExamDate(): Promise<Date | null> {
+    const connection = mysql.createConnection({
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+    })
+
+    connection.connect()
+
+    return new Promise(function(resolve) {
+        connection.query('SELECT MIN(exam_date) AS oldest FROM crep;', (err: mysql.QueryError | null, rows) => {
+            if (err) throw err
+            resolve((rows as RowDataPacket[])[0]?.oldest ?? null);
+        })
+        connection.end()
+    })
+}
+
 export async function getCrepExamsByAcademicYear(academicYear: string): Promise<CrepExam[]> {
     const range = getAcademicYearDateRange(academicYear);
     if (!range) return [];
