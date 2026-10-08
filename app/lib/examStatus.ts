@@ -21,7 +21,7 @@ export const examStatus = [
     { value: 'scanned', label: 'Scanned', color: '', hexColor: '#020617', fcColor: '#0000000', needsAdmin: true },
     { value: 'wait_teach', label: 'Wait-Teach', color: '', hexColor: '#020617', fcColor: '#000000', needsAdmin: true },
     { value: 'to_contact', label: 'To-Contact', color: '', hexColor: '#020617', fcColor: '#000000', needsAdmin: true },
-    { value: 'reserved', label: 'Reserved', color: '', hexColor: '#636363', fcColor: 'oklch(0.4997 0 0)', needsAdmin: true }
+    { value: 'reserved', label: 'Reserved', color: '', hexColor: '#eb3471', fcColor: 'oklch(0.6257 0.2188 6.98)', needsAdmin: true }
 ];
 
 export const examNotAdminStatus = examStatus.filter(status => !status.needsAdmin);
