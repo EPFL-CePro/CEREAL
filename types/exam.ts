@@ -19,4 +19,4 @@ export type Exam = {
     contact: { sciper: string, email: string, firstname: string, lastname: string };
 }
 
-export type NewExam = Omit<Exam, 'id'>;
+export type NewExam = Omit<Exam, 'id' | 'contact'> & { contact: string };
