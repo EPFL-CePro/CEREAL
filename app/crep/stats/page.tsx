@@ -4,11 +4,12 @@ import DeliveryDelayHistogram, { DeliveryDelayBucket } from "@/app/components/cr
 import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable";
 import PrintingDurationHistogram, { PrintingDurationBucket } from "@/app/components/crep/stats/PrintingDurationHistogram";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
-import { getCrepExamsByAcademicYear } from "@/app/lib/crep/database";
+import { getCrepExamsByAcademicYear, getOldestCrepExamDate } from "@/app/lib/crep/database";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
 import { CrepExam } from "@/types/crepExam";
 import { businessDaysBetween } from "@/app/lib/businessDays";
 import {
+    getAcademicYearOfDate,
     getAcademicYearOptions,
     getCurrentAcademicYear,
     isSelectableAcademicYear,
@@ -85,11 +86,13 @@ export default async function Page({
     if (!session?.user) return;
 
     const currentAcademicYear = getCurrentAcademicYear();
-    const academicYears = getAcademicYearOptions(currentAcademicYear);
+    const oldestExamDate = await getOldestCrepExamDate();
+    const minAcademicYear = oldestExamDate ? getAcademicYearOfDate(oldestExamDate) : currentAcademicYear;
+    const academicYears = getAcademicYearOptions(minAcademicYear, currentAcademicYear);
     const { academicYear } = await searchParams;
     const selectedAcademicYear = academicYear ?? currentAcademicYear;
 
-    if (!isSelectableAcademicYear(selectedAcademicYear, currentAcademicYear)) {
+    if (!isSelectableAcademicYear(selectedAcademicYear, minAcademicYear, currentAcademicYear)) {
         redirect(`/crep/stats?academicYear=${currentAcademicYear}`);
     }
 
