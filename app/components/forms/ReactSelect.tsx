@@ -4,7 +4,7 @@ import AsyncSelect from "react-select/async";
 import Select from "react-select";
 import type { OptionProps, GroupBase, OptionsOrGroups, Theme, StylesConfig } from "react-select";
 import CustomOption from "./CustomOption";
-import { Control, Controller, ControllerRenderProps, Path } from "react-hook-form";
+import { Control, Controller, ControllerRenderProps, FieldValues, Path } from "react-hook-form";
 import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
 import { Inputs } from "@/types/inputs";
 import { SelectOption } from "@/types/selectOption";
@@ -18,10 +18,10 @@ function isSelectOption(value: unknown): value is SelectOption {
     );
 }
 
-export interface SelectProps {
-    control: Control<Inputs>;
+export interface SelectProps<T extends FieldValues = Inputs> {
+    control: Control<T>;
     label: string;
-    name: Path<Inputs>;
+    name: Path<T>;
     isMultiChoice: boolean;
     containCourses?: boolean;
     instanceId?: string | number;
@@ -34,10 +34,10 @@ async function fetchOasisCourses(academicYear?: string): Promise<SelectOption[]>
     return list;
 }
 
-type SelectFieldProps = {
-    field: ControllerRenderProps<Inputs>;
+type SelectFieldProps<T extends FieldValues> = {
+    field: ControllerRenderProps<T>;
     label: string;
-    name: Path<Inputs>;
+    name: Path<T>;
     isMultiChoice: boolean;
     containCourses?: boolean;
     instanceId?: string | number;
@@ -45,7 +45,7 @@ type SelectFieldProps = {
     academicYear?: string;
 };
 
-function SelectField({
+function SelectField<T extends FieldValues>({
     field,
     label,
     name,
@@ -54,7 +54,7 @@ function SelectField({
     instanceId,
     disabled,
     academicYear
-}: SelectFieldProps) {
+}: SelectFieldProps<T>) {
     const timeoutRef = useRef<NodeJS.Timeout | number>(0);
     const PAGE_SIZE = 10;
     const allCoursesRef = useRef<SelectOption[] | null>(null);
@@ -372,7 +372,7 @@ function SelectField({
 }
 
 // Select wrapper
-export default function SelectController({
+export default function SelectController<T extends FieldValues = Inputs>({
     control,
     label,
     name,
@@ -381,7 +381,7 @@ export default function SelectController({
     instanceId,
     disabled,
     academicYear
-}: SelectProps) {
+}: SelectProps<T>) {
     return (
         <Controller
             name={name}
