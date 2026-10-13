@@ -1,6 +1,10 @@
 "use client";
 
 import { User } from "next-auth";
+import { getAcademicYearOptions, getCurrentAcademicYear } from "@/app/lib/academicYear";
+import { DigitalArchiveInputs } from "@/types/digitalArchiveInputs";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { RedAsterisk } from "../RedAsterisk";
 
 interface RegisterProps {
     user: AppUser
@@ -12,6 +16,14 @@ interface AppUser extends User {
 }
 
 export default function App({ user }: RegisterProps) {
+    const currentAcademicYear = getCurrentAcademicYear();
+    const academicYears = getAcademicYearOptions('2024-2025', currentAcademicYear);
+
+    const { register, handleSubmit } = useForm<DigitalArchiveInputs>()
+    
+    const onSubmit: SubmitHandler<DigitalArchiveInputs> = async (data) => {
+        console.log(data.academicYear);
+    };
 
     return (
         <div className="flex flex-col items-center m-24">
@@ -48,6 +60,33 @@ export default function App({ user }: RegisterProps) {
                     </div>
                 </ul>
             </div>
+
+            <form
+                className="flex flex-col gap-5 mt-12"
+                onSubmit={handleSubmit(onSubmit)}
+            >
+                <div>
+                    <label>Academic year <RedAsterisk /></label>
+                    <select
+                        defaultValue={currentAcademicYear}
+                        className="mt-1 w-full border-none bg-transparent text-base text-gray-950 outline-none"
+                        {...register('academicYear')}
+                        >
+                        {academicYears.map((academicYear) => (
+                            <option key={academicYear} value={academicYear}>
+                                {academicYear}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <button
+                    className="btn btn-primary self-start disabled:cursor-wait disabled:opacity-80"
+                    type="submit"
+                >
+                    <span>Submit</span>
+                </button>
+            </form>
         </div>
     );
 }
