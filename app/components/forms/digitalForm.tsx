@@ -71,7 +71,7 @@ export default function App({ user }: RegisterProps) {
                         defaultValue={currentAcademicYear}
                         className="mt-1 w-full border-none bg-transparent text-base text-gray-950 outline-none"
                         {...register('academicYear')}
-                        >
+                    >
                         {academicYears.map((academicYear) => (
                             <option key={academicYear} value={academicYear}>
                                 {academicYear}
