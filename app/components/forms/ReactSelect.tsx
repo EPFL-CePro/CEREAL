@@ -58,10 +58,13 @@ function SelectField<T extends FieldValues>({
     const timeoutRef = useRef<NodeJS.Timeout | number>(0);
     const PAGE_SIZE = 10;
     const allCoursesRef = useRef<SelectOption[] | null>(null);
+    const allCoursesAcademicYearRef = useRef<string | undefined>(undefined);
     const filteredCoursesRef = useRef<SelectOption[]>([]);
     const displayedCoursesRef = useRef<SelectOption[]>([]);
     const currentQueryRef = useRef<string>("");
     const pageRef = useRef<number>(1);
+    const latestCoursesRequestRef = useRef(0);
+    const previousAcademicYearRef = useRef(academicYear);
 
     const [selected, setSelected] = useState<SelectOption | SelectOption[] | null>(null);
     const [courseDisplayed, setCourseDisplayed] = useState<SelectOption[]>([]);
@@ -207,16 +210,29 @@ function SelectField<T extends FieldValues>({
 
     const ensureCoursesLoaded = useCallback(
         async (query = "") => {
-            if (!allCoursesRef.current) {
+            const requestAcademicYear = academicYear;
+            const shouldFetchCourses =
+                !allCoursesRef.current ||
+                allCoursesAcademicYearRef.current !== requestAcademicYear;
+
+            if (shouldFetchCourses) {
+                const requestId = latestCoursesRequestRef.current + 1;
+                latestCoursesRequestRef.current = requestId;
                 setCourseLoading(true);
                 try {
-                    const all = await fetchOasisCourses(academicYear);
+                    const all = await fetchOasisCourses(requestAcademicYear);
+                    if (latestCoursesRequestRef.current !== requestId) return;
                     allCoursesRef.current = all ?? [];
+                    allCoursesAcademicYearRef.current = requestAcademicYear;
                 } catch (e) {
+                    if (latestCoursesRequestRef.current !== requestId) return;
                     alert(`Failed to load courses, ${e}`);
                     allCoursesRef.current = [];
+                    allCoursesAcademicYearRef.current = requestAcademicYear;
                 } finally {
-                    setCourseLoading(false);
+                    if (latestCoursesRequestRef.current === requestId) {
+                        setCourseLoading(false);
+                    }
                 }
             }
 
@@ -235,6 +251,24 @@ function SelectField<T extends FieldValues>({
         },
         [PAGE_SIZE, academicYear]
     );
+
+    useEffect(() => {
+        if (!(containCourses && name === "course")) return;
+        if (previousAcademicYearRef.current === academicYear) return;
+
+        previousAcademicYearRef.current = academicYear;
+        latestCoursesRequestRef.current += 1;
+        allCoursesRef.current = null;
+        allCoursesAcademicYearRef.current = undefined;
+        filteredCoursesRef.current = [];
+        displayedCoursesRef.current = [];
+        currentQueryRef.current = "";
+        pageRef.current = 1;
+        setCourseDisplayed([]);
+        setCourseLoading(false);
+        field.onChange(isMultiChoice ? [] : null);
+        void ensureCoursesLoaded("");
+    }, [academicYear, containCourses, ensureCoursesLoaded, field, isMultiChoice, name]);
 
     const loadMoreCourses = useCallback(() => {
         const filtered = filteredCoursesRef.current || [];
