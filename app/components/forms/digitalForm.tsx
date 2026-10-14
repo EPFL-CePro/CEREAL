@@ -173,6 +173,11 @@ export default function App({ user }: RegisterProps) {
                     </div>
                 )}
 
+                <div className="flex flex-col">
+                    <label>Number of copies (must be the same as the number of PDFs files) <RedAsterisk /></label>
+                    <input className="w-32 border-1 border-gray-300 p-2 rounded-lg" type="number" {...register("numberCopies", { valueAsNumber: true, required: true })} />
+                </div>
+
                 <button
                     className="btn btn-primary self-start disabled:cursor-wait disabled:opacity-80"
                     type="submit"
