@@ -57,7 +57,6 @@ export default function Calendar({ user }: CalendarProps) {
     () => getAllowedExamStatus(user.isAdmin || false),
     [user.isAdmin]
   );
-
   useEffect(() => {
     (async function () {
       const data = user.isAdmin ? await getAllCrepExams() as Array<QueryResult> : await getAllNonAdminExams() as Array<QueryResult>;
@@ -336,7 +335,7 @@ export default function Calendar({ user }: CalendarProps) {
       <div className=" w-full flex flex-row justify-between gap-4 flex-wrap md:flex-nowrap">
         <div className="flex flex-grow-8 flex-row">
           <div className="flex-col ml-4 gap-2 grid grid-cols-4">
-            <Legend />
+            <Legend isAdmin={!!user?.isAdmin}/>
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-start">
