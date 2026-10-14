@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { User } from "next-auth";
 import { getAcademicYearOptions, getCurrentAcademicYear } from "@/app/lib/academicYear";
 import { DigitalArchiveInputs } from "@/types/digitalArchiveInputs";
-import { SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { RedAsterisk } from "../RedAsterisk";
 import ReactSelect from "./ReactSelect";
 
@@ -17,13 +17,65 @@ interface AppUser extends User {
     sciper: string;
 }
 
+interface ArchiveSections {
+    sections: string[];
+    matchingSections: string[];
+}
+
 export default function App({ user }: RegisterProps) {
     const currentAcademicYear = getCurrentAcademicYear();
     const academicYears = getAcademicYearOptions('2024-2025', currentAcademicYear);
     const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(currentAcademicYear);
 
-    const { handleSubmit, control } = useForm<DigitalArchiveInputs>()
-    
+    const { handleSubmit, control, register, setValue } = useForm<DigitalArchiveInputs>()
+
+    const courseCode = useWatch({ control, name: "course" })?.exam.code;
+    const [archiveSections, setArchiveSections] = useState<ArchiveSections | null>(null);
+    const [sectionsLoading, setSectionsLoading] = useState(false);
+    const [sectionsError, setSectionsError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setArchiveSections(null);
+        setSectionsError(null);
+        setSectionsLoading(false);
+        setValue("section", "");
+        if (!courseCode) return;
+
+        let cancelled = false;
+        setSectionsLoading(true);
+
+        const params = new URLSearchParams({ academicYear: selectedAcademicYear, courseCode });
+        fetch(`/api/digital-archiving/sections?${params}`)
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error ?? "Failed to read the archives");
+                return data as ArchiveSections;
+            })
+            .then((data) => {
+                if (cancelled) return;
+                setArchiveSections(data);
+                // Course found in a single section: no need to ask the user
+                if (data.matchingSections.length === 1) {
+                    setValue("section", data.matchingSections[0]);
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) setSectionsError(err instanceof Error ? err.message : "Failed to read the archives");
+            })
+            .finally(() => {
+                if (!cancelled) setSectionsLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [courseCode, selectedAcademicYear, setValue]);
+
+    // Several matches: choose between them. No match: choose between every section of the academic year.
+    const sectionOptions = archiveSections
+        ? (archiveSections.matchingSections.length > 1 ? archiveSections.matchingSections : archiveSections.sections)
+        : [];
+
     const onSubmit: SubmitHandler<DigitalArchiveInputs> = async (data) => {
         console.log(data);
     };
@@ -86,6 +138,40 @@ export default function App({ user }: RegisterProps) {
                     <label>Select your exam <RedAsterisk /></label>
                     <ReactSelect control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} academicYear={selectedAcademicYear} />
                 </div>
+
+                {sectionsLoading && <p className="text-sm text-gray-500">Looking for the course in the archives...</p>}
+                {sectionsError && <p className="text-sm text-red-600">{sectionsError}</p>}
+
+                {archiveSections && archiveSections.matchingSections.length === 1 && (
+                    <p>Section: <span className="font-semibold">{archiveSections.matchingSections[0]}</span></p>
+                )}
+
+                {archiveSections && archiveSections.matchingSections.length !== 1 && (
+                    <div>
+                        <label>Section <RedAsterisk /></label>
+                        <p className="text-sm text-gray-500">
+                            {archiveSections.matchingSections.length > 1
+                                ? "This course exists in several sections for this academic year, please select the right one."
+                                : "This course is not in the archives yet for this academic year, please select the section your exam belongs to."}
+                        </p>
+                        {sectionOptions.length > 0 ? (
+                            <select
+                                defaultValue=""
+                                className="mt-1 w-full border-none bg-transparent text-base text-gray-950 outline-none"
+                                {...register("section", { required: true })}
+                            >
+                                <option value="" disabled>Select a section...</option>
+                                {sectionOptions.map((section) => (
+                                    <option key={section} value={section}>
+                                        {section}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <p className="text-sm text-red-600">No section found in the archives for {selectedAcademicYear}.</p>
+                        )}
+                    </div>
+                )}
 
                 <button
                     className="btn btn-primary self-start disabled:cursor-wait disabled:opacity-80"
