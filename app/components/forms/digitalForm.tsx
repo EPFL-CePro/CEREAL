@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { User } from "next-auth";
 import { getAcademicYearOptions, getCurrentAcademicYear } from "@/app/lib/academicYear";
 import { DigitalArchiveInputs } from "@/types/digitalArchiveInputs";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { RedAsterisk } from "../RedAsterisk";
+import ReactSelect from "./ReactSelect";
 
 interface RegisterProps {
     user: AppUser
@@ -18,11 +20,12 @@ interface AppUser extends User {
 export default function App({ user }: RegisterProps) {
     const currentAcademicYear = getCurrentAcademicYear();
     const academicYears = getAcademicYearOptions('2024-2025', currentAcademicYear);
+    const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(currentAcademicYear);
 
-    const { register, handleSubmit } = useForm<DigitalArchiveInputs>()
+    const { handleSubmit, control } = useForm<DigitalArchiveInputs>()
     
     const onSubmit: SubmitHandler<DigitalArchiveInputs> = async (data) => {
-        console.log(data.academicYear);
+        console.log(data);
     };
 
     return (
@@ -70,7 +73,7 @@ export default function App({ user }: RegisterProps) {
                     <select
                         defaultValue={currentAcademicYear}
                         className="mt-1 w-full border-none bg-transparent text-base text-gray-950 outline-none"
-                        {...register('academicYear')}
+                        onChange={(event) => setSelectedAcademicYear(event.target.value)}
                     >
                         {academicYears.map((academicYear) => (
                             <option key={academicYear} value={academicYear}>
@@ -78,6 +81,10 @@ export default function App({ user }: RegisterProps) {
                             </option>
                         ))}
                     </select>
+                </div>
+                <div>
+                    <label>Select your exam <RedAsterisk /></label>
+                    <ReactSelect control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} academicYear={selectedAcademicYear} />
                 </div>
 
                 <button
