@@ -1,6 +1,7 @@
 "use client";
 
 import { PieChart } from "@mui/x-charts/PieChart";
+import { MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/businessDays";
 
 type TimingDatum = {
   id: string;
@@ -54,7 +55,7 @@ export default function WhoWasLateChart({
           </h1>
           <p className="mt-3 text-sm leading-6 text-gray-600">
             An exam is considered &quot;late&quot; when the date of entry in the database is less than
-            8 business days before the desired delivery date.
+            {MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days before the desired delivery date.
           </p>
         </div>
       </div>

@@ -7,7 +7,7 @@ import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
 import { getCrepExamsByAcademicYear, getOldestCrepExamDate } from "@/app/lib/crep/database";
 import { formatDateOnlyValue } from "@/app/lib/dateTime";
 import { CrepExam } from "@/types/crepExam";
-import { businessDaysBetween } from "@/app/lib/businessDays";
+import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/businessDays";
 import {
     getAcademicYearOfDate,
     getAcademicYearOptions,
@@ -115,7 +115,7 @@ export default async function Page({
                 (stats.delayCounts.get(businessDays) ?? 0) + 1
             );
 
-            if (businessDays < 8) {
+            if (businessDays < MIN_BUSINESS_DAYS_BEFORE_DELIVERY) {
                 stats.late++;
             } else {
                 stats.onTime++;

@@ -14,7 +14,7 @@ import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
 import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { limitTextToLines } from "@/app/lib/remarks";
-import { businessDaysBetween } from "@/app/lib/businessDays";
+import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/businessDays";
 import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
@@ -165,8 +165,8 @@ export default function App({ user }: RegisterProps) {
                 return;
             }
 
-            else if (businessDaysBetween(formatDateYYYYMMDD(today), desiredDate) < 8) {
-                const confirmed = await openConfirmationModal('Date Validation Warning', `There must be at least 8 business days between today and the desired delivery date.\n\nDo you still want to submit your exam?`);
+            else if (businessDaysBetween(formatDateYYYYMMDD(today), desiredDate) < MIN_BUSINESS_DAYS_BEFORE_DELIVERY) {
+                const confirmed = await openConfirmationModal('Date Validation Warning', `There must be at least ${MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days between today and the desired delivery date.\n\nDo you still want to submit your exam?`);
                 if (!confirmed) {
                     return;
                 }
@@ -386,7 +386,7 @@ export default function App({ user }: RegisterProps) {
             }
            /*
             The mail checks if status is `registered-warning` or `registered-error`, and displays a message for the user and the CePro team to let them know about the exam printing situation.
-            If the status is `registered-warning`, that means that a printing schedule could be found, but that the timing is too short (less than 8 days between the exam date and the desired delivery date)
+            If the status is `registered-warning`, that means that a printing schedule could be found, but that the timing is too short (less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date)
             If the status is `registered-error`, that means that a printing schedule could NOT be found, so the CePro (and Repro) team need to do something for the user. 
            */
             if (process.env.NODE_ENV !== "development") {
@@ -396,7 +396,7 @@ export default function App({ user }: RegisterProps) {
     status === 'registered-error'
         ? `Due to a printing planning extremely full or too tight delays, we could not determine a printing session for your exam.
 The CePro team will get in touch with you as soon as possible to discuss about your situation.`
-        : `We would like to inform you that you choose a desired delivery date that is inferior to 8 business days from today.
+        : `We would like to inform you that you choose a desired delivery date that is inferior to ${MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days from today.
 The CePro team will get in touch with you shortly to discuss about your situation.
 Next time, please register to the printing service earlier to make sur that the printing team has the right amount of time to print your exam correctly.`
 }
@@ -415,9 +415,9 @@ Next time, please register to the printing service earlier to make sur that the 
                 });
             }
             if(status == 'registered-warning') {
-                // Modal with warning that there is less than 8 days between the exam date and the desired delivery date.
+                // Modal with warning that there is less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date.
                 openModal("REQUIRES ATTENTION - Registration Successful", `
-                    Your exam ${exam_code} has been registered, but with a delivery date that is inferior to 8 business days from today.
+                    Your exam ${exam_code} has been registered, but with a delivery date that is inferior to ${MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days from today.
                     An email has been sent to you as a confirmation.
                     The CePro team can contact you at any time to discuss about your situation.
                 `)
