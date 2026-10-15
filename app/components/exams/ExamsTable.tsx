@@ -37,6 +37,14 @@ type ExamContact = {
 
 type ExamContactValue = string | ExamContact | null | undefined
 
+const COLUMNS_STORAGE_KEY = 'cereal.examsTable.columns'
+
+// Other column settings (size, ...) can be added here later
+type ColumnPreference = {
+  id: string
+  visible: boolean
+}
+
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
   const [globalFilter, setGlobalFilter] = React.useState('') // Plain text searching, searching in the whole table
@@ -44,6 +52,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [exams, setExams] = React.useState<Exam[]>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [isColumnVisibilityLoaded, setIsColumnVisibilityLoaded] = React.useState(false)
   const [academicYears, setAcademicYears] = React.useState<string[]>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -121,6 +130,30 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     },
     []
   )
+
+  // Restoring the column props chosen by the user
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(COLUMNS_STORAGE_KEY)
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          const validPreferences = (parsed as ColumnPreference[]).filter(
+              (column) => typeof column?.id === 'string' && typeof column.visible === 'boolean'
+          );
+
+          const columnVisibility = Object.fromEntries(
+              validPreferences.map((column) => [column.id, column.visible])
+          );
+
+          setColumnVisibility(columnVisibility);
+        }
+      }
+    } catch {
+      // localStorage unavailable or corrupted value: keeping every column visible
+    }
+    setIsColumnVisibilityLoaded(true)
+  }, [])
 
   React.useEffect(() => {
     let isActive = true
@@ -791,6 +824,21 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     getSortedRowModel: getSortedRowModel(),
   })
 
+  // Saving the columns preferences. `columnVisibility` is the dependency that triggers it, the
+  // array is built from the table so that it always contains every column, in display order.
+  React.useEffect(() => {
+    if (!isColumnVisibilityLoaded) return
+    try {
+      const preferences: ColumnPreference[] = table
+        .getAllLeafColumns()
+        .map((column) => ({ id: column.id, visible: column.getIsVisible() }))
+      localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(preferences))
+    } catch {
+      // localStorage unavailable: the choice just won't be remembered
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnVisibility, isColumnVisibilityLoaded])
+
   const rowCount = table.getRowModel().rows.length
   const totalRows = table.getRowCount()
   const currentPage = table.getState().pagination.pageIndex + 1
@@ -977,7 +1025,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                                checked={ column.getIsVisible() }
                                onChange={ column.getToggleVisibilityHandler() }
                         />
-                        { columnLabels[column.id] ?? column.id }
+                        { columnLabels[column.id] ?? column.id  }
                       </label>
                     ))
                   }
