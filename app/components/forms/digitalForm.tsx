@@ -22,17 +22,45 @@ interface ArchiveSections {
     matchingSections: string[];
 }
 
+interface ArchiveUploadResult {
+    fileName: string;
+    destination: string;
+    numberOfPdfs: number;
+    durationMs: number;
+    durationSeconds: number;
+}
+
+function formatBytes(size: number) {
+    if (size < 1024) return `${size} B`;
+    const units = ["KB", "MB", "GB", "TB"];
+    let value = size / 1024;
+    let unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+
+    return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
 export default function App({ user }: RegisterProps) {
     const currentAcademicYear = getCurrentAcademicYear();
     const academicYears = getAcademicYearOptions('2024-2025', currentAcademicYear);
     const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(currentAcademicYear);
 
-    const { handleSubmit, control, register, setValue } = useForm<DigitalArchiveInputs>()
+    const { handleSubmit, control, register, setValue, reset } = useForm<DigitalArchiveInputs>()
 
     const courseCode = useWatch({ control, name: "course" })?.exam.code;
     const [archiveSections, setArchiveSections] = useState<ArchiveSections | null>(null);
     const [sectionsLoading, setSectionsLoading] = useState(false);
     const [sectionsError, setSectionsError] = useState<string | null>(null);
+
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [result, setResult] = useState<ArchiveUploadResult | null>(null);
 
     useEffect(() => {
         setArchiveSections(null);
@@ -78,6 +106,62 @@ export default function App({ user }: RegisterProps) {
 
     const onSubmit: SubmitHandler<DigitalArchiveInputs> = async (data) => {
         console.log(data);
+        setError(null);
+        setResult(null);
+
+        const courseCode = data.course?.exam.code;
+        if (!courseCode || !data.section) {
+            setError("Select an exam and its section.");
+            return;
+        }
+
+        if(!data.numberCopies) {
+            setError("Specify a number of copies. It has to be the same number as the number of PDFs in the ZIP file.");
+            return;
+        }
+
+        if (!selectedFile) {
+            setError("Upload a ZIP file.");
+            return;
+        }
+
+        if (!selectedFile.name.toLowerCase().endsWith(".zip")) {
+            setError("The selected document has to be a .zip file.");
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const params = new URLSearchParams({
+                numberCopies: String(data.numberCopies),
+                academicYear: selectedAcademicYear,
+                section: data.section,
+                courseCode,
+            });
+            const response = await fetch(`/api/digital-archiving/unzip?${params}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/zip",
+                    "X-Archive-Name": encodeURIComponent(selectedFile.name),
+                    "X-Requested-By": user.sciper,
+                },
+                body: selectedFile,
+            });
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.error || "La decompression a echoue.");
+            }
+
+            setResult(payload);
+            setSelectedFile(null);
+            if (inputRef.current) inputRef.current.value = "";
+            reset();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Erreur inattendue pendant le test.");
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -119,6 +203,7 @@ export default function App({ user }: RegisterProps) {
             <form
                 className="flex flex-col gap-5 mt-12"
                 onSubmit={handleSubmit(onSubmit)}
+                encType="multipart/form-data"
             >
                 <div>
                     <label>Academic year <RedAsterisk /></label>
@@ -158,7 +243,7 @@ export default function App({ user }: RegisterProps) {
                             <select
                                 defaultValue=""
                                 className="mt-1 w-full border-none bg-transparent text-base text-gray-950 outline-none"
-                                {...register("section", { required: true })}
+                                {...register("section")}
                             >
                                 <option value="" disabled>Select a section...</option>
                                 {sectionOptions.map((section) => (
@@ -175,14 +260,59 @@ export default function App({ user }: RegisterProps) {
 
                 <div className="flex flex-col">
                     <label>Number of copies (must be the same as the number of PDFs files) <RedAsterisk /></label>
-                    <input className="w-32 border-1 border-gray-300 p-2 rounded-lg" type="number" {...register("numberCopies", { valueAsNumber: true, required: true })} />
+                    <input className="w-32 border-1 border-gray-300 p-2 rounded-lg" type="number" {...register("numberCopies", { valueAsNumber: true })} />
                 </div>
+
+                <div className="flex flex-col">
+                    <label>ZIP file <RedAsterisk /></label>
+                    <input
+                        ref={inputRef}
+                        type="file"
+                        accept=".zip,application/zip,application/x-zip-compressed"
+                        className="rounded-md border border-slate-300 p-3 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-red-600 file:px-4 file:py-2 file:font-semibold file:text-white file:hover:bg-red-700"
+                        disabled={isUploading}
+                        onChange={(event) => {
+                            setError(null);
+                            setResult(null);
+                            setSelectedFile(event.target.files?.[0] ?? null);
+                        }}
+                    />
+                </div>
+                {selectedFile && (
+                    <div className="rounded-md bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        <span className="font-semibold">{selectedFile.name}</span>
+                        <span className="ml-2 text-slate-500">({formatBytes(selectedFile.size)})</span>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                        {error}
+                    </div>
+                )}
+
+                {result && (
+                    <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                        <p className="font-semibold">Your exam has been archived, no more action needed</p>
+                        <p>
+                            Time taken: {result.durationSeconds.toFixed(2)} s ({result.durationMs} ms)
+                        </p>
+                        <p>{result.numberOfPdfs} PDFs</p>
+                    </div>
+                )}
 
                 <button
                     className="btn btn-primary self-start disabled:cursor-wait disabled:opacity-80"
                     type="submit"
+                    disabled={isUploading}
                 >
-                    <span>Submit</span>
+                    {isUploading && (
+                        <span
+                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                            aria-hidden="true"
+                        />
+                    )}
+                    <span>{isUploading ? "Submitting..." : "Submit"}</span>
                 </button>
             </form>
         </div>

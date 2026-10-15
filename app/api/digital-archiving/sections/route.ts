@@ -1,22 +1,9 @@
 import { auth } from "@/auth";
-import { readdir } from "fs/promises";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
+import { findCoursePrefix, listDirectories } from "@/app/lib/archiveFolders";
 
 export const runtime = "nodejs";
-
-// Returns the visible sub-directories of `dir`, or null if `dir` does not exist
-async function listDirectories(dir: string): Promise<string[] | null> {
-    try {
-        const entries = await readdir(dir, { withFileTypes: true });
-        return entries
-            .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-            .map((entry) => entry.name);
-    } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
-        throw err;
-    }
-}
 
 // Archive tree: SECTION/ACADEMIC_YEAR/PREFIX/COURSE_CODE
 // - `sections`: sections having a folder for the academic year
@@ -46,14 +33,9 @@ export async function GET(req: NextRequest) {
 
         const results = await Promise.all(allSections.map(async (section) => {
             const yearDir = path.join(archiveDir, section, academicYear);
-            const prefixes = await listDirectories(yearDir);
-            if (prefixes === null) return null;
+            if ((await listDirectories(yearDir)) === null) return null;
 
-            for (const prefix of prefixes) {
-                const courses = await listDirectories(path.join(yearDir, prefix));
-                if (courses?.includes(courseCode)) return { section, hasCourse: true };
-            }
-            return { section, hasCourse: false };
+            return { section, hasCourse: (await findCoursePrefix(yearDir, courseCode)) !== null };
         }));
 
         const sectionsWithYear = results.filter(

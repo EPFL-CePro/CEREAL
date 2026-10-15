@@ -28,6 +28,7 @@ services:
       - .:/app
       - ${EXAM_FILES_UPLOAD_FOLDER}:${EXAM_FILES_UPLOAD_FOLDER}:rw
       - ${DEFFERED_EXAMS_DIR}:${DEFFERED_EXAMS_DIR}:rw
+      - ${ARCHIVE_EXAMS_DIR}:${ARCHIVE_EXAMS_DIR}:rw
     stdin_open: true
     tty: true
     command: /bin/sh -c "cd /app && npm install && npm run dev"
