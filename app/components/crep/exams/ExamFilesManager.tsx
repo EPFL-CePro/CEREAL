@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CrepFile, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, pickFileSpecs, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
+import { countPdfPages } from "@/app/lib/crep/pdfPages";
 import { FileSpecsFields } from "../FileSpecsFields";
 
 type Props = {
@@ -43,8 +44,9 @@ export function ExamFilesManager({ examId, files, editable }: Props) {
   function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files) return;
 
+    const selectedFiles = Array.from(e.target.files);
     const merged = [...newFiles];
-    Array.from(e.target.files).forEach((file) => {
+    selectedFiles.forEach((file) => {
       if (merged.some((selected) => selected.file.name === file.name)) return;
       // Print settings are pre-filled with the ones of the previous file
       const previousSpecs = merged.length > 0
@@ -53,6 +55,15 @@ export function ExamFilesManager({ examId, files, editable }: Props) {
       merged.push({ file, specs: { ...previousSpecs } });
     });
     setNewFiles(merged);
+
+    // The page count read from the PDF takes the lead over the inherited one
+    selectedFiles.forEach(async (file) => {
+      const pages = await countPdfPages(file);
+      if (pages === null) return;
+      setNewFiles((prev) => prev.map((selected) => selected.file === file
+        ? { ...selected, specs: { ...selected.specs, exam_pages: pages } }
+        : selected));
+    });
 
     // allow selecting the same file again later
     e.target.value = "";
