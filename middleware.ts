@@ -51,5 +51,5 @@ export default async function middleware(req: NextRequest) {
 
 // All routes require login, except /api/auth, that is used to login... (and some static Next.js things)
 export const config = {
-  matcher: ["/((?!api/auth|api/upload-exam-files|api/crep/files|api/cereal/diff-exams/get-bo-user|api/cereal/diff-exams/upload-absence|403|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/digital-archiving/unzip|api/upload-exam-files|api/crep/files|api/cereal/diff-exams/get-bo-user|api/cereal/diff-exams/upload-absence|403|_next/static|_next/image|favicon.ico).*)"],
 }

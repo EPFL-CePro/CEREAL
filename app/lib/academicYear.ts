@@ -1,5 +1,3 @@
-export const MIN_ACADEMIC_YEAR = "2025-2026";
-
 export function getCurrentAcademicYear(date = new Date()) {
     const month = date.getMonth();
 
@@ -30,12 +28,17 @@ export function getAcademicYearDateRange(academicYear: string) {
     };
 }
 
-export function getAcademicYearOptions(currentAcademicYear = getCurrentAcademicYear()) {
-    const minStartYear = parseAcademicYearStart(MIN_ACADEMIC_YEAR);
+export function getAcademicYearOfDate(date: Date) {
+    const startYear = date.getMonth() >= 9 ? date.getFullYear() : date.getFullYear() - 1;
+    return `${startYear}-${startYear + 1}`;
+}
+
+export function getAcademicYearOptions(minAcademicYear: string, currentAcademicYear = getCurrentAcademicYear()) {
+    const minStartYear = parseAcademicYearStart(minAcademicYear);
     const currentStartYear = parseAcademicYearStart(currentAcademicYear);
 
     if (!minStartYear || !currentStartYear || currentStartYear < minStartYear) {
-        return [MIN_ACADEMIC_YEAR];
+        return [currentAcademicYear];
     }
 
     return Array.from(
@@ -47,6 +50,6 @@ export function getAcademicYearOptions(currentAcademicYear = getCurrentAcademicY
     ).reverse();
 }
 
-export function isSelectableAcademicYear(academicYear: string, currentAcademicYear = getCurrentAcademicYear()) {
-    return getAcademicYearOptions(currentAcademicYear).includes(academicYear);
+export function isSelectableAcademicYear(academicYear: string, minAcademicYear: string, currentAcademicYear = getCurrentAcademicYear()) {
+    return getAcademicYearOptions(minAcademicYear, currentAcademicYear).includes(academicYear);
 }

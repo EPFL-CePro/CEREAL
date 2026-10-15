@@ -1,3 +1,7 @@
+// Minimum number of business days required between the registration date and the desired delivery date.
+// Below this delay, an exam is registered with a warning and counted as "late" in the stats.
+export const MIN_BUSINESS_DAYS_BEFORE_DELIVERY = 7;
+
 export function businessDaysBetween(
   startDate: string | Date,
   endDate: string | Date

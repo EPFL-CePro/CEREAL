@@ -4,7 +4,7 @@ import AsyncSelect from "react-select/async";
 import Select from "react-select";
 import type { OptionProps, GroupBase, OptionsOrGroups, Theme, StylesConfig } from "react-select";
 import CustomOption from "./CustomOption";
-import { Control, Controller, ControllerRenderProps, Path } from "react-hook-form";
+import { Control, Controller, ControllerRenderProps, FieldValues, Path } from "react-hook-form";
 import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
 import { Inputs } from "@/types/inputs";
 import { SelectOption } from "@/types/selectOption";
@@ -18,10 +18,10 @@ function isSelectOption(value: unknown): value is SelectOption {
     );
 }
 
-export interface SelectProps {
-    control: Control<Inputs>;
+export interface SelectProps<T extends FieldValues = Inputs> {
+    control: Control<T>;
     label: string;
-    name: Path<Inputs>;
+    name: Path<T>;
     isMultiChoice: boolean;
     containCourses?: boolean;
     instanceId?: string | number;
@@ -34,10 +34,10 @@ async function fetchOasisCourses(academicYear?: string): Promise<SelectOption[]>
     return list;
 }
 
-type SelectFieldProps = {
-    field: ControllerRenderProps<Inputs>;
+type SelectFieldProps<T extends FieldValues> = {
+    field: ControllerRenderProps<T>;
     label: string;
-    name: Path<Inputs>;
+    name: Path<T>;
     isMultiChoice: boolean;
     containCourses?: boolean;
     instanceId?: string | number;
@@ -45,7 +45,7 @@ type SelectFieldProps = {
     academicYear?: string;
 };
 
-function SelectField({
+function SelectField<T extends FieldValues>({
     field,
     label,
     name,
@@ -54,14 +54,17 @@ function SelectField({
     instanceId,
     disabled,
     academicYear
-}: SelectFieldProps) {
+}: SelectFieldProps<T>) {
     const timeoutRef = useRef<NodeJS.Timeout | number>(0);
     const PAGE_SIZE = 10;
     const allCoursesRef = useRef<SelectOption[] | null>(null);
+    const allCoursesAcademicYearRef = useRef<string | undefined>(undefined);
     const filteredCoursesRef = useRef<SelectOption[]>([]);
     const displayedCoursesRef = useRef<SelectOption[]>([]);
     const currentQueryRef = useRef<string>("");
     const pageRef = useRef<number>(1);
+    const latestCoursesRequestRef = useRef(0);
+    const previousAcademicYearRef = useRef(academicYear);
 
     const [selected, setSelected] = useState<SelectOption | SelectOption[] | null>(null);
     const [courseDisplayed, setCourseDisplayed] = useState<SelectOption[]>([]);
@@ -207,16 +210,29 @@ function SelectField({
 
     const ensureCoursesLoaded = useCallback(
         async (query = "") => {
-            if (!allCoursesRef.current) {
+            const requestAcademicYear = academicYear;
+            const shouldFetchCourses =
+                !allCoursesRef.current ||
+                allCoursesAcademicYearRef.current !== requestAcademicYear;
+
+            if (shouldFetchCourses) {
+                const requestId = latestCoursesRequestRef.current + 1;
+                latestCoursesRequestRef.current = requestId;
                 setCourseLoading(true);
                 try {
-                    const all = await fetchOasisCourses(academicYear);
+                    const all = await fetchOasisCourses(requestAcademicYear);
+                    if (latestCoursesRequestRef.current !== requestId) return;
                     allCoursesRef.current = all ?? [];
+                    allCoursesAcademicYearRef.current = requestAcademicYear;
                 } catch (e) {
+                    if (latestCoursesRequestRef.current !== requestId) return;
                     alert(`Failed to load courses, ${e}`);
                     allCoursesRef.current = [];
+                    allCoursesAcademicYearRef.current = requestAcademicYear;
                 } finally {
-                    setCourseLoading(false);
+                    if (latestCoursesRequestRef.current === requestId) {
+                        setCourseLoading(false);
+                    }
                 }
             }
 
@@ -235,6 +251,24 @@ function SelectField({
         },
         [PAGE_SIZE, academicYear]
     );
+
+    useEffect(() => {
+        if (!(containCourses && name === "course")) return;
+        if (previousAcademicYearRef.current === academicYear) return;
+
+        previousAcademicYearRef.current = academicYear;
+        latestCoursesRequestRef.current += 1;
+        allCoursesRef.current = null;
+        allCoursesAcademicYearRef.current = undefined;
+        filteredCoursesRef.current = [];
+        displayedCoursesRef.current = [];
+        currentQueryRef.current = "";
+        pageRef.current = 1;
+        setCourseDisplayed([]);
+        setCourseLoading(false);
+        field.onChange(isMultiChoice ? [] : null);
+        void ensureCoursesLoaded("");
+    }, [academicYear, containCourses, ensureCoursesLoaded, field, isMultiChoice, name]);
 
     const loadMoreCourses = useCallback(() => {
         const filtered = filteredCoursesRef.current || [];
@@ -372,7 +406,7 @@ function SelectField({
 }
 
 // Select wrapper
-export default function SelectController({
+export default function SelectController<T extends FieldValues = Inputs>({
     control,
     label,
     name,
@@ -381,7 +415,7 @@ export default function SelectController({
     instanceId,
     disabled,
     academicYear
-}: SelectProps) {
+}: SelectProps<T>) {
     return (
         <Controller
             name={name}
