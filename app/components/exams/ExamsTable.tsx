@@ -1015,8 +1015,21 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
-              <details className="relative">
-                <summary className="btn btn-secondary cursor-pointer list-none text-nowrap">Columns</summary>
+              <details className="group relative">
+                <summary
+                  className="btn btn-secondary inline-flex cursor-pointer list-none items-center gap-2 text-nowrap"
+                  title="Show or hide columns"
+                  aria-label="Show or hide columns"
+                >
+                  {/*TODO: Replace SVG icons with library icons*/}
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
+                  </svg>
+                  Columns
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4 transition-transform group-open:rotate-180" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </summary>
                 <div className="absolute right-0 z-9999 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
                   {
                     table.getAllColumns().filter(x => x.getCanHide()).map((column) => (
