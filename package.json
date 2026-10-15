@@ -26,6 +26,7 @@
     "next": "15.5.9",
     "next-auth": "^5.0.0-beta.29",
     "nodemailer": "^6.10.1",
+    "pdf-lib": "^1.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.65.0",

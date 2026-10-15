@@ -18,6 +18,7 @@ import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/li
 import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
+import { countPdfPages } from "@/app/lib/crep/pdfPages";
 import { FileSpecsFields } from "./FileSpecsFields";
 
 interface RegisterProps {
@@ -98,6 +99,15 @@ export default function App({ user }: RegisterProps) {
             merged.push({ file, specs: { ...previousSpecs } });
         });
         setSelectedFiles(merged);
+
+        // The page count read from the PDF takes precedence over the inherited one
+        newFiles.forEach(async (file) => {
+            const pages = await countPdfPages(file);
+            if (pages === null) return;
+            setSelectedFiles((prev) => prev.map((selected) => selected.file === file
+                ? { ...selected, specs: { ...selected.specs, exam_pages: pages } }
+                : selected));
+        });
 
         setFilesError(duplicates.length > 0
             ? `A file with the same name has already been selected : ${duplicates.map((file) => file.name).join(", ")}. Please rename it before adding it.`
