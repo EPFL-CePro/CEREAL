@@ -11,6 +11,7 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
+  VisibilityState,
 } from '@tanstack/react-table'
 import { deleteExam, getAcademicYearsFromExams, getAllExamStatus, getAllExamTypes, getAllServiceLevels, getAllServices, getExamsByAcademicYear, updateExamDate, updateExamPagesNumber, updateExamRemark, updateExamResponsible, updateExamService, updateExamServiceLevel, updateExamStatus, updateExamStudentsNumber, updateExamType } from '@/app/lib/database'
 import { Exam } from '@/types/exam'
@@ -42,6 +43,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [exams, setExams] = React.useState<Exam[]>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [academicYears, setAcademicYears] = React.useState<string[]>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -714,8 +716,17 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       ),
       enableSorting: false,
       enableColumnFilter: false,
+      enableHiding: false
     },
   ]
+
+  const columnLabels: Record<string, string> = {
+    code: 'Code', name : 'Courses', teachers: 'Teachers', contact: 'Contact',
+    service_level_id: 'Service Level', service_id: 'Service', exam_type_id: 'Exam Type',
+    exam_status_id: 'Exam status', exam_date: 'Exam date', exam_semester: 'Semester',
+    nb_students: 'NB Students', nb_pages: 'NB Pages', remark: 'Remark',
+    responsible_id: 'Responsible', actions: 'Actions',
+  }
 
   const table = useReactTable({
     data: exams,
@@ -725,7 +736,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       sorting,
       columnFilters,
       pagination,
+      columnVisibility
     },
+    onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -870,7 +883,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   return (
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-10 lg:px-14">
       <div className="mx-auto">
-        <div className="mb-6 overflow-hidden rounded-[2rem] backdrop-blur">
+        <div className="relative z-40 mb-6 rounded-[2rem] backdrop-blur">
           <div className="relative px-6 py-5 md:px-8">
             <div className="mx-auto max-w-7xl xl:pr-60">
               <div className="flex w-full flex-col gap-4 lg:flex-row">
@@ -953,7 +966,23 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </label>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-end xl:absolute xl:right-0 xl:top-1/2 xl:mt-0 xl:-translate-y-1/2">
+            <div className="mt-4 flex items-center justify-end xl:absolute xl:right-0 xl:top-1/2 xl:mt-0 xl:-translate-y-1/2 gap-4">
+              <details className="relative">
+                <summary className="btn btn-secondary cursor-pointer list-none text-nowrap">Columns</summary>
+                <div className="absolute right-0 z-9999 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                  {
+                    table.getAllColumns().filter(x => x.getCanHide()).map((column) => (
+                      <label key={ column.id } className="flex items-center gap-2 py-1 text-sm">
+                        <input type="checkbox"
+                               checked={ column.getIsVisible() }
+                               onChange={ column.getToggleVisibilityHandler() }
+                        />
+                        { columnLabels[column.id] ?? column.id }
+                      </label>
+                    ))
+                  }
+                </div>
+              </details>
               <button
                 className="btn btn-primary text-nowrap"
                 onClick={() => exportExams(table.getPrePaginationRowModel().rows.map((row) => row.original))}
