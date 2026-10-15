@@ -334,7 +334,7 @@ export default function Calendar({ user }: CalendarProps) {
     <div className="flex flex-col gap-4 justify-between">
       <div className=" w-full flex flex-row justify-between gap-4 flex-wrap md:flex-nowrap">
         <div className="flex flex-grow-8 flex-row">
-          <div className="flex-col ml-4 gap-2 grid grid-cols-4">
+          <div className="flex-col ml-4 gap-4 grid grid-cols-4">
             <Legend isAdmin={!!user?.isAdmin}/>
           </div>
         </div>
