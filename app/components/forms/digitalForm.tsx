@@ -168,7 +168,7 @@ export default function App({ user }: RegisterProps) {
             <h1 className="text-3xl font-semibold mb-12 text-center" >CePro — Digital archiving of exam papers</h1>
             <div className="flex flex-col gap-2">
                 <h2 className="text-xl font-semibold underline mb-3 text-center">Reminder of the guidelines for Digital Archiving</h2>
-                <ul className="list-disc flex flex-col gap-2 max-w-xl">
+                <ul className="list-disc flex flex-col gap-2 max-w-5xl">
                     <div>
                         <li className="font-semibold">General requirements</li>
                         Exam papers must be complete, legible, and available in digital format.
@@ -200,7 +200,7 @@ export default function App({ user }: RegisterProps) {
             </div>
 
             <form
-                className="flex flex-col gap-5 mt-12"
+                className="flex flex-col gap-5 mt-12 w-full max-w-5xl"
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data"
             >
