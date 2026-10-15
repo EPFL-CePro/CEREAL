@@ -105,7 +105,6 @@ export default function App({ user }: RegisterProps) {
         : [];
 
     const onSubmit: SubmitHandler<DigitalArchiveInputs> = async (data) => {
-        console.log(data);
         setError(null);
         setResult(null);
 
