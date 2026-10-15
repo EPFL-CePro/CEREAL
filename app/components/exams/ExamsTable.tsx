@@ -932,8 +932,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-10 lg:px-14">
       <div className="mx-auto">
         <div className="relative z-40 mb-6 rounded-[2rem] backdrop-blur">
-          <div className="relative px-6 py-5 md:px-8">
-            <div className="mx-auto max-w-7xl xl:pr-60">
+          <div className="flex flex-col gap-4 px-6 py-5 md:px-8 xl:flex-row xl:items-center">
+            <div className="w-full min-w-0 xl:flex-1">
               <div className="flex w-full flex-col gap-4 lg:flex-row">
                 <label className="group flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100 lg:max-w-xl">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 transition group-focus-within:bg-red-100">
@@ -1014,7 +1014,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </label>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-end xl:absolute xl:right-0 xl:top-1/2 xl:mt-0 xl:-translate-y-1/2 gap-4">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
               <details className="relative">
                 <summary className="btn btn-secondary cursor-pointer list-none text-nowrap">Columns</summary>
                 <div className="absolute right-0 z-9999 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
