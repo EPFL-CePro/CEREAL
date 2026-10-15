@@ -1028,6 +1028,14 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                   </svg>
                 </summary>
                 <div className="absolute right-0 z-9999 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                  <button
+                    type="button"
+                    className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-default disabled:text-slate-400 disabled:hover:bg-transparent"
+                    disabled={ table.getIsAllColumnsVisible() }
+                    onClick={ () => table.toggleAllColumnsVisible(true) }
+                  >
+                    Show all columns
+                  </button>
                   {
                     table.getAllColumns().filter(x => x.getCanHide()).map((column) => (
                       <label key={ column.id } className="flex items-center gap-2 py-1 text-sm">
