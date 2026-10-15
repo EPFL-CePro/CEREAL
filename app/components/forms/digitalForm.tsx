@@ -298,6 +298,7 @@ export default function App({ user }: RegisterProps) {
                             Time taken: {result.durationSeconds.toFixed(2)} s ({result.durationMs} ms)
                         </p>
                         <p>{result.numberOfPdfs} PDFs</p>
+                        <p><strong>Folder path in NAS</strong> : {result.destination}</p>
                     </div>
                 )}
 
