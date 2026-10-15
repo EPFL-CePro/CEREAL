@@ -204,11 +204,11 @@ export default function App({ user }: RegisterProps) {
                 onSubmit={handleSubmit(onSubmit)}
                 encType="multipart/form-data"
             >
-                <div>
+                <div className="flex flex-col">
                     <label>Academic year <RedAsterisk /></label>
                     <select
                         defaultValue={currentAcademicYear}
-                        className="mt-1 w-full border-none bg-transparent text-base text-gray-950 outline-none"
+                        className="w-36 border-1 border-gray-300 p-2 rounded-lg"
                         onChange={(event) => setSelectedAcademicYear(event.target.value)}
                     >
                         {academicYears.map((academicYear) => (
