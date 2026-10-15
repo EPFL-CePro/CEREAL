@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { execFile } from "child_process";
 import { createWriteStream } from "fs";
-import { chmod, chown, mkdtemp, mkdir, readdir, rm, stat } from "fs/promises";
+import { chmod, chown, mkdtemp, mkdir, readdir, rm, rmdir, stat } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
 import { promisify } from "util";
@@ -37,11 +37,28 @@ function isArchivedPdf(entry: string) {
     );
 }
 
+// Swiss time (the container runs in UTC), ex. 2026_10_15_115900
+function uploadFolderName(date: Date) {
+    const parts = Object.fromEntries(
+        new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Europe/Zurich",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23",
+        }).formatToParts(date).map((part) => [part.type, part.value])
+    );
+    return `${parts.year}_${parts.month}_${parts.day}_${parts.hour}${parts.minute}${parts.second}`;
+}
+
 // The server runs as root in Docker and unzip keeps the rights stored in the ZIP:
 // without this, the archived PDFs would belong to root and be unreadable by the archive owner
-async function giveToArchiveOwner(rootDir: string, dirs: string[], courseDir: string) {
+async function giveToArchiveOwner(rootDir: string, dirs: string[], uploadDir: string) {
     const { uid, gid } = await stat(rootDir);
-    const files = (await readdir(courseDir)).map((file) => path.join(courseDir, file));
+    const files = (await readdir(uploadDir)).map((file) => path.join(uploadDir, file));
 
     await Promise.all([
         ...dirs.map(async (dir) => {
@@ -55,8 +72,8 @@ async function giveToArchiveOwner(rootDir: string, dirs: string[], courseDir: st
     ]);
 }
 
-// Archive tree: SECTION/ACADEMIC_YEAR/PREFIX/COURSE_CODE
-// The PDFs of the ZIP are extracted flat inside the COURSE_CODE folder, which must not already contain files
+// Archive tree: SECTION/ACADEMIC_YEAR/PREFIX/COURSE_CODE/UPLOAD_TIMESTAMP
+// Each upload is extracted flat inside its own timestamped folder: the previous archives of the course are never touched
 export async function POST(req: NextRequest) {
     const session = await auth();
 
@@ -108,9 +125,9 @@ export async function POST(req: NextRequest) {
 
     const tempDir = await mkdtemp(path.join(tmpdir(), "cereal-digital-archive-"));
     const tempZipPath = path.join(tempDir, "upload.zip");
-    // Course folder reserved by this upload, emptied if the extraction fails
-    let claimedCourseDir: string | null = null;
-    let createdCourseDir = false;
+    // Folders created by this upload, removed if it fails
+    let uploadDir: string | null = null;
+    const createdDirs: string[] = [];
 
     try {
         if (!(await listDirectories(archiveDir))?.includes(section)) {
@@ -163,45 +180,41 @@ export async function POST(req: NextRequest) {
         }
 
         // mkdir returns the first folder it had to create: the folders created by this upload are this one and its children
-        const firstCreatedDir = await mkdir(path.dirname(courseDir), { recursive: true });
-        const createdDirs: string[] = [courseDir];
+        const firstCreatedDir = await mkdir(courseDir, { recursive: true });
         if (firstCreatedDir) {
-            for (let dir = path.dirname(courseDir); ; dir = path.dirname(dir)) {
+            for (let dir = courseDir; ; dir = path.dirname(dir)) {
                 createdDirs.push(dir);
                 if (dir === firstCreatedDir) break;
             }
         }
+
+        const newUploadDir = path.join(courseDir, uploadFolderName(new Date()));
         try {
-            // Not recursive, so that two simultaneous uploads of the same course cannot both succeed
-            await mkdir(courseDir);
-            createdCourseDir = true;
+            // Not recursive, so that two simultaneous uploads of the same course cannot extract into the same folder
+            await mkdir(newUploadDir);
         } catch (err) {
             if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
-            if ((await readdir(courseDir)).length > 0) {
-                return NextResponse.json(
-                    { error: `The exam ${courseCode} is already archived for academic year ${academicYear}` },
-                    { status: 409 }
-                );
-            }
+            return NextResponse.json(
+                { error: `Another archive of the exam ${courseCode} has just been uploaded, try again in a few seconds` },
+                { status: 409 }
+            );
         }
-        claimedCourseDir = courseDir;
+        uploadDir = newUploadDir;
 
         const start = performance.now();
         // -j: flatten the ZIP folders, -n: never overwrite, -C: case-insensitive patterns (.pdf / .PDF)
-        await execFileAsync("unzip", ["-q", "-j", "-n", "-C", tempZipPath, "*.pdf", "-x", ...IGNORED_ENTRIES, "-d", courseDir], {
+        await execFileAsync("unzip", ["-q", "-j", "-n", "-C", tempZipPath, "*.pdf", "-x", ...IGNORED_ENTRIES, "-d", newUploadDir], {
             maxBuffer: 1024 * 1024 * 20,
         });
         const durationMs = Math.round(performance.now() - start);
 
-        claimedCourseDir = null;
-
         // On a NAS share, the ownership can be forced by the mount options and chown refused: the extraction is still valid
-        await giveToArchiveOwner(archiveDir, createdDirs, courseDir)
+        await giveToArchiveOwner(archiveDir, [newUploadDir, ...createdDirs], newUploadDir)
             .catch((ownerErr) => console.error("Unable to give the archived files to the archive owner", ownerErr));
 
         return NextResponse.json({
             fileName,
-            destination: courseDir,
+            destination: newUploadDir,
             numberOfPdfs: pdfs.length,
             durationMs,
             durationSeconds: durationMs / 1000,
@@ -209,15 +222,13 @@ export async function POST(req: NextRequest) {
     } catch (err) {
         console.error(err);
 
-        // Do not leave a partially extracted exam, it would block the next upload
-        const dirToClean = claimedCourseDir;
-        if (dirToClean) {
-            await (createdCourseDir
-                ? rm(dirToClean, { recursive: true, force: true })
-                : readdir(dirToClean).then((files) => Promise.all(
-                    files.map((file) => rm(path.join(dirToClean, file), { recursive: true, force: true }))
-                ))
-            ).catch((cleanupErr) => console.error(cleanupErr));
+        // Do not leave a partially extracted archive
+        if (uploadDir) {
+            await rm(uploadDir, { recursive: true, force: true }).catch((cleanupErr) => console.error(cleanupErr));
+        }
+        // Nor the empty parent folders created for it (rmdir refuses a folder filled in the meantime by another upload)
+        for (const dir of createdDirs) {
+            if (await rmdir(dir).then(() => false, () => true)) break;
         }
 
         const message = err instanceof Error ? err.message : "Failed to unzip archive";
