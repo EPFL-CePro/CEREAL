@@ -824,8 +824,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     getSortedRowModel: getSortedRowModel(),
   })
 
-  // Saving the columns preferences. `columnVisibility` is the dependency that triggers it, the
-  // array is built from the table so that it always contains every column, in display order.
   React.useEffect(() => {
     if (!isColumnVisibilityLoaded) return
     try {
@@ -834,10 +832,9 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         .map((column) => ({ id: column.id, visible: column.getIsVisible() }))
       localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(preferences))
     } catch {
-      // localStorage unavailable: the choice just won't be remembered
+      // localStorage unavailable: the choice won't be remembered
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columnVisibility, isColumnVisibilityLoaded])
+  }, [columnVisibility, isColumnVisibilityLoaded, table])
 
   const rowCount = table.getRowModel().rows.length
   const totalRows = table.getRowCount()
