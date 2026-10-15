@@ -212,9 +212,11 @@ export async function POST(req: NextRequest) {
         await giveToArchiveOwner(archiveDir, [newUploadDir, ...createdDirs], newUploadDir)
             .catch((ownerErr) => console.error("Unable to give the archived files to the archive owner", ownerErr));
 
+        const returnedDestination = path.join(section, academicYear, prefix, courseCode);
+
         return NextResponse.json({
             fileName,
-            destination: newUploadDir,
+            destination: returnedDestination,
             numberOfPdfs: pdfs.length,
             durationMs,
             durationSeconds: durationMs / 1000,
