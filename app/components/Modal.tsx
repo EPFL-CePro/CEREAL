@@ -1,5 +1,6 @@
 "use client"
 import { User } from "next-auth";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import React, { Dispatch, SetStateAction, useRef, useState } from "react";
 import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal, updateCrepExamFields, updateCrepFileSpecs } from "../lib/crep/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
@@ -281,9 +282,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
             <div className="shrink-0 border-b border-black/5 px-5 py-4 print:px-8 print:pt-24 md:px-8 md:py-6">
                 <h3 className={`exam-title pr-12 text-lg font-bold ${examColor}`}>{eventSnapshot?.title}</h3>
                 <button className="btn absolute right-4 top-4 p-1 hover:bg-gray-100 md:right-6 md:top-6" aria-label="Close">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6 size-6 ">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                    </svg>
+                    <XMarkIcon className="size-6" aria-hidden="true" />
                 </button>
                 {/* status selector for non-admin users. ToDo: Create a component instead?*/}
                 <div className="flex items-center justify-between">
