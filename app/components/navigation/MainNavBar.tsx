@@ -18,7 +18,7 @@ export async function MainNavBar() {
     if (groups.length === 0) return null;
 
     return (
-        <nav aria-label="Main navigation" className="relative z-40 w-full border-b border-gray-200 px-6 sm:px-12 py-2">
+        <nav aria-label="Main navigation" className="relative z-50 w-full border-b border-gray-200 px-6 sm:px-12 py-2">
             <NavLinks groups={groups} />
         </nav>
     );
