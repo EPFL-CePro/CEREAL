@@ -17,6 +17,7 @@
     "@fullcalendar/list": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
+    "@heroicons/react": "^2.2.0",
     "@mui/material": "^9.1.1",
     "@mui/x-charts": "^9.5.0",
     "@tanstack/react-table": "^8.21.3",
