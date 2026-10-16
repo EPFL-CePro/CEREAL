@@ -4,6 +4,7 @@ import 'rsuite/dist/rsuite-no-reset.min.css';
 import "./globals.css";
 import { CustomProvider } from "rsuite";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
+import { MainNavBar } from "./components/navigation/MainNavBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${jetBrainsMono.variable} antialiased`}
       >
         <ImpersonationBanner />
+        <MainNavBar />
         <CustomProvider>{children}</CustomProvider>
       </body>
     </html>

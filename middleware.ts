@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { NextRequest, NextResponse } from 'next/server';
+import { canAccessRoute } from "@/app/lib/routeAccess";
  
 export default async function middleware(req: NextRequest) {
 	const session = await auth();
@@ -11,40 +12,10 @@ export default async function middleware(req: NextRequest) {
 		return NextResponse.redirect(authUrl);
 	}
 
-	// If user is admin, he can access anything.
-	if(session.user.isAdmin) {
-		return NextResponse.next();
+	if (!canAccessRoute(session.user, pathname)) {
+		return NextResponse.redirect(new URL("/403", req.url));
 	}
 
-	// Routes available only to people who can access the CREP sub-module
-	if (
-		pathname === '/crep'
-	) {
-		if(!session.user.hasCrepAccess) {
-			return NextResponse.redirect(new URL("/403", req.url));
-		}
-	}
-
-	// Routes available only to the SAC.
-	if (
-		pathname === '/sac-absences' || pathname.startsWith('/sac-absences/')
-	) {
-		if(!session.user.hasSACAccess) {
-			return NextResponse.redirect(new URL("/403", req.url));
-		}
-	}
-
-	// Routes available only to administrators of the app
-	if (
-		pathname === '/admin' || pathname.startsWith('/admin/') ||
-		pathname === '/exams' || pathname.startsWith('/exams/')
-	) {
-		if(!session.user.isAdmin) {
-			return NextResponse.redirect(new URL("/403", req.url));
-		}
-	}
-
-	// If the previous conditions did not match, it means that the route trying to be accessed is a non-protected route, anybody can access to.
 	return NextResponse.next();
 
 }
