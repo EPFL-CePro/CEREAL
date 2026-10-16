@@ -1,5 +1,6 @@
 "use client"
 import { fetchCourses } from "@/app/lib/api";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { getAllCrepExams, getAllExamsBetweenDates, getAllExamsByStatus } from "@/app/lib/crep/database";
 import { getAllowedExamStatus } from "@/app/lib/examStatus";
 import { User } from "next-auth";
@@ -124,9 +125,7 @@ ${uniqueExams.map((exam:CrepExam) => {
                     dialog.close();
                     setModalOpen(false);
                 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6 size-6 ">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
+                <XMarkIcon className="size-6" aria-hidden="true" />
             </button>
             <div>
                 <h3 className={`exam-title font-bold basis-full text-lg`}>Export exams</h3>
