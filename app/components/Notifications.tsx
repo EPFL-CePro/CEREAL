@@ -101,7 +101,7 @@ export default function Notifications({ user }: notifProps) {
             if (ref.current && !ref.current.contains(event.target as Node)) {
                 setOpen(false);
             }
-            markAsRead(user.sciper);
+            await markAsRead(user.sciper);
             const list = await fetchLogs(user.sciper);
             setLogs(list ?? []);
 
@@ -132,6 +132,10 @@ export default function Notifications({ user }: notifProps) {
                             <li className="p-4 text-gray-500">No notifications</li>
                         ) : (
                             logs
+                                .filter(log => {
+                                    if (user.isAdmin) return true;
+                                    return (typeof user.email === "string" && log.contact.includes(user.email))
+                                })
                                 .sort((a, b) => b.id - a.id)
                                 .slice(0, 7)
                                 .map((n) => {
