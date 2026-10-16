@@ -59,7 +59,7 @@ export default function Calendar({ user }: CalendarProps) {
   );
   useEffect(() => {
     (async function () {
-      const data = user.isAdmin ? await getAllCrepExams() as Array<QueryResult> : await getAllNonAdminExams() as Array<QueryResult>;
+      const data = (user.isAdmin ? await getAllCrepExams() : await getAllNonAdminExams()) as unknown as Array<QueryResult>;
       const startDate = new Date();
 
       const filteredData = data.map((e: EventInput, i: number) => {
