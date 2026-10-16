@@ -23,6 +23,7 @@ import { ExamStatus } from '@/types/examStatus'
 import { fetchCeproAdminsIT, fetchTeachersByCourseCode } from '@/app/lib/api'
 import { GroupUser } from '@/types/groupUser'
 import { Teacher } from '@/types/teacher'
+import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, ViewColumnsIcon } from "@heroicons/react/24/outline";
 
 interface ExamsTableProps {
   academicYear: string
@@ -934,17 +935,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               <div className="flex w-full flex-col gap-4 lg:flex-row">
                 <label className="group flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100 lg:max-w-xl">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 transition group-focus-within:bg-red-100">
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <circle cx="11" cy="11" r="7" />
-                      <path d="m20 20-3.5-3.5" />
-                    </svg>
+                    <MagnifyingGlassIcon className="size-5" strokeWidth={2} aria-hidden="true" />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -962,20 +953,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
 
                 <label className="flex h-14 min-w-[16rem] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm xl:ml-auto">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <svg
-                      aria-hidden="true"
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <path d="M7 4h10" />
-                      <path d="M5 8h14" />
-                      <path d="M8 12h8" />
-                      <path d="M10 16h4" />
-                      <path d="M12 20v-4" />
-                    </svg>
+                    <FunnelIcon className="size-5" strokeWidth={1.8} aria-hidden="true" />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -1014,18 +992,13 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
               <details className="group relative">
                 <summary
-                  className="btn btn-secondary inline-flex cursor-pointer list-none items-center gap-2 text-nowrap"
+                  className="btn btn-secondary cursor-pointer list-none text-nowrap [&::-webkit-details-marker]:hidden"
                   title="Show or hide columns"
                   aria-label="Show or hide columns"
                 >
-                  {/*TODO: Replace SVG icons with library icons*/}
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
-                  </svg>
+                  <ViewColumnsIcon className="size-5 shrink-0" aria-hidden="true" />
                   Columns
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-4 transition-transform group-open:rotate-180" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
+                  <ChevronDownIcon className="size-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
                 <div className="absolute right-0 z-9999 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
                   <button
@@ -1118,17 +1091,11 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
 
                             {canFilter && (
                               <label className="group flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100">
-                                <svg
+                                <MagnifyingGlassIcon
+                                  className="size-4 shrink-0 text-slate-400 transition group-focus-within:text-red-500"
+                                  strokeWidth={2}
                                   aria-hidden="true"
-                                  viewBox="0 0 24 24"
-                                  className="h-4 w-4 shrink-0 text-slate-400 transition group-focus-within:text-red-500"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                >
-                                  <circle cx="11" cy="11" r="7" />
-                                  <path d="m20 20-3.5-3.5" />
-                                </svg>
+                                />
                                 <input
                                   type="text"
                                   value={
@@ -1166,17 +1133,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                     <td colSpan={columns.length} className="px-8 py-16">
                       <div className="flex flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-12 text-center">
                         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
-                          <svg
-                            aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            className="h-8 w-8 text-slate-300"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                          >
-                            <circle cx="11" cy="11" r="7" />
-                            <path d="m20 20-3.5-3.5" />
-                          </svg>
+                          <MagnifyingGlassIcon className="size-8 text-slate-300" strokeWidth={1.8} aria-hidden="true" />
                         </div>
                         <h3 className="mt-5 text-xl font-semibold text-slate-900">
                           No exams match these filters
