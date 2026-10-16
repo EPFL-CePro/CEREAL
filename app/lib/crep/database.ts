@@ -175,7 +175,7 @@ export async function updateExamReproRemarkById(id: string, reproRemark: string)
 export async function getAllExamsByStatus(status: Array<string>): Promise<CrepExam[]> {
     const connection = createPromiseConnection();
     try {
-        const [rows] = await connection.query<RowDataPacket[]>(`SELECT * from crep WHERE status IN (${status.map(obj => `"${obj}"`).join(", ")});`);
+        const [rows] = await connection.query<RowDataPacket[]>('SELECT * from crep WHERE status IN (?);', [status]);
         return attachFiles(rows as CrepExam[]);
     } catch (err) {
         throw err;
@@ -187,7 +187,10 @@ export async function getAllExamsByStatus(status: Array<string>): Promise<CrepEx
 export async function getAllExamsBetweenDates(beginDate: Date, endDate: Date): Promise<CrepExam[]> {
     const connection = createPromiseConnection();
     try {
-        const [rows] = await connection.query<RowDataPacket[]>(`SELECT * from crep WHERE print_date between '${formatDateTimeForDatabase(beginDate)}' and '${formatDateTimeForDatabase(endDate)}'`);
+        const [rows] = await connection.query<RowDataPacket[]>(
+            'SELECT * from crep WHERE print_date between ? and ?',
+            [formatDateTimeForDatabase(beginDate), formatDateTimeForDatabase(endDate)]
+        );
         return attachFiles(rows as CrepExam[]);
     } catch (err) {
         throw err;
