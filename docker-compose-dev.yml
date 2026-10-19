@@ -21,7 +21,7 @@ services:
       - cereal-app-network
   cereal-app:
     container_name: cereal-app
-    image: node:20
+    image: node:24
     ports:
       - '3000:3000'
     volumes:
