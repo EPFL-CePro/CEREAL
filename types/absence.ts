@@ -2,7 +2,7 @@ import type { DiffExam } from "./diffExam";
 
 export type Absence = {
     id: string;
-    sciper: Number;
+    sciper: number;
     first_name: string;
     last_name: string;
     certificate_date_from: Date;
