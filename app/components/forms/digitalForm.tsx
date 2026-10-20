@@ -42,9 +42,10 @@ function formatBytes(size: number) {
 export default function App({ user }: RegisterProps) {
     const currentAcademicYear = getCurrentAcademicYear();
     const academicYears = getAcademicYearOptions('2024-2025', currentAcademicYear);
-    const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(currentAcademicYear);
-
-    const { handleSubmit, control, register, reset } = useForm<DigitalArchiveInputs>()
+    const { handleSubmit, control, register, reset, watch } = useForm<DigitalArchiveInputs>({
+        defaultValues: { academicYear: currentAcademicYear },
+    })
+    const selectedAcademicYear = watch("academicYear");
 
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -86,7 +87,7 @@ export default function App({ user }: RegisterProps) {
         try {
             const params = new URLSearchParams({
                 numberCopies: String(data.numberCopies),
-                academicYear: selectedAcademicYear,
+                academicYear: data.academicYear,
                 courseCode,
             });
             const response = await fetch(`/api/digital-archiving/unzip?${params}`, {
@@ -159,9 +160,8 @@ export default function App({ user }: RegisterProps) {
                 <div className="flex flex-col">
                     <label>Academic year <RedAsterisk /></label>
                     <select
-                        defaultValue={currentAcademicYear}
                         className="w-36 border-1 border-gray-300 p-2 rounded-lg"
-                        onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                        {...register("academicYear")}
                     >
                         {academicYears.map((academicYear) => (
                             <option key={academicYear} value={academicYear}>
