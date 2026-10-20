@@ -18,9 +18,9 @@ const EPFL_API_BASE = 'https://api.epfl.ch/v1';
 const getApiEpflCredentials = () => Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64');
 
 // Check that a financial center (FC) exists. Returns an error message if the EPFL API could not be reached.
-export async function checkFinancialCenter(query: string): Promise<boolean | string> {
+export async function validateFinancialCenter(financialCenter: string): Promise<boolean | string> {
     const url = new URL(`${EPFL_API_BASE}/funds`);
-    url.searchParams.set('cfs', query);
+    url.searchParams.set('cfs', financialCenter);
     url.searchParams.set('pagesize', '1');
     const headers = new Headers();
     headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
