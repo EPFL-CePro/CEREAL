@@ -1,35 +1,14 @@
-import { readdir } from "fs/promises";
 import path from "path";
 
-// Archive tree: SECTION/ACADEMIC_YEAR/PREFIX/COURSE_CODE (ex. IC/2025-2026/CS-4XX/CS-433)
+// Archive tree: CODE_PREFIX/ACADEMIC_YEAR/CODE_GROUP/COURSE_CODE (ex. CS/2025-2026/CS-4XX/CS-433)
 
-// Returns the visible sub-directories of `dir`, or null if `dir` does not exist
-export async function listDirectories(dir: string): Promise<string[] | null> {
-    try {
-        const entries = await readdir(dir, { withFileTypes: true });
-        return entries
-            .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-            .map((entry) => entry.name);
-    } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
-        throw err;
-    }
-}
+// CS-433 -> CS/2025-2026/CS-4XX/CS-433, CMS-ADM1 -> CMS/2025-2026/CMS-AXX/CMS-ADM1. Null if the course code has no "-".
+export function courseArchivePath(academicYear: string, courseCode: string): string | null {
+    const match = /^([^-]+)-(.)/.exec(courseCode);
+    if (!match) return null;
 
-// Returns the prefix folder containing the course in `yearDir`, or null if the course is not archived yet
-export async function findCoursePrefix(yearDir: string, courseCode: string): Promise<string | null> {
-    const prefixes = (await listDirectories(yearDir)) ?? [];
-    for (const prefix of prefixes) {
-        const courses = await listDirectories(path.join(yearDir, prefix));
-        if (courses?.includes(courseCode)) return prefix;
-    }
-    return null;
-}
-
-// CS-433 -> CS-4XX, COM-112(a) -> COM-1XX. Null if the course code does not follow the convention.
-export function computeCoursePrefix(courseCode: string): string | null {
-    const match = /^([A-Za-z]+)-(\d)/.exec(courseCode);
-    return match ? `${match[1]}-${match[2]}XX` : null;
+    const [, codePrefix, firstChar] = match;
+    return path.join(codePrefix, academicYear, `${codePrefix}-${firstChar}XX`, courseCode);
 }
 
 // A single folder name, that cannot escape its parent folder

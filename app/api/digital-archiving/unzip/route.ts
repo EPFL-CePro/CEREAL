@@ -9,7 +9,7 @@ import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import type { ReadableStream } from "stream/web";
 import { NextRequest, NextResponse } from "next/server";
-import { computeCoursePrefix, findCoursePrefix, isSafePathSegment, listDirectories } from "@/app/lib/archiveFolders";
+import { courseArchivePath, isSafePathSegment } from "@/app/lib/archiveFolders";
 
 export const runtime = "nodejs";
 
@@ -72,7 +72,7 @@ async function giveToArchiveOwner(rootDir: string, dirs: string[], uploadDir: st
     ]);
 }
 
-// Archive tree: SECTION/ACADEMIC_YEAR/PREFIX/COURSE_CODE/UPLOAD_TIMESTAMP
+// Archive tree: CODE_PREFIX/ACADEMIC_YEAR/CODE_GROUP/COURSE_CODE/UPLOAD_TIMESTAMP (missing folders are created)
 // Each upload is extracted flat inside its own timestamped folder: the previous archives of the course are never touched
 export async function POST(req: NextRequest) {
     const session = await auth();
@@ -103,7 +103,6 @@ export async function POST(req: NextRequest) {
     const params = req.nextUrl.searchParams;
     const numberCopies = Number(params.get("numberCopies"));
     const academicYear = params.get("academicYear") ?? "";
-    const section = params.get("section") ?? "";
     const courseCode = params.get("courseCode") ?? "";
 
     if (!Number.isInteger(numberCopies) || numberCopies <= 0) {
@@ -115,14 +114,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Missing or invalid `academicYear` param (ex. 2025-2026)" }, { status: 400 });
     }
 
-    if (!isSafePathSegment(courseCode)) {
-        return NextResponse.json({ error: "Missing or invalid `courseCode` param" }, { status: 400 });
+    const coursePath = isSafePathSegment(courseCode) ? courseArchivePath(academicYear, courseCode) : null;
+    if (!coursePath) {
+        return NextResponse.json({ error: "Missing or invalid `courseCode` param (ex. CS-433)" }, { status: 400 });
     }
 
-    if (!isSafePathSegment(section)) {
-        return NextResponse.json({ error: "Missing or invalid `section` param" }, { status: 400 });
-    }
-
+    const courseDir = path.join(archiveDir, coursePath);
     const tempDir = await mkdtemp(path.join(tmpdir(), "cereal-digital-archive-"));
     const tempZipPath = path.join(tempDir, "upload.zip");
     // Folders created by this upload, removed if it fails
@@ -130,19 +127,6 @@ export async function POST(req: NextRequest) {
     const createdDirs: string[] = [];
 
     try {
-        if (!(await listDirectories(archiveDir))?.includes(section)) {
-            return NextResponse.json({ error: `The section ${section} does not exist in the archives` }, { status: 400 });
-        }
-
-        const yearDir = path.join(archiveDir, section, academicYear);
-        const prefix = (await findCoursePrefix(yearDir, courseCode)) ?? computeCoursePrefix(courseCode);
-
-        if (!prefix) {
-            return NextResponse.json({ error: `Unable to find the prefix folder of the course ${courseCode}` }, { status: 400 });
-        }
-
-        const courseDir = path.join(yearDir, prefix, courseCode);
-
         await pipeline(
             Readable.fromWeb(req.body as unknown as ReadableStream<Uint8Array>),
             createWriteStream(tempZipPath)
@@ -212,11 +196,9 @@ export async function POST(req: NextRequest) {
         await giveToArchiveOwner(archiveDir, [newUploadDir, ...createdDirs], newUploadDir)
             .catch((ownerErr) => console.error("Unable to give the archived files to the archive owner", ownerErr));
 
-        const returnedDestination = path.join(section, academicYear, prefix, courseCode);
-
         return NextResponse.json({
             fileName,
-            destination: returnedDestination,
+            destination: coursePath,
             numberOfPdfs: pdfs.length,
             durationMs,
             durationSeconds: durationMs / 1000,
