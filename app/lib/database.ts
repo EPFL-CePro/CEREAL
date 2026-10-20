@@ -1,5 +1,4 @@
 'use server';
-import mysql from 'mysql2';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { Service } from '@/types/service';
 import { ExamType } from '@/types/examType';
@@ -374,28 +373,11 @@ export async function getAbsenceCertificateFileNameById(id: string): Promise<str
     return rows[0]?.certificate_file_name ?? null;
 }
 
-// Not converted to the pool on purpose, and to be handled with the protection of the server actions.
-// `tableName` and `columnName` are concatenated in the SQL (identifiers cannot be bound as parameters),
-// so they must never come from the client as they are: they should be checked against a whitelist.
+// TODO - WARNING: Exposed via 'use server'. Dynamically interpolating table and column names leads to SQL Injection vulnerabilities.
 export async function updateSACById(tableName: string, columnName: string, id: string, value: boolean | string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise((resolve, reject) => {
-        connection.query(
-            `UPDATE ${tableName} SET ${columnName} = ? WHERE id = ?;`,
-            [value, id],
-            (err, rows) => {
-                if (err) return reject(err)
-                resolve(JSON.stringify(rows));
-            }
-        )
-        connection.end()
-    })
+    const [result] = await db.query(
+        `UPDATE ${tableName} SET ${columnName} = ? WHERE id = ?`,
+        [value, id]
+    );
+    return JSON.stringify(result);
 }
