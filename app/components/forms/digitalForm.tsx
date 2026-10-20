@@ -7,6 +7,7 @@ import { DigitalArchiveInputs } from "@/types/digitalArchiveInputs";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { RedAsterisk } from "../RedAsterisk";
 import ReactSelect from "./ReactSelect";
+import { sendTemplatedMail } from "@/app/lib/mail";
 
 interface RegisterProps {
     user: AppUser
@@ -37,6 +38,16 @@ function formatBytes(size: number) {
     }
 
     return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function formatPapersManagement(papersManagement:string) {
+    if(papersManagement == 'repro_collect') {
+        return 'The exam papers are at the printing centre and I will come and collect them shortly.';
+    } if(papersManagement == 'repro_destroy') {
+        return 'The exam papers are at the printing centre and may be destroyed by CePro.';
+    } if(papersManagement == 'papers_user') {
+        return 'The exam papers are in my possession and I will take care of them.';
+    }
 }
 
 export default function App({ user }: RegisterProps) {
@@ -105,9 +116,22 @@ export default function App({ user }: RegisterProps) {
                 throw new Error(payload.error || "La decompression a echoue.");
             }
 
-            setResult(payload);
+            const uploadResult = payload as ArchiveUploadResult;
+            setResult(uploadResult);
             setSelectedFile(null);
             if (inputRef.current) inputRef.current.value = "";
+
+            if (process.env.NODE_ENV !== "development") {
+                await sendTemplatedMail("archiving_confirmation", {
+                    "registrant.email": user.email,
+                    courseName: `${data.course?.exam.code} - ${data.course?.exam.title}`,
+                    academicYear: data.academicYear,
+                    pdfsNumber: uploadResult.numberOfPdfs,
+                    papersManagement: formatPapersManagement(data.papersManagement),
+                    nasPath: uploadResult.destination
+                });
+            }
+
             reset();
         } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur inattendue pendant le test.");

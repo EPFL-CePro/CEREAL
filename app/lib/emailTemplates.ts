@@ -194,6 +194,42 @@ CePro
             replyTo: "",
         },
     },
+
+    archiving_confirmation: {
+        section: "CEREAL",
+        name: "Digital archiving confirmation",
+        placeholders: [
+            { token: "registrant.email", desc: "User submitting (email)" },
+            { token: "courseName", desc: "Course for the archive" },
+            { token: "academicYear", desc: "Academic year of the archive" },
+            { token: "pdfsNumber", desc: "Number of PDFs files in the archive" },
+            { token: "papersManagement", desc: "Choosen method for exam papers management" },
+            { token: "nasPath", desc: "Folder on the NAS where the archive is stored" },
+        ],
+        defaults: {
+            subject: "Digital archive of exam",
+            body: `
+Hello,
+
+Your digital archive has been saved.
+
+- Course : {{courseName}}
+- Academic Year : {{academicYear}}
+- Number of PDFs : {{pdfsNumber}}
+- Papers management method : {{papersManagement}}
+- Path on the NAS : {{nasPath}}
+
+You can find the documentation to connect to the archives NAS here : https://exadoc.epfl.ch/docs/archive/procedure
+
+Best
+
+CePro
+`,
+            to: "{{registrant.email}}",
+            cc: "cepro-exams@epfl.ch",
+            replyTo: "",
+        },
+    },
 };
 
 // Keys are derived from the registry, so adding or removing a template is a
