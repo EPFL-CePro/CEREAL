@@ -4,7 +4,7 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } from "@/app/lib/crep/database";
 import { useState } from "react";
 import ReactSelect from "../forms/ReactSelect";
-import { checkFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
+import { validateFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
 import { sendTemplatedMail } from "@/app/lib/mail";
 import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dateTime";
 import { User } from "next-auth";
@@ -148,7 +148,7 @@ export default function App({ user }: RegisterProps) {
             return;
         }
         // Check that the financial center exists
-        const financialCenterExists = await checkFinancialCenter(data.financialCenter);
+        const financialCenterExists = await financialCenterExists(data.financialCenter);
         if (typeof financialCenterExists === 'string') {
             openModal("Financial Center error", "We could not verify the financial center right now. Please try again in a few minutes.");
             return;
