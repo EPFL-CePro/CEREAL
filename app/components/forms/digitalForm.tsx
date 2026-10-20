@@ -77,6 +77,11 @@ export default function App({ user }: RegisterProps) {
             return;
         }
 
+        if(!data.papersManagement) {
+            setError("Please choose a papers management method.");
+            return;
+        }
+
         setIsUploading(true);
         try {
             const params = new URLSearchParams({
@@ -196,6 +201,22 @@ export default function App({ user }: RegisterProps) {
                         <span className="ml-2 text-slate-500">({formatBytes(selectedFile.size)})</span>
                     </div>
                 )}
+
+                <div className="flex flex-col">
+                    <label>Management of exam papers<RedAsterisk /></label>
+                    <div>
+                        <input {...register("papersManagement")} className="mr-2" type="radio" id="repro_collect" value="repro_collect" />
+                        <label htmlFor="repro_collect" className="text-sm">The exam papers are at the printing centre and I will come and collect them shortly.</label>
+                    </div>
+                    <div>
+                        <input {...register("papersManagement")} className="mr-2" type="radio" id="repro_destroy" value="repro_destroy" />
+                        <label htmlFor="repro_destroy" className="text-sm">The exam papers are at the printing centre and may be destroyed by CePro.</label>
+                    </div>
+                    <div>
+                        <input {...register("papersManagement")} className="mr-2" type="radio" id="papers_user" value="papers_user" />
+                        <label htmlFor="papers_user" className="text-sm">The exam papers are in my possession and I will take care of them.</label>
+                    </div>
+                </div>
 
                 {error && (
                     <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
