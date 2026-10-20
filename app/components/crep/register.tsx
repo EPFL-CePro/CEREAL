@@ -4,7 +4,7 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } from "@/app/lib/crep/database";
 import { useState } from "react";
 import ReactSelect from "../forms/ReactSelect";
-import { fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
+import { checkFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
 import { sendTemplatedMail } from "@/app/lib/mail";
 import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dateTime";
 import { User } from "next-auth";
@@ -145,6 +145,16 @@ export default function App({ user }: RegisterProps) {
         if (selectedFiles.length === 0 && !hideFiles) {
             setFilesError("Please upload at least one file");
             openModal("File Upload Error", "You need to upload at least one file before submitting the form.");
+            return;
+        }
+        // Check that the financial center exists
+        const financialCenterExists = await checkFinancialCenter(data.financialCenter);
+        if (typeof financialCenterExists === 'string') {
+            openModal("Financial Center error", "We could not verify the financial center right now. Please try again in a few minutes.");
+            return;
+        }
+        else if (!financialCenterExists) {
+            openModal("Financial Center error", "Please enter a valid financial center.");
             return;
         }
 
@@ -634,7 +644,12 @@ Next time, please register to the printing service earlier to make sur that the 
                 )}
 
                 <label>Financial Center <RedAsterisk /></label>
-                <input type="text" placeholder={"FCXXXX"} maxLength={8} {...register("financialCenter", { required: true })} />
+                <input
+                    type="text"
+                    placeholder="FCXXXX"
+                    maxLength={8}
+                    {...register("financialCenter", { required: true })}
+                />
                 {errors.financialCenter && <span className="text-red-600">This field is required</span>}
                 <label>Contact <RedAsterisk /></label>
                 <ReactSelect control={control} label={"contact"} name={"contact"} isMultiChoice={false} instanceId={2} />

@@ -14,13 +14,33 @@ function getOasisBaseUrl(): string {
         ? "https://oasis-t.epfl.ch:8484"
         : "https://oasis.epfl.ch:8484";
 }
+const EPFL_API_BASE = 'https://api.epfl.ch/v1';
+const getApiEpflCredentials = () => Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64');
+
+// Check that a financial center (FC) exists. Returns an error message if the EPFL API could not be reached.
+export async function checkFinancialCenter(query: string): Promise<boolean | string> {
+    const url = new URL(`${EPFL_API_BASE}/funds`);
+    url.searchParams.set('cfs', query);
+    url.searchParams.set('pagesize', '1');
+    const headers = new Headers();
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
+
+    try {
+        const res = await fetch(url, {method: 'GET', headers});
+        if (!res.ok) return `EPFL API error (${res.status})`;
+        const data = await res.json();
+        return data.count > 0;
+    } catch (error) {
+        return 'EPFL API unreachable';
+    }
+}
 
 export async function fetchPersons(query: string): Promise<SelectOption[]> {
-    const url = `https://api.epfl.ch/v1/persons?query=${encodeURIComponent(query)}`;
+    const url = `${EPFL_API_BASE}/persons?query=${encodeURIComponent(query)}`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
-    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     const res = await fetch(url, {method: 'GET', headers});
     if (!res.ok) return [];
     const data = await res.json();
@@ -39,11 +59,11 @@ export async function fetchPersons(query: string): Promise<SelectOption[]> {
 }
 
 export async function fetchGroups(query: string): Promise<SelectOption[]> {
-    const url = `https://api.epfl.ch/v1/groups?name=${encodeURIComponent(query)}`;
+    const url = `${EPFL_API_BASE}/groups?name=${encodeURIComponent(query)}`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
-    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     const res = await fetch(url, {method: 'GET', headers});
     if (!res.ok) return [];
     const data = await res.json();
@@ -59,11 +79,11 @@ export async function fetchGroups(query: string): Promise<SelectOption[]> {
 }
 
 export async function fetchGroupPersons(groupId: string): Promise<SelectOption[]> {
-    const url = `https://api.epfl.ch/v1/groups/${encodeURIComponent(groupId)}/persons?pagesize=0`;
+    const url = `${EPFL_API_BASE}/groups/${encodeURIComponent(groupId)}/persons?pagesize=0`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
-    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     const res = await fetch(url, {method: 'GET', headers});
     if (!res.ok) return [];
     const data = await res.json();
@@ -81,22 +101,22 @@ export async function fetchGroupPersons(groupId: string): Promise<SelectOption[]
 }
 
 export async function fetchPersonBySciper(sciper: string): Promise<EPFLUser> {
-    const url = `https://api.epfl.ch/v1/persons/${sciper}`;
+    const url = `${EPFL_API_BASE}/persons/${sciper}`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
-    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     const res = await fetch(url, {method: 'GET', headers});
     const data = await res.json();
     return data;
 }
 
 export async function fetchMultiplePersonsBySciper(scipersWithCommas: string): Promise<EPFLUser[]> {
-    const url = `https://api.epfl.ch/v1/persons?ids=${encodeURIComponent(scipersWithCommas)}`;
+    const url = `${EPFL_API_BASE}/persons?ids=${encodeURIComponent(scipersWithCommas)}`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
-    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     const res = await fetch(url, {method: 'GET', headers});
     if (!res.ok) return [];
     const data = await res.json();
@@ -203,11 +223,11 @@ export async function fetchTeachersByCourseCode(academicYear: string): Promise<R
 }
 
 export async function fetchCeproAdminsIT(): Promise<GroupUser[]> {
-    const url = `https://api.epfl.ch/v1/groups/CePro_admin_IT/members`;
+    const url = `${EPFL_API_BASE}/groups/CePro_admin_IT/members`;
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Headers', '*');
-    headers.set('Authorization', 'Basic ' + Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64'));
+    headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     const res = await fetch(url, {method: 'GET', headers});
     const data = await res.json();
     return data.members;
