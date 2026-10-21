@@ -424,6 +424,6 @@ export async function updateSACById(tableName: string, columnName: string, id: s
 // Comments
 export async function getAllCommentsForExam(examId: string) : Promise<Comment[]>  {
     await requirePermission(Permission.ADMIN);
-    const [rows] = await db.query('SELECT * FROM comments WHERE exam_id = ?;', [examId]);
+    const [rows] = await db.query('SELECT * FROM comments WHERE exam_id = ? ORDER BY created_at DESC;', [examId]);
     return rows as Comment[];
 }
