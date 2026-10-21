@@ -148,7 +148,7 @@ export default function App({ user }: RegisterProps) {
             return;
         }
         // Check that the financial center exists
-        const financialCenterExists = await financialCenterExists(data.financialCenter);
+        const financialCenterExists = await validateFinancialCenter(data.financialCenter);
         if (typeof financialCenterExists === 'string') {
             openModal("Financial Center error", "We could not verify the financial center right now. Please try again in a few minutes.");
             return;
