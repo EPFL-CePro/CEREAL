@@ -13,7 +13,6 @@ import { User } from "next-auth";
 import { getAllowedExamStatus } from "@/app/lib/examStatus";
 import { Filters } from "../../Filters";
 import { ExamSearch } from "./ExamSearch";
-import { QueryResult } from "mysql2";
 import { Legend } from "../../Legend";
 import { EventApi } from "@fullcalendar/core";
 import { useSearchParams } from "next/navigation";
@@ -59,7 +58,7 @@ export default function Calendar({ user }: CalendarProps) {
   );
   useEffect(() => {
     (async function () {
-      const data = user.isAdmin ? await getAllCrepExams() as Array<QueryResult> : await getAllNonAdminExams() as Array<QueryResult>;
+      const data = (user.isAdmin ? await getAllCrepExams() : await getAllNonAdminExams()) as unknown as EventInput[];
       const startDate = new Date();
 
       const filteredData = data.map((e: EventInput, i: number) => {

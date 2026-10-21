@@ -1,7 +1,8 @@
 'use server';
 
-import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2';
-import { Connection as PromiseConnection } from 'mysql2/promise';
+import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import type { PoolConnection } from 'mysql2/promise';
+import { db } from '@/app/lib/db';
 import { examBlockingPrintStatus, examNotAdminStatus } from '../examStatus';
 import { CrepExam, CrepFile, CrepFileSpecs } from '@/types/crepExam';
 import { formatDateTimeForDatabase } from '../dateTime';
@@ -11,34 +12,20 @@ import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from './fileSpecs';
 
 type NewCrepFile = CrepFileSpecs & { file_name: string | null };
 
-function createPromiseConnection(): PromiseConnection {
-    return mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    }).promise();
-}
-
 // Adds the files (table `crep_file`) of every exam to `exam.files`
 async function attachFiles(exams: CrepExam[]): Promise<CrepExam[]> {
     if (exams.length === 0) return exams;
 
-    const connection = createPromiseConnection();
-    try {
-        const [rows] = await connection.query<RowDataPacket[]>(
-            'SELECT * FROM crep_file WHERE crep_id IN (?) ORDER BY id;',
-            [exams.map((exam) => exam.id)]
-        );
-        const files = (rows as CrepFile[]).map((file) => ({ ...file, need_scan: Boolean(file.need_scan) }));
+    const [rows] = await db.query<RowDataPacket[]>(
+        'SELECT * FROM crep_file WHERE crep_id IN (?) ORDER BY id;',
+        [exams.map((exam) => exam.id)]
+    );
+    const files = (rows as CrepFile[]).map((file) => ({ ...file, need_scan: Boolean(file.need_scan) }));
 
-        return exams.map((exam) => ({ ...exam, files: files.filter((file) => file.crep_id === exam.id) }));
-    } finally {
-        await connection.end();
-    }
+    return exams.map((exam) => ({ ...exam, files: files.filter((file) => file.crep_id === exam.id) }));
 }
 
-async function insertFiles(connection: PromiseConnection, crepId: number, files: NewCrepFile[]) {
+async function insertFiles(connection: PoolConnection, crepId: number, files: NewCrepFile[]) {
     await connection.query(
         'INSERT INTO crep_file (crep_id, file_name, exam_students, exam_pages, paper_format, paper_color, print, need_scan) VALUES ?;',
         [files.map((file) => {
@@ -49,7 +36,7 @@ async function insertFiles(connection: PromiseConnection, crepId: number, files:
 }
 
 // Recomputes `crep.print_duration` from the copies of all the files of the exam, returns the new duration
-async function refreshPrintDuration(connection: PromiseConnection, crepId: number): Promise<number> {
+async function refreshPrintDuration(connection: PoolConnection, crepId: number): Promise<number> {
     const [rows] = await connection.query<RowDataPacket[]>(
         'SELECT COALESCE(SUM(exam_students), 0) AS copies FROM crep_file WHERE crep_id = ?;',
         [crepId]
@@ -60,221 +47,72 @@ async function refreshPrintDuration(connection: PromiseConnection, crepId: numbe
 }
 
 export async function getAllCrepExams() {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('SELECT * from crep;', (err, rows) => {
-            if (err) throw err
-            resolve(attachFiles(rows as CrepExam[]));
-        })
-        connection.end()
-    })
+    const [rows] = await db.query('SELECT * from crep;');
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function getAllCrepExamsForRepro(email: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query(`SELECT * from crep WHERE status = 'toPrint' OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`, [email],
-            (err, rows) => {
-            if (err) throw err
-            resolve(attachFiles(rows as CrepExam[]));
-        })
-        connection.end()
-    })
+    const [rows] = await db.query(
+        `SELECT * from crep WHERE status = 'toPrint' OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`,
+        [email]
+    );
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function getOldestCrepExamDate(): Promise<Date | null> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('SELECT MIN(exam_date) AS oldest FROM crep;', (err: mysql.QueryError | null, rows) => {
-            if (err) throw err
-            resolve((rows as RowDataPacket[])[0]?.oldest ?? null);
-        })
-        connection.end()
-    })
+    const [rows] = await db.query<RowDataPacket[]>('SELECT MIN(exam_date) AS oldest FROM crep;');
+    return rows[0]?.oldest ?? null;
 }
 
 export async function getCrepExamsByAcademicYear(academicYear: string): Promise<CrepExam[]> {
     const range = getAcademicYearDateRange(academicYear);
     if (!range) return [];
 
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query(
-            'SELECT * FROM crep WHERE exam_date >= ? AND exam_date < ?;',
-            [formatDateTimeForDatabase(range.start), formatDateTimeForDatabase(range.end)],
-            (err:mysql.QueryError | null, rows) => {
-                if (err) throw err
-                resolve(attachFiles(rows as CrepExam[]));
-            }
-        )
-        connection.end()
-    })
+    const [rows] = await db.query(
+        'SELECT * FROM crep WHERE exam_date >= ? AND exam_date < ?;',
+        [formatDateTimeForDatabase(range.start), formatDateTimeForDatabase(range.end)]
+    );
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function getAllNonAdminExams() {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
     const allowedStatuses = [...examNotAdminStatus.map(status => status.value), "reserved"];
-    
-    return new Promise(function(resolve) {
-        connection.query("SELECT * from crep WHERE status IN (" + allowedStatuses.map(() => "?").join(", ") + ");", allowedStatuses, (err, rows) => {
-            if (err) throw err
-            resolve(attachFiles(rows as CrepExam[]));
-        })
-        connection.end()
-    })
+
+    const [rows] = await db.query('SELECT * from crep WHERE status IN (?);', [allowedStatuses]);
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function updateExamDateById(id: string, startDate: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET print_date = ? WHERE id = ?;', [startDate, id], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET print_date = ? WHERE id = ?;', [startDate, id]);
+    return JSON.stringify(result);
 }
 
 export async function updateExamStatusById(id: string, status: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET status = ? WHERE id = ?;', [status, id], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET status = ? WHERE id = ?;', [status, id]);
+    return JSON.stringify(result);
 }
 
 export async function updateExamRemarkById(id: string, remark: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET remark = ? WHERE id = ?;', [remark, id], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET remark = ? WHERE id = ?;', [remark, id]);
+    return JSON.stringify(result);
 }
 
 export async function updateExamReproRemarkById(id: string, reproRemark: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET repro_remark = ? WHERE id = ?;', [reproRemark, id], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET repro_remark = ? WHERE id = ?;', [reproRemark, id]);
+    return JSON.stringify(result);
 }
 
 export async function getAllExamsByStatus(status: Array<string>): Promise<CrepExam[]> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-    
-    return new Promise(function(resolve) {
-        connection.query(`SELECT * from crep WHERE status IN (${status.map(obj => `"${obj}"`).join(", ")});`, (err:mysql.QueryError, rows:CrepExam[]) => {
-            if (err) throw err
-            resolve(attachFiles(rows));
-        })
-        connection.end()
-    })
+    const [rows] = await db.query('SELECT * from crep WHERE status IN (?);', [status]);
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function getAllExamsBetweenDates(beginDate: Date, endDate: Date): Promise<CrepExam[]> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-    
-    return new Promise(function(resolve) {
-        connection.query(`SELECT * from crep WHERE print_date between '${formatDateTimeForDatabase(beginDate)}' and '${formatDateTimeForDatabase(endDate)}'`, (err:mysql.QueryError, rows:CrepExam[]) => {
-            if (err) throw err
-            resolve(attachFiles(rows));
-        })
-        connection.end()
-    })
+    const [rows] = await db.query(
+        'SELECT * from crep WHERE print_date between ? and ?',
+        [formatDateTimeForDatabase(beginDate), formatDateTimeForDatabase(endDate)]
+    );
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function insertExamForPrint(exam: {
@@ -295,7 +133,7 @@ export async function insertExamForPrint(exam: {
     const filesError = validateFilesSpecs(files);
     if (filesError) throw new Error(filesError);
 
-    const connection = createPromiseConnection();
+    const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
@@ -329,9 +167,11 @@ export async function insertExamForPrint(exam: {
         return crepId;
     } catch (err) {
         await connection.rollback();
+        // A session variable stays on a connection of the pool: it must not be given back with the flag set
+        await connection.query('SET @crep_registering = NULL;').catch(() => {});
         throw err;
     } finally {
-        await connection.end();
+        connection.release();
     }
 }
 
@@ -339,7 +179,7 @@ export async function addCrepFiles(crepId: number, files: NewCrepFile[]): Promis
     const filesError = validateFilesSpecs(files);
     if (filesError) throw new Error(filesError);
 
-    const connection = createPromiseConnection();
+    const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
@@ -350,7 +190,7 @@ export async function addCrepFiles(crepId: number, files: NewCrepFile[]): Promis
         await connection.rollback();
         throw err;
     } finally {
-        await connection.end();
+        connection.release();
     }
 }
 
@@ -359,7 +199,7 @@ export async function updateCrepFileSpecs(crepId: number, files: (CrepFileSpecs 
     const filesError = validateFilesSpecs(files);
     if (filesError) throw new Error(filesError);
 
-    const connection = createPromiseConnection();
+    const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
@@ -394,12 +234,12 @@ export async function updateCrepFileSpecs(crepId: number, files: (CrepFileSpecs 
         await connection.rollback();
         throw err;
     } finally {
-        await connection.end();
+        connection.release();
     }
 }
 
 export async function deleteCrepFile(crepId: number, fileId: number): Promise<void> {
-    const connection = createPromiseConnection();
+    const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();
@@ -410,126 +250,41 @@ export async function deleteCrepFile(crepId: number, fileId: number): Promise<vo
         await connection.rollback();
         throw err;
     } finally {
-        await connection.end();
+        connection.release();
     }
 }
 
 export async function getAllExamsForDate(date:string): Promise <CrepExam[]> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-    
-    return new Promise(function(resolve) {
-        connection.query('SELECT * FROM crep WHERE DATE(print_date) = DATE(?);', [date], (err, rows) => {
-            if (err) throw err
-            resolve(attachFiles(rows as CrepExam[]));
-        })
-        connection.end()
-    })
+    const [rows] = await db.query('SELECT * FROM crep WHERE DATE(print_date) = DATE(?);', [date]);
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function getBlockingExamsForDate(date:string): Promise <CrepExam[]> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query(
-            'SELECT * FROM crep WHERE DATE(print_date) = DATE(?) AND status IN (?);',
-            [date, examBlockingPrintStatus],
-            (err, rows) => {
-                if (err) throw err
-                resolve(attachFiles(rows as CrepExam[]));
-            }
-        )
-        connection.end()
-    })
+    const [rows] = await db.query(
+        'SELECT * FROM crep WHERE DATE(print_date) = DATE(?) AND status IN (?);',
+        [date, examBlockingPrintStatus]
+    );
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function deleteCrepExam(examId: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('DELETE FROM crep WHERE id = ?;', [examId], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('DELETE FROM crep WHERE id = ?;', [examId]);
+    return JSON.stringify(result);
 }
 
 export async function updateCrepBoxes(examId: string, boxes: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET boxes = ? WHERE id = ?;', [boxes, examId], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET boxes = ? WHERE id = ?;', [boxes, examId]);
+    return JSON.stringify(result);
 }
 
 export async function updateCrepPriceUnit(examId: string, priceUnit: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET price_unit = ? WHERE id = ?;', [priceUnit, examId], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET price_unit = ? WHERE id = ?;', [priceUnit, examId]);
+    return JSON.stringify(result);
 }
 
 export async function updateCrepPriceTotal(examId: string, priceTotal: string) {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('UPDATE crep SET price_total = ? WHERE id = ?;', [priceTotal, examId], (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query('UPDATE crep SET price_total = ? WHERE id = ?;', [priceTotal, examId]);
+    return JSON.stringify(result);
 }
 
 export async function updateCrepExamFields(
@@ -546,109 +301,39 @@ export async function updateCrepExamFields(
     const setClause = entries.map(([col]) => `${col} = ?`).join(', ');
     const params = [...entries.map(([, value]) => value), examId];
 
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query(`UPDATE crep SET ${setClause} WHERE id = ?;`, params, (err, rows) => {
-            if (err) throw err
-            resolve(JSON.stringify(rows));
-        })
-        connection.end()
-    })
+    const [result] = await db.query(`UPDATE crep SET ${setClause} WHERE id = ?;`, params);
+    return JSON.stringify(result);
 }
 
 export async function getCrepExamsByContactEmail(email: string): Promise<CrepExam[]> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
-
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query(
-            "SELECT * FROM crep WHERE JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ? ORDER BY desired_date DESC;",
-            [email],
-            (err, rows) => {
-                if (err) throw err
-                resolve(attachFiles(rows as CrepExam[]));
-            }
-        )
-        connection.end()
-    })
+    const [rows] = await db.query(
+        "SELECT * FROM crep WHERE JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ? ORDER BY desired_date DESC;",
+        [email]
+    );
+    return attachFiles(rows as CrepExam[]);
 }
 
 export async function getCrepExamById(id: string): Promise<CrepExam | null> {
-    const connection = mysql.createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE,
-    })
+    const [rows] = await db.query('SELECT * FROM crep WHERE id = ? LIMIT 1;', [id]);
+    const exams = rows as CrepExam[];
+    if (exams.length === 0) return null;
 
-    connection.connect()
-
-    return new Promise(function(resolve) {
-        connection.query('SELECT * FROM crep WHERE id = ? LIMIT 1;', [id], (err, rows) => {
-            if (err) throw err
-            const arr = rows as CrepExam[];
-            resolve(arr.length > 0 ? attachFiles(arr).then(([exam]) => exam) : null);
-        })
-        connection.end()
-    })
+    const [exam] = await attachFiles(exams);
+    return exam;
 }
 
 export async function getLogs(sciper: string) {
-  const connection = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-  });
-
-  connection.connect();
-  
-  return new Promise((resolve, reject) => {
-    connection.query(
-      'SELECT l.*, un.read_at, (un.read_at IS NOT NULL) AS is_read FROM crep_log l LEFT JOIN user_notification un ON un.log_id = l.id AND un.sciper = ? ORDER BY l.date_time DESC, l.id DESC;',
-      [sciper],
-      (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows);
-      }
+    const [rows] = await db.query(
+        'SELECT l.*, un.read_at, (un.read_at IS NOT NULL) AS is_read FROM crep_log l LEFT JOIN user_notification un ON un.log_id = l.id AND un.sciper = ? ORDER BY l.date_time DESC, l.id DESC;',
+        [sciper]
     );
-    connection.end();
-  });
+    return rows;
 }
 
 export async function markAsRead(sciper: string) {
-  const connection = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-  });
-
-  connection.connect();
-  
-  return new Promise((resolve, reject) => {
-    connection.query(
-      'INSERT INTO user_notification (log_id, sciper, read_at) SELECT l.id, ?, CURRENT_TIMESTAMP(6) FROM crep_log l ON DUPLICATE KEY UPDATE read_at = IF(user_notification.read_at IS NULL, CURRENT_TIMESTAMP(6), user_notification.read_at);',
-      [sciper],
-      (err) => {
-        if (err) return reject(err);
-        resolve({ ok: true });
-      }
+    await db.query(
+        'INSERT INTO user_notification (log_id, sciper, read_at) SELECT l.id, ?, CURRENT_TIMESTAMP(6) FROM crep_log l ON DUPLICATE KEY UPDATE read_at = IF(user_notification.read_at IS NULL, CURRENT_TIMESTAMP(6), user_notification.read_at);',
+        [sciper]
     );
-    connection.end();
-  });
+    return { ok: true };
 }
