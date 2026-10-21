@@ -23,6 +23,7 @@ import { Service } from "@/types/service";
 import { ServiceLevel } from "@/types/serviceLevel";
 import * as XLSX from 'xlsx';
 import { XLSXFile } from "@/types/boFile";
+import { toast } from "sonner";
 
 type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams";
 type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">;
@@ -146,7 +147,7 @@ export default function AdminPage() {
       selectedBoFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     if (!isXlsxFile) {
-      alert("Please upload an XLSX file.")
+      toast.error('Please upload an XLSX file');
       return;
     }
 
@@ -160,7 +161,7 @@ export default function AdminPage() {
     const firstColumnHeader = String(firstSheet?.A1?.v ?? "").trim();
 
     if (firstColumnHeader !== "SCIPER") {
-      alert("Please upload a valid BO XLSX file.");
+      toast.error("Please upload a valid BO XLSX file.");
       return;
     }
 
@@ -184,7 +185,7 @@ export default function AdminPage() {
       selectedDiffExamsFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     if (!isXlsxFile) {
-      alert("Please upload an XLSX file.")
+      toast.error('Please upload an XLSX file');
       return;
     }
 

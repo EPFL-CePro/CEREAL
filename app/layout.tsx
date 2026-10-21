@@ -5,12 +5,12 @@ import "./globals.css";
 import { CustomProvider } from "rsuite";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { MainNavBar } from "./components/navigation/MainNavBar";
+import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
@@ -32,6 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${jetBrainsMono.variable} antialiased`}
       >
+        <Toaster position="top-center" richColors/>
         <ImpersonationBanner />
         <MainNavBar />
         <CustomProvider>{children}</CustomProvider>

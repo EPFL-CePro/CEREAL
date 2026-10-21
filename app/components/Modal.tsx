@@ -22,6 +22,7 @@ import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor";
 import { CrepFile } from "@/types/crepExam";
 import { FileSpecsFields } from "./crep/FileSpecsFields";
 import { getBindingLabel, validateFilesSpecs } from "../lib/crep/fileSpecs";
+import {toast} from "sonner";
 
 interface AppUser extends User {
     isAdmin?: boolean;
@@ -254,8 +255,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     return;
                 }
 
-                console.error(error);
-                window.alert("An error occurred while deleting the exam folder. Please try again.");
+                toast.error("An error occurred while deleting the exam folder. Please try again.");
                 return;
             }
         }
@@ -585,7 +585,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
                         const filesError = canEditModal ? validateFilesSpecs(files) : null;
                         if (filesError) {
-                            window.alert(filesError);
+                            toast.error(filesError);
                             setSelectStatus(previousStatus);
                             setIsSubmitting(false);
                             return;
@@ -608,7 +608,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
                         if (shouldNotifyFinished) {
                             if(parseInt(boxes) <= 0 || parseFloat(priceUnit) <= 0 || parseFloat(priceTotal) <= 0) {
-                                window.alert("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
+                                toast.warning("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
                                 setSelectStatus(previousStatus);
                                 setIsSubmitting(false);
                                 return;

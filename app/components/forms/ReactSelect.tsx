@@ -8,6 +8,7 @@ import { Control, Controller, ControllerRenderProps, FieldValues, Path } from "r
 import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/api";
 import { Inputs } from "@/types/inputs";
 import { SelectOption } from "@/types/selectOption";
+import { toast } from "sonner";
 
 function isSelectOption(value: unknown): value is SelectOption {
     return Boolean(
@@ -226,7 +227,7 @@ function SelectField<T extends FieldValues>({
                     allCoursesAcademicYearRef.current = requestAcademicYear;
                 } catch (e) {
                     if (latestCoursesRequestRef.current !== requestId) return;
-                    alert(`Failed to load courses, ${e}`);
+                    toast.error(`Failed to load courses, ${e}`);
                     allCoursesRef.current = [];
                     allCoursesAcademicYearRef.current = requestAcademicYear;
                 } finally {
