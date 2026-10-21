@@ -9,13 +9,13 @@ export const metadata = {
 export default async function Page({
     params,
 }: {
-    params: Promise<{ examId?: string }>
+    params: Promise<{ examId: string }>
 }) {
     const session = await auth();
     if (!session?.user) return;
 
     const { examId } = await params;
-    const allCommentsForExam = await getAllCommentsForExam(examId || '');
+    const allCommentsForExam = await getAllCommentsForExam(examId);
 
     return (
         <main>
