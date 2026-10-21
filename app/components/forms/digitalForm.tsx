@@ -24,6 +24,7 @@ interface ArchiveUploadResult {
     numberOfPdfs: number;
     durationMs: number;
     durationSeconds: number;
+    permissionsGranted: boolean;
 }
 
 function formatBytes(size: number) {
@@ -256,6 +257,12 @@ export default function App({ user }: RegisterProps) {
                         </p>
                         <p>{result.numberOfPdfs} PDFs</p>
                         <p><strong>Folder path in NAS</strong> : {result.destination}</p>
+                    </div>
+                )}
+
+                {result && !result.permissionsGranted && (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                        The access rights to the archive folder could not be properly given to the teachers of the exam. Please inform CePro.
                     </div>
                 )}
 

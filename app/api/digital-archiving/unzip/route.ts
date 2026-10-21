@@ -10,6 +10,7 @@ import { pipeline } from "stream/promises";
 import type { ReadableStream } from "stream/web";
 import { NextRequest, NextResponse } from "next/server";
 import { courseArchivePath, isSafePathSegment } from "@/app/lib/archiveFolders";
+import { grantTeachersFullControl } from "@/app/lib/archivePermissions";
 
 export const runtime = "nodejs";
 
@@ -196,12 +197,16 @@ export async function POST(req: NextRequest) {
         await giveToArchiveOwner(archiveDir, [newUploadDir, ...createdDirs], newUploadDir)
             .catch((ownerErr) => console.error("Unable to give the archived files to the archive owner", ownerErr));
 
+        // The archive is kept even without the teachers rights: the page asks to warn CePro
+        const permissionsGranted = await grantTeachersFullControl(academicYear, courseCode, coursePath, tempDir);
+
         return NextResponse.json({
             fileName,
             destination: coursePath,
             numberOfPdfs: pdfs.length,
             durationMs,
             durationSeconds: durationMs / 1000,
+            permissionsGranted,
         });
     } catch (err) {
         console.error(err);

@@ -3,6 +3,9 @@ export type EPFLUser = {
     firstname: string
     lastname: string
     email: string
+    account: {
+      username: string
+    }
   }
 
 export type AuthorizedPersons = {

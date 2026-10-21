@@ -10,7 +10,7 @@ RUN npm run build
 FROM node:24-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache unzip
+RUN apk add --no-cache unzip samba-client
 
 ENV NODE_ENV=production
 
