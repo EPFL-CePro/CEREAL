@@ -1,7 +1,7 @@
 import { Comment } from '@/types/comment';
 
 interface CommentsTableProps {
-  comments: Comment[]
+  comments: Comment[];
 }
 
 function formatDate(date: Date) {
