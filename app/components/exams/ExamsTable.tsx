@@ -24,6 +24,7 @@ import { fetchCeproAdminsIT, fetchTeachersByCourseCode } from '@/app/lib/api'
 import { GroupUser } from '@/types/groupUser'
 import { Teacher } from '@/types/teacher'
 import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, ViewColumnsIcon } from "@heroicons/react/24/outline";
+import Link from 'next/link'
 
 interface ExamsTableProps {
   academicYear: string
@@ -746,6 +747,25 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           >
             Delete
           </button>
+          <Link
+            href={`/exams/comments/${row.original.id}`}
+            target="_blank"
+            className="
+              px-3
+              py-2
+              border-2
+              border-green-500
+              rounded-lg
+              text-green-700
+              hover:bg-green-800
+              hover:text-white
+              hover:border-green-800
+              transition
+              ease-in-out
+            "
+          >
+            Comments
+          </Link>
         </div>
       ),
       enableSorting: false,
