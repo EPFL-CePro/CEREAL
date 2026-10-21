@@ -1,3 +1,4 @@
+import CommentsTable from "@/app/components/exams/comments/CommentsTable";
 import { getAllCommentsForExam } from "@/app/lib/database";
 import { auth } from "@/auth";
 
@@ -18,10 +19,11 @@ export default async function Page({
 
     return (
         <main>
-            <ul>
-                <li><strong>Exam id : </strong>{examId}</li>
-                <li><strong>Comments length : </strong>{allCommentsForExam.length}</li>
-            </ul>
+            {allCommentsForExam.length == 0 ?
+                <>No comments found for exam id {examId} or exam does not exist.</>
+            :
+                <CommentsTable comments={allCommentsForExam} />
+            }
         </main>
     )
 }
