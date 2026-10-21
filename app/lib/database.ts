@@ -12,6 +12,7 @@ import type { DiffExam, NewDiffExam } from '@/types/diffExam';
 import {db} from "@/app/lib/db";
 import { requirePermission } from "@/app/lib/requirePermission";
 import { Permission } from "@/app/lib/routeAccess";
+import { Comment } from '@/types/comment';
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise <Service[]> {
@@ -418,4 +419,11 @@ export async function updateSACById(tableName: string, columnName: string, id: s
         [value, id]
     );
     return JSON.stringify(result);
+}
+
+// Comments
+export async function getAllCommentsForExam(examId: string) : Promise<Comment[]>  {
+    await requirePermission(Permission.ADMIN);
+    const [rows] = await db.query('SELECT * FROM comments WHERE exam_id = ?;', [examId]);
+    return rows as Comment[];
 }
