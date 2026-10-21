@@ -3,6 +3,8 @@
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import type { PoolConnection } from 'mysql2/promise';
 import { db } from '@/app/lib/db';
+import { requirePermission } from '@/app/lib/requirePermission';
+import { Permission } from '@/app/lib/routeAccess';
 import { examBlockingPrintStatus, examNotAdminStatus } from '../examStatus';
 import { CrepExam, CrepFile, CrepFileSpecs } from '@/types/crepExam';
 import { formatDateTimeForDatabase } from '../dateTime';
@@ -47,11 +49,13 @@ async function refreshPrintDuration(connection: PoolConnection, crepId: number):
 }
 
 export async function getAllCrepExams() {
+    await requirePermission(Permission.CREP);
     const [rows] = await db.query('SELECT * from crep;');
     return attachFiles(rows as CrepExam[]);
 }
 
 export async function getAllCrepExamsForRepro(email: string) {
+    await requirePermission(Permission.CREP);
     const [rows] = await db.query(
         `SELECT * from crep WHERE status = 'toPrint' OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`,
         [email]
@@ -60,11 +64,13 @@ export async function getAllCrepExamsForRepro(email: string) {
 }
 
 export async function getOldestCrepExamDate(): Promise<Date | null> {
+    await requirePermission(Permission.CREP);
     const [rows] = await db.query<RowDataPacket[]>('SELECT MIN(exam_date) AS oldest FROM crep;');
     return rows[0]?.oldest ?? null;
 }
 
 export async function getCrepExamsByAcademicYear(academicYear: string): Promise<CrepExam[]> {
+    await requirePermission(Permission.CREP);
     const range = getAcademicYearDateRange(academicYear);
     if (!range) return [];
 
@@ -76,6 +82,7 @@ export async function getCrepExamsByAcademicYear(academicYear: string): Promise<
 }
 
 export async function getAllNonAdminExams() {
+    await requirePermission(Permission.CREP);
     const allowedStatuses = [...examNotAdminStatus.map(status => status.value), "reserved"];
 
     const [rows] = await db.query('SELECT * from crep WHERE status IN (?);', [allowedStatuses]);
@@ -83,26 +90,31 @@ export async function getAllNonAdminExams() {
 }
 
 export async function updateExamDateById(id: string, startDate: string) {
+    await requirePermission(Permission.ADMIN);
     const [result] = await db.query('UPDATE crep SET print_date = ? WHERE id = ?;', [startDate, id]);
     return JSON.stringify(result);
 }
 
 export async function updateExamStatusById(id: string, status: string) {
+    await requirePermission(Permission.CREP);
     const [result] = await db.query('UPDATE crep SET status = ? WHERE id = ?;', [status, id]);
     return JSON.stringify(result);
 }
 
 export async function updateExamRemarkById(id: string, remark: string) {
+    await requirePermission(Permission.CREP);
     const [result] = await db.query('UPDATE crep SET remark = ? WHERE id = ?;', [remark, id]);
     return JSON.stringify(result);
 }
 
 export async function updateExamReproRemarkById(id: string, reproRemark: string) {
+    await requirePermission(Permission.CREP);
     const [result] = await db.query('UPDATE crep SET repro_remark = ? WHERE id = ?;', [reproRemark, id]);
     return JSON.stringify(result);
 }
 
 export async function getAllExamsByStatus(status: Array<string>): Promise<CrepExam[]> {
+    await requirePermission(Permission.CREP);
     const [rows] = await db.query('SELECT * from crep WHERE status IN (?);', [status]);
     return attachFiles(rows as CrepExam[]);
 }
@@ -115,6 +127,7 @@ export async function getAllExamsBetweenDates(beginDate: Date, endDate: Date): P
     return attachFiles(rows as CrepExam[]);
 }
 
+// No permission check on purpose: used by the register form (every logged-in user).
 export async function insertExamForPrint(exam: {
     exam_code: string;
     exam_date: string | Date;
@@ -196,6 +209,7 @@ export async function addCrepFiles(crepId: number, files: NewCrepFile[]): Promis
 
 // Only updates the print settings of the files, returns the printing duration of the exam
 export async function updateCrepFileSpecs(crepId: number, files: (CrepFileSpecs & { id: number })[]): Promise<number> {
+    await requirePermission(Permission.CREP);
     const filesError = validateFilesSpecs(files);
     if (filesError) throw new Error(filesError);
 
@@ -255,6 +269,7 @@ export async function deleteCrepFile(crepId: number, fileId: number): Promise<vo
 }
 
 export async function getAllExamsForDate(date:string): Promise <CrepExam[]> {
+    await requirePermission(Permission.CREP);
     const [rows] = await db.query('SELECT * FROM crep WHERE DATE(print_date) = DATE(?);', [date]);
     return attachFiles(rows as CrepExam[]);
 }
@@ -268,21 +283,25 @@ export async function getBlockingExamsForDate(date:string): Promise <CrepExam[]>
 }
 
 export async function deleteCrepExam(examId: string) {
+    await requirePermission(Permission.ADMIN);
     const [result] = await db.query('DELETE FROM crep WHERE id = ?;', [examId]);
     return JSON.stringify(result);
 }
 
 export async function updateCrepBoxes(examId: string, boxes: string) {
+    await requirePermission(Permission.CREP);
     const [result] = await db.query('UPDATE crep SET boxes = ? WHERE id = ?;', [boxes, examId]);
     return JSON.stringify(result);
 }
 
 export async function updateCrepPriceUnit(examId: string, priceUnit: string) {
+    await requirePermission(Permission.CREP);
     const [result] = await db.query('UPDATE crep SET price_unit = ? WHERE id = ?;', [priceUnit, examId]);
     return JSON.stringify(result);
 }
 
 export async function updateCrepPriceTotal(examId: string, priceTotal: string) {
+    await requirePermission(Permission.CREP);
     const [result] = await db.query('UPDATE crep SET price_total = ? WHERE id = ?;', [priceTotal, examId]);
     return JSON.stringify(result);
 }
@@ -291,6 +310,7 @@ export async function updateCrepExamFields(
     examId: string,
     fields: Record<string, string | number | boolean>
 ) {
+    await requirePermission(Permission.CREP);
     const allowedColumns = [
         'desired_date', 'exam_date', 'financial_center',
         'authorized_persons', 'order_number',
@@ -323,6 +343,7 @@ export async function getCrepExamById(id: string): Promise<CrepExam | null> {
 }
 
 export async function getLogs(sciper: string) {
+    await requirePermission(Permission.CREP);
     const [rows] = await db.query(
         'SELECT l.*, un.read_at, (un.read_at IS NOT NULL) AS is_read FROM crep_log l LEFT JOIN user_notification un ON un.log_id = l.id AND un.sciper = ? ORDER BY l.date_time DESC, l.id DESC;',
         [sciper]
@@ -331,6 +352,7 @@ export async function getLogs(sciper: string) {
 }
 
 export async function markAsRead(sciper: string) {
+    await requirePermission(Permission.CREP);
     await db.query(
         'INSERT INTO user_notification (log_id, sciper, read_at) SELECT l.id, ?, CURRENT_TIMESTAMP(6) FROM crep_log l ON DUPLICATE KEY UPDATE read_at = IF(user_notification.read_at IS NULL, CURRENT_TIMESTAMP(6), user_notification.read_at);',
         [sciper]
