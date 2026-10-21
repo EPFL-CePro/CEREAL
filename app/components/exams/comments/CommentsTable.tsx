@@ -1,16 +1,29 @@
+'use client';
 import { Comment } from '@/types/comment';
+import { useState } from 'react';
+import AddCommentModal from './AddCommentModal';
+import { User } from 'next-auth';
+import { insertComment } from '@/app/lib/database';
+import { useRouter } from 'next/navigation';
 
 interface CommentsTableProps {
   comments: Comment[];
+  user: User;
+  examId: string;
 }
 
 function formatDate(date: Date) {
-  return new Date(date).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' });
+  return new Date(date).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Zurich' });
 }
 
-export default function CommentsTable({ comments }: CommentsTableProps) {
+export default function CommentsTable({ comments, user, examId }: CommentsTableProps) {
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  const router = useRouter();
+
   return (
     <div className="overflow-x-auto rounded-lg">
+      <button className="btn btn-primary" onClick={() => setAddModalOpen(true)}>Add a comment</button>
       <table className="w-5xl divide-y divide-gray-200 text-left text-sm">
         <thead className="bg-gray-200 text-xs font-semibold uppercase tracking-normal text-gray-500">
           <tr>
@@ -29,6 +42,26 @@ export default function CommentsTable({ comments }: CommentsTableProps) {
           ))}
         </tbody>
       </table>
+      {addModalOpen && (
+        <AddCommentModal
+          onClose={() => setAddModalOpen(false)}
+          onSubmit={async (content) => {
+            await insertComment(
+              {
+                content,
+                exam_id: parseInt(examId),
+                registered_by:
+                {
+                  name: user.name || '',
+                  email: user.email || '',
+                  sciper: user.sciper
+                }
+              }
+            )
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   )
 }

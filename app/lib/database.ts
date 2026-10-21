@@ -427,3 +427,19 @@ export async function getAllCommentsForExam(examId: string) : Promise<Comment[]>
     const [rows] = await db.query('SELECT * FROM comments WHERE exam_id = ? ORDER BY created_at DESC;', [examId]);
     return rows as Comment[];
 }
+
+export async function insertComment(comment: Omit<Comment, 'id' | 'created_at'>): Promise<number> {
+    await requirePermission(Permission.ADMIN);
+    const params = [
+        comment.exam_id,
+        comment.content,
+        comment.registered_by
+    ];
+
+    const [result] = await db.execute<ResultSetHeader>(
+        'INSERT INTO comments (exam_id, content, registered_by) VALUES (?, ?, ?)',
+        params
+    );
+
+    return result.insertId;
+}

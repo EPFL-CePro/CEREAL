@@ -22,7 +22,7 @@ export default async function Page({
             {allCommentsForExam.length == 0 ?
                 <>No comments found for exam id {examId} or exam does not exist.</>
             :
-                <CommentsTable comments={allCommentsForExam} />
+                <CommentsTable comments={allCommentsForExam} user={session.user} examId={examId} />
             }
         </main>
     )
