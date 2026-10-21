@@ -47,6 +47,38 @@ type ColumnPreference = {
   visible: boolean
 }
 
+type RemarkTextareaProps = {
+  id: string;
+  initialValue?: string;
+  onUpdateState: (id: string, updates: Partial<Exam>) => void;
+};
+
+const RemarkTextarea = React.memo(
+  function RemarkTextarea({ id, initialValue, onUpdateState }: RemarkTextareaProps) {
+    const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    return (
+      <textarea
+        className="min-h-[4.5rem] w-[13rem] rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+        defaultValue={initialValue || ''}
+        rows={2}
+        onChange={(e) => {
+          const value = e.target.value;
+
+          if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+          }
+
+          debounceRef.current = setTimeout(async () => {
+            await updateExamRemark(id, value);
+            onUpdateState(id, {remark: value});
+          }, 700);
+        }}
+      />
+    );
+  }
+);
+
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
   const [globalFilter, setGlobalFilter] = React.useState('') // Plain text searching, searching in the whole table
@@ -209,40 +241,14 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     }
   }, [academicYear])
 
-  const handleOpenExamDetails = (exam: Exam) => {
+  const handleOpenExamDetails = React.useCallback((exam: Exam) => {
     setSelectedExam(exam)
-  }
+  }, [])
 
-  type RemarkTextareaProps = {
-    id: string;
-    initialValue?: string;
-  };
 
-  function RemarkTextarea({ id, initialValue }: RemarkTextareaProps) {
-    const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    return (
-      <textarea
-        className="min-h-[4.5rem] w-[13rem] rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700"
-        defaultValue={initialValue || ''}
-        rows={2}
-        onChange={(e) => {
-          const value = e.target.value;
-
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-          }
-
-          debounceRef.current = setTimeout(async () => {
-            await updateExamRemark(id, value)
-            updateExamInState(id, { remark: value })
-          }, 700);
-        }}
-      />
-    );
-  }
-
-  const columns: ColumnDef<Exam>[] = [
+  // UseMemo to prevent render to destroy and recreate all the cells (and make the focus of the remark textarea lost).
+  const columns = React.useMemo<ColumnDef<Exam>[]>(() => [
     {
       accessorKey: 'code',
       header: 'Code',
@@ -630,7 +636,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       accessorKey: 'remark',
       header: 'Remark',
       cell: ({ row }) => (
-        <RemarkTextarea id={row.original.id} initialValue={row.original.remark ? row.original.remark : ''} />
+        <RemarkTextarea id={row.original.id} initialValue={row.original.remark ? row.original.remark : ''} onUpdateState={updateExamInState} />
       ),
     },
     {
@@ -772,7 +778,20 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       enableColumnFilter: false,
       enableHiding: false
     },
-  ]
+  ], [
+    allServiceLevels,
+    allServices,
+    allExamTypes,
+    allExamStatus,
+    allCeproAdminsIT,
+    teachersByCourse,
+    updateExamInState,
+    handleOpenExamDetails,
+    formatContact,
+    getContactSearchText,
+    compactSelectClassName,
+    compactInputClassName,
+  ])
 
   const columnLabels: Record<string, string> = {
     code: 'Code', name : 'Courses', teachers: 'Teachers', contact: 'Contact',
@@ -785,6 +804,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const table = useReactTable({
     data: exams,
     columns,
+    // Rows are identified by the exam, not by their position (cells keep their own state)
+    getRowId: (exam) => String(exam.id),
     state: {
       globalFilter,
       sorting,
