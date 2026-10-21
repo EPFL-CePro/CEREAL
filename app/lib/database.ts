@@ -146,6 +146,12 @@ export async function getAllExams(): Promise <Exam[]> {
     return rows as Exam[];
 }
 
+export async function getExamById(examId: string): Promise <Exam[]> {
+    await requirePermission(Permission.ADMIN);
+    const [rows] = await db.query('SELECT * FROM exam WHERE id = ?;', [examId]);
+    return rows as Exam[];
+}
+
 export async function getExamsByAcademicYear(academicYear: string): Promise <Exam[]> {
     await requirePermission(Permission.ADMIN);
     const [rows] = await db.query('SELECT exam.* FROM exam WHERE exam.academic_year_id = ?;', [academicYear]);
