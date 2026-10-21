@@ -23,7 +23,7 @@ export default async function Page({
             {examInDb.length == 0 ?
                 <>Exam with id {examId} does not exist in the database.</>
             :
-                <CommentsTable comments={allCommentsForExam} user={session.user} examId={examId} />
+                <CommentsTable comments={allCommentsForExam} user={session.user} examId={examId} exam={examInDb[0]} />
             }
         </main>
     )

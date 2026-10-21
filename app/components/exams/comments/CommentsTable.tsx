@@ -5,25 +5,28 @@ import AddCommentModal from './AddCommentModal';
 import { User } from 'next-auth';
 import { insertComment } from '@/app/lib/database';
 import { useRouter } from 'next/navigation';
+import { Exam } from '@/types/exam';
 
 interface CommentsTableProps {
   comments: Comment[];
   user: User;
   examId: string;
+  exam: Exam;
 }
 
 function formatDate(date: Date) {
   return new Date(date).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Zurich' });
 }
 
-export default function CommentsTable({ comments, user, examId }: CommentsTableProps) {
+export default function CommentsTable({ comments, user, examId, exam }: CommentsTableProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   const router = useRouter();
 
   return (
     <div className="overflow-x-auto rounded-lg">
-      <button className="btn btn-primary" onClick={() => setAddModalOpen(true)}>Add a comment</button>
+      <h1 className="font-bold text-3xl mb-8">Comments for exam {exam.code} - {exam.name} <i>(exam date : {exam.exam_date ? new Date(exam.exam_date).toLocaleDateString('fr-CH') : 'Not set'})</i></h1>
+      <button className="btn btn-primary mb-3" onClick={() => setAddModalOpen(true)}>Add a comment</button>
       {comments.length > 0 && (
         <table className="w-5xl divide-y divide-gray-200 text-left text-sm">
           <thead className="bg-gray-200 text-xs font-semibold uppercase tracking-normal text-gray-500">
