@@ -30,7 +30,7 @@ export async function validateFinancialCenter(financialCenter: string): Promise<
         if (!res.ok) return `EPFL API error (${res.status})`;
         const data = await res.json();
         return data.count > 0;
-    } catch (error) {
+    } catch {
         return 'EPFL API unreachable';
     }
 }
