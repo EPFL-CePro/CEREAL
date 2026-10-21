@@ -1,43 +1,57 @@
+// TODO - Refactor: Rename it (accessRules.ts) and move it in (app/lib/access/)
 export interface AccessUser {
 	isAdmin?: boolean;
 	hasCrepAccess?: boolean;
 	hasSACAccess?: boolean;
 }
 
-export function canAccessRoute(user: AccessUser, pathname: string): boolean {
+export enum Permission {
+	ADMIN = 'admin',
+	CREP = 'crep',
+	SAC = 'sac',
+}
+
+export function hasPermission(user: AccessUser, permission: Permission): boolean {
 	// If user is admin, he can access anything.
 	if (user.isAdmin) {
 		return true;
 	}
 
-	// Routes available only to people who can access the CREP sub-module
-	if (
-		pathname === '/crep'
-	) {
-		if (!user.hasCrepAccess) {
+	switch (permission) {
+		case Permission.CREP:
+			return Boolean(user.hasCrepAccess);
+		case Permission.SAC:
+			return Boolean(user.hasSACAccess);
+		case Permission.ADMIN:
 			return false;
-		}
 	}
+}
 
-	// Routes available only to the SAC.
-	if (
-		pathname === '/sac-absences' || pathname.startsWith('/sac-absences/')
-	) {
-		if (!user.hasSACAccess) {
-			return false;
-		}
-	}
+interface ProtectedRoute {
+	path: string;
+	includeSubPages?: boolean; // Protects everything below the path (ex: /admin/users)
+	permission: Permission;
+}
 
-	// Routes available only to administrators of the app
-	if (
-		pathname === '/admin' || pathname.startsWith('/admin/') ||
-		pathname === '/exams' || pathname.startsWith('/exams/')
-	) {
-		if (!user.isAdmin) {
-			return false;
-		}
-	}
+// Routes that need a permission. Anybody can access to route that doesn't exist here.
+const PROTECTED_ROUTES: ProtectedRoute[] = [
+	{ path: '/crep', permission: Permission.CREP },
+	{ path: '/sac-absences', includeSubPages: true, permission: Permission.SAC },
+	{ path: '/admin', includeSubPages: true, permission: Permission.ADMIN },
+	{ path: '/exams', includeSubPages: true, permission: Permission.ADMIN },
+];
 
-	// If the previous conditions did not match, it means that the route trying to be accessed is a non-protected route, anybody can access to.
-	return true;
+function isRouteConcerned(route: ProtectedRoute, pathname: string): boolean {
+	const isSamePage = pathname === route.path;
+	const isSubPage = Boolean(route.includeSubPages) && pathname.startsWith(`${route.path}/`);
+
+	return isSamePage || isSubPage;
+}
+
+export function canAccessRoute(user: AccessUser, pathname: string): boolean {
+	const protectedRoute = PROTECTED_ROUTES.find((route) => isRouteConcerned(route, pathname));
+
+	if (!protectedRoute) return true;
+
+	return hasPermission(user, protectedRoute.permission);
 }
