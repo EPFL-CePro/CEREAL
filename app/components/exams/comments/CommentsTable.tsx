@@ -1,7 +1,7 @@
 'use client';
 import { Comment } from '@/types/comment';
 import { useState } from 'react';
-import AddCommentModal from './AddCommentModal';
+import CommentModal from './CommentModal';
 import { User } from 'next-auth';
 import { deleteComment, insertComment, updateComment } from '@/app/lib/database';
 import { useRouter } from 'next/navigation';
@@ -62,7 +62,7 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
         </table>
       )}
       {addModalOpen && (
-        <AddCommentModal
+        <CommentModal
           onClose={() => setAddModalOpen(false)}
           onSubmit={async (content) => {
             await insertComment(
@@ -82,7 +82,7 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
         />
       )}
       {editingComment && (
-        <AddCommentModal
+        <CommentModal
           initialContent={editingComment.content}
           onClose={() => setEditingComment(null)}
           onSubmit={async (content) => {

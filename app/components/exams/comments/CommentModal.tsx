@@ -1,13 +1,13 @@
 'use client';
 import { FormEvent, useState } from 'react';
 
-interface AddCommentModalProps {
+interface CommentModalProps {
   onClose: () => void
   onSubmit: (content: string) => void | Promise<void>
   initialContent?: string
 }
 
-export default function AddCommentModal({ onClose, onSubmit, initialContent }: AddCommentModalProps) {
+export default function CommentModal({ onClose, onSubmit, initialContent }: CommentModalProps) {
   const [content, setContent] = useState(initialContent ?? '');
   const isEdit = initialContent !== undefined;
   const [submitting, setSubmitting] = useState(false);
