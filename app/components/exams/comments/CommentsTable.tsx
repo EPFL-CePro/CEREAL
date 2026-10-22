@@ -3,9 +3,10 @@ import { Comment } from '@/types/comment';
 import { useState } from 'react';
 import AddCommentModal from './AddCommentModal';
 import { User } from 'next-auth';
-import { insertComment } from '@/app/lib/database';
+import { deleteComment, insertComment } from '@/app/lib/database';
 import { useRouter } from 'next/navigation';
 import { Exam } from '@/types/exam';
+import { TrashIcon } from "@heroicons/react/24/outline";
 
 interface CommentsTableProps {
   comments: Comment[];
@@ -23,6 +24,13 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
 
   const router = useRouter();
 
+  async function handleDeleteComment(comment:Comment) {
+    if(window.confirm("Are you sure you want to delete this comment ?")) {
+      await deleteComment(comment);
+      router.refresh();
+    }
+  }
+
   return (
     <div className="overflow-x-auto rounded-lg">
       <h1 className="font-bold text-3xl mb-8">Comments for exam {exam.code} - {exam.name} <i>(exam date : {exam.exam_date ? new Date(exam.exam_date).toLocaleDateString('fr-CH') : 'Not set'})</i></h1>
@@ -34,6 +42,7 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
               <th scope="col" className="px-4 py-3 whitespace-nowrap">Date</th>
               <th scope="col" className="px-4 py-3 whitespace-nowrap">Author</th>
               <th scope="col" className="px-4 py-3">Comment</th>
+              <th scope="col" className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
@@ -42,6 +51,7 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
                 <td className="px-4 py-3 whitespace-nowrap text-gray-950">{formatDate(comment.created_at)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-gray-950">{comment.registered_by.name}</td>
                 <td className="px-4 py-3 whitespace-pre-wrap text-gray-950">{comment.content}</td>
+                <td className="px-4 py-3"><button className="btn btn-primary" onClick={() => handleDeleteComment(comment)}><TrashIcon className="size-5" strokeWidth="1.50" /></button></td>
               </tr>
             ))}
           </tbody>

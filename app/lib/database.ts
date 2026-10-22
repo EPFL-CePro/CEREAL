@@ -449,3 +449,12 @@ export async function insertComment(comment: Omit<Comment, 'id' | 'created_at'>)
 
     return result.insertId;
 }
+
+export async function deleteComment(comment: Comment) : Promise<number>  {
+    await requirePermission(Permission.ADMIN);
+    const [result] = await db.execute<ResultSetHeader>(
+        'DELETE FROM comments WHERE id = ?',
+        [comment.id]
+    );
+    return result.affectedRows;
+}
