@@ -458,3 +458,12 @@ export async function deleteComment(comment: Comment) : Promise<number>  {
     );
     return result.affectedRows;
 }
+
+export async function updateComment(comment: Pick<Comment, 'id' | 'content'>) : Promise<number>  {
+    await requirePermission(Permission.ADMIN);
+    const [result] = await db.execute<ResultSetHeader>(
+        'UPDATE comments SET content = ? WHERE id = ?',
+        [comment.content, comment.id]
+    );
+    return result.affectedRows;
+}

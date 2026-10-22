@@ -3,10 +3,10 @@ import { Comment } from '@/types/comment';
 import { useState } from 'react';
 import AddCommentModal from './AddCommentModal';
 import { User } from 'next-auth';
-import { deleteComment, insertComment } from '@/app/lib/database';
+import { deleteComment, insertComment, updateComment } from '@/app/lib/database';
 import { useRouter } from 'next/navigation';
 import { Exam } from '@/types/exam';
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
 
 interface CommentsTableProps {
   comments: Comment[];
@@ -21,6 +21,7 @@ function formatDate(date: Date) {
 
 export default function CommentsTable({ comments, user, examId, exam }: CommentsTableProps) {
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editingComment, setEditingComment] = useState<Comment | null>(null);
 
   const router = useRouter();
 
@@ -51,7 +52,10 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
                 <td className="px-4 py-3 whitespace-nowrap text-gray-950">{formatDate(comment.created_at)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-gray-950">{comment.registered_by.name}</td>
                 <td className="px-4 py-3 whitespace-pre-wrap text-gray-950">{comment.content}</td>
-                <td className="px-4 py-3"><button className="btn btn-primary" onClick={() => handleDeleteComment(comment)}><TrashIcon className="size-5" strokeWidth="1.50" /></button></td>
+                <td className="flex gap-2 px-4 py-3">
+                  <button className="btn btn-primary" onClick={() => handleDeleteComment(comment)}><TrashIcon className="size-5" strokeWidth="1.50" /></button>
+                  <button className="btn btn-secondary" onClick={() => setEditingComment(comment)}><PencilIcon className="size-5" strokeWidth="1.50" /></button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -73,6 +77,16 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
                 }
               }
             )
+            router.refresh();
+          }}
+        />
+      )}
+      {editingComment && (
+        <AddCommentModal
+          initialContent={editingComment.content}
+          onClose={() => setEditingComment(null)}
+          onSubmit={async (content) => {
+            await updateComment({ id: editingComment.id, content });
             router.refresh();
           }}
         />

@@ -4,10 +4,12 @@ import { FormEvent, useState } from 'react';
 interface AddCommentModalProps {
   onClose: () => void
   onSubmit: (content: string) => void | Promise<void>
+  initialContent?: string
 }
 
-export default function AddCommentModal({ onClose, onSubmit }: AddCommentModalProps) {
-  const [content, setContent] = useState('');
+export default function AddCommentModal({ onClose, onSubmit, initialContent }: AddCommentModalProps) {
+  const [content, setContent] = useState(initialContent ?? '');
+  const isEdit = initialContent !== undefined;
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -29,7 +31,7 @@ export default function AddCommentModal({ onClose, onSubmit }: AddCommentModalPr
         onClick={(e) => e.stopPropagation()}
         className="flex w-3/4 flex-col gap-4 rounded-xl bg-white p-8 text-slate-900 drop-shadow-2xl md:w-2/4"
       >
-        <h2 className="text-xl font-semibold">New comment</h2>
+        <h2 className="text-xl font-semibold">{isEdit ? 'Edit comment' : 'New comment'}</h2>
         <textarea
           autoFocus
           rows={6}
@@ -41,7 +43,7 @@ export default function AddCommentModal({ onClose, onSubmit }: AddCommentModalPr
         <div className="flex justify-end gap-2">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button type="submit" className="btn btn-primary disabled:cursor-wait disabled:opacity-80" disabled={submitting || !content.trim()}>
-            {submitting ? 'Saving...' : 'Add'}
+            {submitting ? 'Saving...' : isEdit ? 'Save' : 'Add'}
           </button>
         </div>
       </form>
