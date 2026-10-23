@@ -10,11 +10,14 @@ import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } f
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
 import { RegisterModal } from "../forms/RegisterModal";
+import DateInput from "./register/DateInput";
+import FormSection from "./register/FormSection";
+import Checkbox from "./register/Checkbox";
 import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
 import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
 import { limitTextToLines } from "@/app/lib/remarks";
-import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/businessDays";
+import { businessDaysBetween, getPreviousBusinessDay, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/businessDays";
 import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
@@ -33,10 +36,10 @@ interface AppUser extends User {
 interface Gap {
     between: [CrepExam, CrepExam]; // before exam, end exam
     gapMinutes: number; // gap between the two exams in minutes
-};
+}
 
 
-export default function App({ user }: RegisterProps) {
+export default function RegisterForm({ user }: RegisterProps) {
     const { control, register, handleSubmit, formState: { errors }, setError, clearErrors, reset, setValue } = useForm<Inputs>({
         defaultValues: {
             course: null,
@@ -177,7 +180,7 @@ export default function App({ user }: RegisterProps) {
                 setError("desiredDate", { type: "validate", message: "Desired delivery date cannot be later than the exam date." });
                 return;
             }
-            
+
             today.setHours(0, 0, 0, 0);
 
             if(exam <= today || desired <= today) {
@@ -402,12 +405,12 @@ export default function App({ user }: RegisterProps) {
                     openModal("File Upload Error", "An error occurred while uploading exam files. Please try again.");
                     return;
                 }
-                
+
             }
            /*
             The mail checks if status is `registered-warning` or `registered-error`, and displays a message for the user and the CePro team to let them know about the exam printing situation.
             If the status is `registered-warning`, that means that a printing schedule could be found, but that the timing is too short (less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date)
-            If the status is `registered-error`, that means that a printing schedule could NOT be found, so the CePro (and Repro) team need to do something for the user. 
+            If the status is `registered-error`, that means that a printing schedule could NOT be found, so the CePro (and Repro) team need to do something for the user.
            */
             if (process.env.NODE_ENV !== "development") {
                 const attentionRequired = ['registered-warning', 'registered-error'].includes(status);
@@ -469,7 +472,7 @@ Next time, please register to the printing service earlier to make sur that the 
 
     return (
         /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
-        <div className="flex flex-col items-center m-24">
+        <div className="flex flex-col items-center m-12">
             <dialog id="register-modal" className="modal fixed top-3/8 left-1/8 w-3/4 md:left-1/4 md:w-2/4 rounded-xl flex items-center justify-center z-50 drop-shadow-2xl backdrop:backdrop-blur-xs opacity-98" onClose={() => {
                 setModalOpen(false);
                 if (modalResolver) {
@@ -481,65 +484,56 @@ Next time, please register to the printing service earlier to make sur that the 
                     <RegisterModal setModalOpen={setModalOpen} title={modalTitle} message={modalMessage} isConfirm={isConfirmModal} onResult={handleModalResult} />
                 )}
             </dialog >
-            <h1 className="text-3xl font-semibold" >Exam Printing Order</h1>
-            <form className="w-2/4 [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
+            <form className="flex flex-col gap-4"
                 onSubmit={handleSubmit(onSubmit)}
                 onKeyDown={preventEnterSubmit}
                 encType="multipart/form-data">
                 {/* register your input into the hook by invoking the "register" function */}
-                <label>Select your exam <RedAsterisk /></label>
-                <ReactSelect control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} />
-                <div className="flex flex-row justify-between w-full gap-4 [&>*>label]:text-lg">
-                    <div className="flex flex-col w-2/4 gap-3 ">
-                        <label>Exam Date <RedAsterisk /></label>
-                        <input
-                            className="text-right"
-                            type="date"
-                            {...register("examDate", {
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-3xl font-semibold text-center" >Exam Printing Order</h1>
+                    <p>Order printed copies of an exam for your class. All fields marked with <RedAsterisk/> are required.</p>
+                </div>
+                <FormSection number={1} title="Exam and dates">
+                    <div>
+                        <h3>Select your exam <RedAsterisk /></h3>
+                        <ReactSelect control={control} label={"course"} name={"course"} isMultiChoice={false} containCourses={true} instanceId={1} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <DateInput
+                            label="Exam Date"
+                            required
+                            registration={register("examDate", {
                                 required: true,
-                                onChange: (e) => {
-                                    const exam = (e.target as HTMLInputElement).value;
-                                    const d = new Date(exam);
-
-                                    // If it's sunday go back 2 days
-                                    if (d.getDay() === 0) {
-                                        d.setDate(d.getDate() - 2);
-                                    }
-                                    // If it's monday go back 3 days
-                                    else if (d.getDay() === 1) {
-                                        d.setDate(d.getDate() - 3);
-                                    }
-                                    // Else just go back one day
-                                    else {
-                                        d.setDate(d.getDate() - 1);
-                                    }
-                                    const formatted = formatDateYYYYMMDD(d)
-                                    setValue("desiredDate", formatted, { shouldDirty: true, shouldValidate: true });
-                                },
+                                // The desired delivery date is the business day before the exam
+                                onChange: (e) => setValue("desiredDate", getPreviousBusinessDay(e.target.value), { shouldDirty: true, shouldValidate: true }),
                             })}
                         />
+                        <DateInput
+                            label="Desired delivery date"
+                            required
+                            registration={register("desiredDate", { required: false })}
+                            error={errors.desiredDate?.message}
+                        />
                     </div>
-                    <div className="flex flex-col w-2/4 gap-3">
-                        <label>Desired delivery date <RedAsterisk /></label>
-                        <input className="text-right" type="date" {...register("desiredDate", { required: false })} />
-                        {errors.desiredDate && <span className="text-red-600">{errors.desiredDate.message}</span>}
-                    </div>
-                </div>
-                {user.isAdmin && (
-                    <div className="flex gap-2 items-center h-12">
-                        <label htmlFor="reserved">Reserved, no files yet</label>
-                        <input type="checkbox" id="reserved" name="reserved" checked={hideFiles} onChange={(e) => {
-                            setHideFiles(e.target.checked)
-                            setFilesError(null)
-                        }}/>
-                    </div>
-                )}
-                <div className="flex flex-col gap-2">
-                    <label className="text-lg">{hideFiles ? "Print settings" : "Attach exam file(s) to print"} <RedAsterisk /></label>
-                    {!hideFiles && <span className="text-sm text-slate-600">Each file has its own print settings.</span>}
-                    <div>
-                        <span>I need help{" "}</span>
-                        <span className="group relative inline-flex h-5 w-5">
+                </FormSection>
+                <FormSection number={2} title="Files and Print settings">
+                    {user.isAdmin && (
+                        <Checkbox
+                            label="Reserved, no files yet"
+                            checked={hideFiles}
+                            onChange={(checked) => {
+                                setHideFiles(checked)
+                                setFilesError(null)
+                            }}
+                        />
+                    )}
+                    {/* FILE SETTINGS SECTION*/}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-lg">{hideFiles ? "Print settings" : "Attach exam file(s) to print"} <RedAsterisk /></label>
+                        {!hideFiles && <span className="text-sm text-slate-600">Each file has its own print settings.</span>}
+                        <div>
+                            <span>I need help{" "}</span>
+                            <span className="group relative inline-flex h-5 w-5">
                             <button
                                 type="button"
                                 aria-label="Show bindings example"
@@ -571,10 +565,10 @@ Next time, please register to the printing service earlier to make sur that the 
                                 </div>
                             </div>
                         </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span>Bindings</span>
-                        <span className="group relative inline-flex h-5 w-5">
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span>Bindings</span>
+                            <span className="group relative inline-flex h-5 w-5">
                             <button
                                 type="button"
                                 aria-label="Show bindings example"
@@ -591,57 +585,58 @@ Next time, please register to the printing service earlier to make sur that the 
                                 />
                             </span>
                         </span>
-                    </div>
-                </div>
-
-                <div className={`${hideFiles && 'hidden'}`}>
-                    <div className="relative w-full">
-                        <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
-                            Select file...
                         </div>
-                        <input type="file" multiple onChange={handleFilesChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
-                </div>
 
-                {/* One card per file, with its own print settings */}
-                <div className={`${hideFiles && 'hidden'} flex flex-col gap-3 border border-slate-300 rounded-md p-2 bg-background`}
-                    style={{ "--background": "#f0f0f0" } as React.CSSProperties}>
-                    {selectedFiles.length === 0 && (
-                        <span className="text-sm text-slate-500">
+                    <div className={`${hideFiles && 'hidden'}`}>
+                        <div className="relative w-full">
+                            <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
+                                Select file...
+                            </div>
+                            <input type="file" multiple onChange={handleFilesChange}
+                                   className="absolute inset-0 opacity-0 cursor-pointer" />
+                        </div>
+                    </div>
+
+                    {/* One card per file, with its own print settings */}
+                    <div className={`${hideFiles && 'hidden'} flex flex-col gap-3 border border-slate-300 rounded-md p-2 bg-background`}
+                         style={{ "--background": "#f0f0f0" } as React.CSSProperties}>
+                        {selectedFiles.length === 0 && (
+                            <span className="text-sm text-slate-500">
                             No files selected yet.
                         </span>
-                    )}
+                        )}
 
-                    {selectedFiles.map(({ file, specs }, index) => (
-                        <div key={file.name} className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
-                            <div className="flex items-center justify-between text-sm">
-                                <div>
-                                    <span className="font-medium">{file.name}</span>{" "}
-                                    <span className="text-slate-500">
+                        {selectedFiles.map(({ file, specs }, index) => (
+                            <div key={file.name} className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
+                                <div className="flex items-center justify-between text-sm">
+                                    <div>
+                                        <span className="font-medium">{file.name}</span>{" "}
+                                        <span className="text-slate-500">
                                         ({(file.size / 1024).toFixed(1)} KB)
                                     </span>
+                                    </div>
+                                    <button type="button" className="text-red-600 text-xs underline"
+                                            onClick={() => handleRemoveFile(index)} >
+                                        Remove
+                                    </button>
                                 </div>
-                                <button type="button" className="text-red-600 text-xs underline"
-                                    onClick={() => handleRemoveFile(index)} >
-                                    Remove
-                                </button>
+                                <FileSpecsFields value={specs} onChange={(nextSpecs) => handleFileSpecsChange(index, nextSpecs)} />
                             </div>
-                            <FileSpecsFields value={specs} onChange={(nextSpecs) => handleFileSpecsChange(index, nextSpecs)} />
-                        </div>
-                    ))}
-                </div>
-
-                {hideFiles && (
-                    <div className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
-                        <span className="text-sm font-medium">File not uploaded yet</span>
-                        <FileSpecsFields value={reservedSpecs} onChange={setReservedSpecs} />
+                        ))}
                     </div>
-                )}
 
-                {filesError && (
-                    <span className="text-red-600">{filesError}</span>
-                )}
+                    {hideFiles && (
+                        <div className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
+                            <span className="text-sm font-medium">File not uploaded yet</span>
+                            <FileSpecsFields value={reservedSpecs} onChange={setReservedSpecs} />
+                        </div>
+                    )}
+
+                    {filesError && (
+                        <span className="text-red-600">{filesError}</span>
+                    )}
+                </FormSection>
 
                 <label>Financial Center <RedAsterisk /></label>
                 <input
