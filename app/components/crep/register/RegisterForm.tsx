@@ -3,16 +3,17 @@
 import { useForm, SubmitHandler } from "react-hook-form"
 import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } from "@/app/lib/crep/database";
 import { useState } from "react";
-import ReactSelect from "../forms/ReactSelect";
+import ReactSelect from "../../forms/ReactSelect";
 import { validateFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/api";
 import { sendTemplatedMail } from "@/app/lib/mail";
 import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dateTime";
 import { User } from "next-auth";
-import { RedAsterisk } from "../RedAsterisk";
-import { RegisterModal } from "../forms/RegisterModal";
-import DateInput from "./register/DateInput";
-import FormSection from "./register/FormSection";
-import Checkbox from "./register/Checkbox";
+import { RedAsterisk } from "../../RedAsterisk";
+import { RegisterModal } from "../../forms/RegisterModal";
+import DateInput from "./DateInput";
+import FormSection from "./FormSection";
+import Checkbox from "./Checkbox";
+import FilesAndPrintSettings from "./FilesAndPrintSettings";
 import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
 import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
@@ -22,7 +23,6 @@ import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
 import { countPdfPages } from "@/app/lib/crep/pdfPages";
-import { FileSpecsFields } from "./FileSpecsFields";
 
 interface RegisterProps {
     user: AppUser
@@ -524,161 +524,63 @@ Next time, please register to the printing service earlier to make sur that the 
                             }}
                         />
                     )}
-                    {/* FILE SETTINGS SECTION*/}
-                    <div className="flex flex-col gap-2">
-                        <label className="text-lg">{hideFiles ? "Print settings" : "Attach exam file(s) to print"} <RedAsterisk /></label>
-                        {!hideFiles && <span className="text-sm text-slate-600">Each file has its own print settings.</span>}
-                        <div>
-                            <span>I need help{" "}</span>
-                            <span className="group relative inline-flex h-5 w-5">
-                            <button
-                                type="button"
-                                aria-label="Show bindings example"
-                                className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-400 text-xs font-semibold leading-none text-slate-700 hover:border-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                            >
-                                ?
-                            </button>
-                            <div className="invisible absolute left-1/2 bottom-5 z-20 w-96 -translate-x-1/2 select-text rounded-md border border-slate-700 bg-white p-2 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-                                <div className="flex flex-col gap-2">
-                                    <div>
-                                        PDF already containing 120 documents of 20 pages each (2400-page PDF):
-
-                                        <ul className="pl-4 list-disc">
-                                            <li>Requested copies: 120</li>
-                                            <li>Pages per document: 20</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        PDF containing a single 20-page document:
-
-                                        <ul className="pl-4 list-disc">
-                                            <li>Requested copies: 120</li>
-                                            <li>Pages per document: 20</li>
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        Documents will be automatically separated and stapled/folded every specified number of pages per document.
-                                    </div>
-                                </div>
-                            </div>
-                        </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span>Bindings</span>
-                            <span className="group relative inline-flex h-5 w-5">
-                            <button
-                                type="button"
-                                aria-label="Show bindings example"
-                                className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-400 text-xs font-semibold leading-none text-slate-700 hover:border-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                            >
-                                ?
-                            </button>
-                            <span className="invisible absolute left-1/2 bottom-5 z-20 w-96 -translate-x-1/2 select-text rounded-md border border-slate-700 bg-white p-2 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src="/bindings.png"
-                                    alt="Bindings example"
-                                    className="h-auto w-full rounded"
-                                />
-                            </span>
-                        </span>
-                        </div>
-                    </div>
-
-                    <div className={`${hideFiles && 'hidden'}`}>
-                        <div className="relative w-full">
-                            <div className="border border-slate-300 rounded-md px-4 py-2 bg-white text-left">
-                                Select file...
-                            </div>
-                            <input type="file" multiple onChange={handleFilesChange}
-                                   className="absolute inset-0 opacity-0 cursor-pointer" />
-                        </div>
-                    </div>
-
-                    {/* One card per file, with its own print settings */}
-                    <div className={`${hideFiles && 'hidden'} flex flex-col gap-3 border border-slate-300 rounded-md p-2 bg-background`}
-                         style={{ "--background": "#f0f0f0" } as React.CSSProperties}>
-                        {selectedFiles.length === 0 && (
-                            <span className="text-sm text-slate-500">
-                            No files selected yet.
-                        </span>
-                        )}
-
-                        {selectedFiles.map(({ file, specs }, index) => (
-                            <div key={file.name} className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <div>
-                                        <span className="font-medium">{file.name}</span>{" "}
-                                        <span className="text-slate-500">
-                                        ({(file.size / 1024).toFixed(1)} KB)
-                                    </span>
-                                    </div>
-                                    <button type="button" className="text-red-600 text-xs underline"
-                                            onClick={() => handleRemoveFile(index)} >
-                                        Remove
-                                    </button>
-                                </div>
-                                <FileSpecsFields value={specs} onChange={(nextSpecs) => handleFileSpecsChange(index, nextSpecs)} />
-                            </div>
-                        ))}
-                    </div>
-
-                    {hideFiles && (
-                        <div className="flex flex-col gap-3 rounded-md border border-slate-300 bg-white p-3">
-                            <span className="text-sm font-medium">File not uploaded yet</span>
-                            <FileSpecsFields value={reservedSpecs} onChange={setReservedSpecs} />
-                        </div>
-                    )}
-
-                    {filesError && (
-                        <span className="text-red-600">{filesError}</span>
-                    )}
+                    <FilesAndPrintSettings
+                        hideFiles={hideFiles}
+                        selectedFiles={selectedFiles}
+                        reservedSpecs={reservedSpecs}
+                        filesError={filesError}
+                        onFilesChange={handleFilesChange}
+                        onRemoveFile={handleRemoveFile}
+                        onFileSpecsChange={handleFileSpecsChange}
+                        onReservedSpecsChange={setReservedSpecs}
+                    />
                 </FormSection>
+                <FormSection number={3} title="Billing and pickup">
+                    <label>Financial Center <RedAsterisk /></label>
+                    <input
+                        type="text"
+                        placeholder="FCXXXX"
+                        maxLength={8}
+                        {...register("financialCenter", { required: true })}
+                    />
+                    {errors.financialCenter && <span className="text-red-600">This field is required</span>}
+                    <label>Contact <RedAsterisk /></label>
+                    <ReactSelect control={control} label={"contact"} name={"contact"} isMultiChoice={false} instanceId={2} />
+                    <label>Authorized persons</label>
+                    <div className="bg-red-600/30 border-1 border-red-500 rounded-xl p-3 text-sm">
+                        Only the persons that will be selected here will be authorized to come pick up the exam at the Repro.<br />
+                        The Repro will ask for the Camipro of the person that came to pick up the exam.<br />
+                        The Repro has the right to not give the exam to the person if they are not selected in this list.
+                    </div>
+                    <span className="text-xs">👤 = Individual person</span>
+                    <span className="text-xs">👥 = Group of people</span>
+                    <ReactSelect control={control} label={"authorized persons"} name={"authorizedPersons"} isMultiChoice={true} instanceId={3} />
+                    <label>Additional remarks</label>
+                    <textarea
+                        {...remarkField}
+                        placeholder="Additional remarks (optional)"
+                        onChange={(e) => {
+                            e.target.value = limitTextToLines(e.target.value);
+                            remarkField.onChange(e);
+                            setValue("remark", e.target.value, { shouldDirty: true, shouldValidate: true });
+                        }}
+                    />
 
-                <label>Financial Center <RedAsterisk /></label>
-                <input
-                    type="text"
-                    placeholder="FCXXXX"
-                    maxLength={8}
-                    {...register("financialCenter", { required: true })}
-                />
-                {errors.financialCenter && <span className="text-red-600">This field is required</span>}
-                <label>Contact <RedAsterisk /></label>
-                <ReactSelect control={control} label={"contact"} name={"contact"} isMultiChoice={false} instanceId={2} />
-                <label>Authorized persons</label>
-                <div className="bg-red-600/30 border-1 border-red-500 rounded-xl p-3 text-sm">
-                    Only the persons that will be selected here will be authorized to come pick up the exam at the Repro.<br />
-                    The Repro will ask for the Camipro of the person that came to pick up the exam.<br />
-                    The Repro has the right to not give the exam to the person if they are not selected in this list.
-                </div>
-                <span className="text-xs">👤 = Individual person</span>
-                <span className="text-xs">👥 = Group of people</span>
-                <ReactSelect control={control} label={"authorized persons"} name={"authorizedPersons"} isMultiChoice={true} instanceId={3} />
-                <label>Additional remarks</label>
-                <textarea
-                    {...remarkField}
-                    placeholder="Additional remarks (optional)"
-                    onChange={(e) => {
-                        e.target.value = limitTextToLines(e.target.value);
-                        remarkField.onChange(e);
-                        setValue("remark", e.target.value, { shouldDirty: true, shouldValidate: true });
-                    }}
-                />
-
-                <button
-                    className="btn btn-primary flex items-center justify-center gap-2 hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
-                    type="submit"
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting && (
-                        <span
-                            className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                            aria-hidden="true"
-                        />
-                    )}
-                    <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
-                </button>
-                {(Object.keys(errors).length > 0 || filesError) && <span className="text-red-500">The form contains error(s), please see message(s) above to correct every error(s).</span>}
+                    <button
+                        className="btn btn-primary flex items-center justify-center gap-2 hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
+                        type="submit"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting && (
+                            <span
+                                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                                aria-hidden="true"
+                            />
+                        )}
+                        <span>{isSubmitting ? "Submitting..." : "Submit exam registration"}</span>
+                    </button>
+                    {(Object.keys(errors).length > 0 || filesError) && <span className="text-red-500">The form contains error(s), please see message(s) above to correct every error(s).</span>}
+                </FormSection>
             </form >
         </div >
 
