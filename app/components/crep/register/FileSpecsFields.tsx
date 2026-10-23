@@ -1,5 +1,6 @@
 "use client"
 // Print settings of one file of a print request (copies, pages, print side, bindings, color, scan)
+import { useId } from "react";
 import { CrepFileSpecs } from "@/types/crepExam";
 import { BookOpenIcon, ArrowPathIcon, DocumentIcon, DocumentTextIcon, SwatchIcon } from "@heroicons/react/24/outline";
 import { paperColors, paperFormats, printSides } from "@/app/lib/crep/fileSpecs";
@@ -28,6 +29,8 @@ interface FileSpecsFieldsProps {
 }
 
 export function FileSpecsFields({ value, onChange, disabled = false }: FileSpecsFieldsProps) {
+    const id = useId();
+
     function update<K extends keyof CrepFileSpecs>(key: K, fieldValue: CrepFileSpecs[K]) {
         onChange?.({ ...value, [key]: fieldValue });
     }
