@@ -479,7 +479,7 @@ Next time, please register to the printing service earlier to make sur that the 
                     <RegisterModal setModalOpen={setModalOpen} title={modalTitle} message={modalMessage} isConfirm={isConfirmModal} onResult={handleModalResult} />
                 )}
             </dialog >
-            <form className="flex flex-col gap-4"
+            <form className="flex flex-col gap-4 w-full max-w-3xl"
                 onSubmit={handleSubmit(onSubmit)}
                 onKeyDown={preventEnterSubmit}
                 encType="multipart/form-data">
