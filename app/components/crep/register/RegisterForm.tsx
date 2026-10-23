@@ -87,10 +87,8 @@ export default function RegisterForm({ user }: RegisterProps) {
         setModalOpen(false);
     };
 
-    const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files) return;
-
-        const newFiles = Array.from(e.target.files);
+    const handleFilesChange = (newFiles: File[]) => {
+        if (newFiles.length === 0) return;
 
         // Two files of the same exam can not have the same name (they are stored in the same folder)
         const duplicates = newFiles.filter((file) => selectedFiles.some((selected) => selected.file.name === file.name));
@@ -116,9 +114,6 @@ export default function RegisterForm({ user }: RegisterProps) {
             ? `A file with the same name has already been selected : ${duplicates.map((file) => file.name).join(", ")}. Please rename it before adding it.`
             : null
         );
-
-        // allow selecting the same file again later
-        e.target.value = "";
     };
 
     const handleRemoveFile = (index: number) => {
@@ -517,6 +512,7 @@ Next time, please register to the printing service earlier to make sur that the 
                     {user.isAdmin && (
                         <Checkbox
                             label="Reserved, no files yet"
+                            description="The exam is booked, the files can be added later."
                             checked={hideFiles}
                             onChange={(checked) => {
                                 setHideFiles(checked)
@@ -538,6 +534,7 @@ Next time, please register to the printing service earlier to make sur that the 
                 <FormSection number={3} title="Billing and pickup">
                     <label>Financial Center <RedAsterisk /></label>
                     <input
+                        className="mb-2 p-2 border rounded-md accent-red-500 border-slate-300"
                         type="text"
                         placeholder="FCXXXX"
                         maxLength={8}
@@ -552,11 +549,10 @@ Next time, please register to the printing service earlier to make sur that the 
                         The Repro will ask for the Camipro of the person that came to pick up the exam.<br />
                         The Repro has the right to not give the exam to the person if they are not selected in this list.
                     </div>
-                    <span className="text-xs">👤 = Individual person</span>
-                    <span className="text-xs">👥 = Group of people</span>
                     <ReactSelect control={control} label={"authorized persons"} name={"authorizedPersons"} isMultiChoice={true} instanceId={3} />
                     <label>Additional remarks</label>
                     <textarea
+                        className="mb-2 p-2 border rounded-md accent-red-500 border-slate-300"
                         {...remarkField}
                         placeholder="Additional remarks (optional)"
                         onChange={(e) => {
