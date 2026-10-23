@@ -89,6 +89,15 @@ If you are willing to contribute to this project in any way, please do ! But res
 <table>
   <tbody>
     <tr>
+      <td align="center" valign="top" colspan="4">
+        <h1>👑</h1>
+        <a href="https://zurcher.digital"><img src="https://github.com/a-zurcher.png?size=200" width="200px;" alt="a-zurcher"/></a>
+        <h2><a href="https://zurcher.digital">a-zurcher</a></h2>
+        <sub><b>✨ Supreme Ruler of This Repository ✨</b></sub><br /><br />
+        <a href="#code-a-zurcher" title="Code">💻</a> <a href="#bug-a-zurcher" title="Bug reports">🐛</a> <a href="#design-a-zurcher" title="Design">🎨</a> <a href="#data-a-zurcher" title="Data">🔣</a> <a href="#doc-a-zurcher" title="Documentation">📖</a> <a href="#ideas-a-zurcher" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-a-zurcher" title="Project Management">📆</a> <a href="#review-a-zurcher" title="Reviewed Pull Requests">👀</a> <a href="#test-a-zurcher" title="Tests">⚠️</a> <a href="#maintenance-a-zurcher" title="Maintenance">🚧</a> <a href="#infra-a-zurcher" title="Infrastructure">🚇</a> <a href="#mentoring-a-zurcher" title="Mentoring">🧑‍🏫</a>
+      </td>
+    </tr>
+    <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://panseri.dev/"><img src="https://avatars.githubusercontent.com/u/30987143?v=4?s=100" width="100px;" alt="Azecko"/><br /><sub><b>Azecko</b></sub></a><br /><a href="#code-Azecko" title="Code">💻</a> <a href="#bug-Azecko" title="Bug reports">🐛</a> <a href="#design-Azecko" title="Design">🎨</a> <a href="#data-Azecko" title="Data">🔣</a> <a href="#doc-Azecko" title="Documentation">📖</a> <a href="#ideas-Azecko" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-Azecko" title="Project Management">📆</a> <a href="#review-Azecko" title="Reviewed Pull Requests">👀</a> <a href="#test-Azecko" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/KedroX"><img src="https://avatars.githubusercontent.com/u/44971905?v=4?s=100" width="100px;" alt="Ludovic Bonivento"/><br /><sub><b>Ludovic Bonivento</b></sub></a><br /><a href="#code-KedroX" title="Code">💻</a> <a href="#bug-KedroX" title="Bug reports">🐛</a> <a href="#ideas-KedroX" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-KedroX" title="Project Management">📆</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/alessdangelo"><img src="https://avatars.githubusercontent.com/u/61836900?v=4?s=100" width="100px;" alt="aless / fi"/><br /><sub><b>aless / fi</b></sub></a><br /><a href="#code-alessdangelo" title="Code">💻</a> <a href="#bug-alessdangelo" title="Bug reports">🐛</a> <a href="#ideas-alessdangelo" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-alessdangelo" title="Project Management">📆</a> <a href="#design-alessdangelo" title="Design">🎨</a></td>
