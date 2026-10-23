@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 import { CrepFile, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, pickFileSpecs, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
 import { countPdfPages } from "@/app/lib/crep/pdfPages";
@@ -15,13 +16,14 @@ type Props = {
 
 export function ExamFilesManager({ examId, files, editable }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   // Files selected to be added, each one with its own print settings
   const [newFiles, setNewFiles] = useState<{ file: File; specs: CrepFileSpecs }[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(file: CrepFile) {
-    if (!confirm(`Delete the file « ${file.file_name ?? "File not uploaded yet"} » ?`)) return;
+    if (!(await confirm(`Delete the file « ${file.file_name ?? "File not uploaded yet"} » ?`))) return;
     setBusy(true);
     setError(null);
     try {

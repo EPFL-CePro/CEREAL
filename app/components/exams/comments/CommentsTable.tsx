@@ -5,6 +5,7 @@ import CommentModal from './CommentModal';
 import { User } from 'next-auth';
 import { deleteComment, insertComment, updateComment } from '@/app/lib/database';
 import { useRouter } from 'next/navigation';
+import { useConfirm } from '@/app/components/ConfirmProvider';
 import { Exam } from '@/types/exam';
 import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
 
@@ -24,9 +25,10 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
 
   const router = useRouter();
+  const confirm = useConfirm();
 
   async function handleDeleteComment(comment:Comment) {
-    if(window.confirm("Are you sure you want to delete this comment ?")) {
+    if(await confirm("Are you sure you want to delete this comment ?")) {
       await deleteComment(comment);
       router.refresh();
     }

@@ -6,6 +6,7 @@ import { CustomProvider } from "rsuite";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { MainNavBar } from "./components/navigation/MainNavBar";
 import { Toaster } from 'sonner';
+import { ConfirmProvider } from "./components/ConfirmProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,9 @@ export default function RootLayout({
         <Toaster position="top-center" richColors/>
         <ImpersonationBanner />
         <MainNavBar />
-        <CustomProvider>{children}</CustomProvider>
+        <ConfirmProvider>
+          <CustomProvider>{children}</CustomProvider>
+        </ConfirmProvider>
       </body>
     </html>
   );

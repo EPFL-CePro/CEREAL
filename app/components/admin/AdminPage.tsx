@@ -24,6 +24,7 @@ import { ServiceLevel } from "@/types/serviceLevel";
 import * as XLSX from 'xlsx';
 import { XLSXFile } from "@/types/boFile";
 import { toast } from "sonner";
+import { useConfirm } from "@/app/components/ConfirmProvider";
 
 type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams";
 type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">;
@@ -82,6 +83,7 @@ const templateFieldLabels: { key: keyof TemplateFormFields; label: string; multi
 ];
 
 export default function AdminPage() {
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = React.useState<Tab>("service");
   const [services, setServices] = React.useState<Service[]>([]);
   const [serviceLevels, setServiceLevels] = React.useState<ServiceLevel[]>([]);
@@ -110,7 +112,7 @@ export default function AdminPage() {
   }
 
   async function handleDeleteService(service: Service) {
-    if(window.confirm("This will delete this service from the database. Are you sure you want to continue ?")) {
+    if(await confirm("This will delete this service from the database. Are you sure you want to continue ?")) {
       await deleteService(service);
 
       setServices((currentServices) =>
@@ -120,7 +122,7 @@ export default function AdminPage() {
   }
 
   async function handleDeleteServiceLevel(serviceLevel: ServiceLevel) {
-    if(window.confirm("This will delete this service level from the database. Are you sure you want to continue ?")) {
+    if(await confirm("This will delete this service level from the database. Are you sure you want to continue ?")) {
       await deleteServiceLevel(serviceLevel);
 
       setServiceLevels((currentServiceLevels) =>
@@ -130,7 +132,7 @@ export default function AdminPage() {
   }
 
   async function handleDeleteExamStatus(examStatus: ExamStatus) {
-    if(window.confirm("This will delete this exam status from the database. Are you sure you want to continue ?")) {
+    if(await confirm("This will delete this exam status from the database. Are you sure you want to continue ?")) {
       await deleteExamStatus(examStatus);
 
       setExamStatuses((currentExamStatuses) =>
