@@ -6,17 +6,32 @@ import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 interface FileDropzoneProps {
     onFiles: (files: File[]) => void;
     multiple?: boolean;
-    accept?: string;
+    accept?: string; // (ex: ".pdf,image/*")
+    disabled?: boolean;
 }
 
-export default function FileDropzone({ onFiles, multiple = true, accept }: FileDropzoneProps) {
+function isAccepted(file: File, accept?: string): boolean {
+    if (!accept) return true;
+
+    return accept.split(",").some((rule) => {
+        const pattern = rule.trim().toLowerCase();
+        if (pattern.startsWith(".")) return file.name.toLowerCase().endsWith(pattern);
+        if (pattern.endsWith("/*")) return file.type.startsWith(pattern.slice(0, -1));
+        return file.type === pattern;
+    });
+}
+
+export default function FileDropzone({ onFiles, multiple = true, accept, disabled = false }: FileDropzoneProps) {
     const id = useId();
     const [isDragging, setIsDragging] = useState(false);
 
     const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
         e.preventDefault();
         setIsDragging(false);
-        const files = Array.from(e.dataTransfer.files);
+        if (disabled) return;
+
+        const files = Array.from(e.dataTransfer.files).filter((file) => isAccepted(file, accept));
+        if (files.length === 0) return;
         onFiles(multiple ? files : files.slice(0, 1));
     };
 
@@ -26,11 +41,10 @@ export default function FileDropzone({ onFiles, multiple = true, accept }: FileD
     };
 
     return (
-        // The label is linked to the input: a click on the zone opens the file picker.
         <label
             htmlFor={id}
-            className={`flex flex-col items-center gap-1 px-4 py-6 border-2 border-dashed rounded-md text-center cursor-pointer transition has-focus-visible:ring-2 has-focus-visible:ring-red-500 ${isDragging ? "border-red-500 bg-red-50" : "border-slate-300 bg-white hover:bg-slate-50"}`}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            className={`flex flex-col items-center gap-1 px-4 py-6 border-2 border-dashed rounded-md text-center transition has-focus-visible:ring-2 has-focus-visible:ring-red-500 ${disabled ? "cursor-not-allowed opacity-50 border-slate-300 bg-slate-50" : isDragging ? "cursor-pointer border-red-500 bg-red-50" : "cursor-pointer border-slate-300 bg-white hover:bg-slate-50"}`}
+            onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true); }}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
@@ -44,6 +58,7 @@ export default function FileDropzone({ onFiles, multiple = true, accept }: FileD
                 className="sr-only"
                 multiple={multiple}
                 accept={accept}
+                disabled={disabled}
                 onChange={(e) => {
                     onFiles(Array.from(e.target.files ?? []));
                     // Allows to select the same file again after having removed it
