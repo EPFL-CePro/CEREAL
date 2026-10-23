@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CrepFile, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, pickFileSpecs, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
 import { countPdfPages } from "@/app/lib/crep/pdfPages";
-import { FileSpecsFields } from "../FileSpecsFields";
+import { FileSpecsFields } from "../register/FileSpecsFields";
 
 type Props = {
   examId: number;

@@ -1,7 +1,7 @@
 import { DocumentTextIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { RedAsterisk } from "@/app/components/RedAsterisk";
 import { CrepFileSpecs } from "@/types/crepExam";
-import { FileSpecsFields } from "../FileSpecsFields";
+import { FileSpecsFields } from "./FileSpecsFields";
 import FileDropzone from "./FileDropzone";
 
 interface FilesAndPrintSettingsProps {
@@ -19,7 +19,7 @@ export default function FilesAndPrintSettings({ hideFiles, selectedFiles, reserv
     return (
         <>
             <div className="flex flex-col gap-3">
-                <label className="text-lg">{hideFiles ? "Print settings" : "Attach exam file(s) to print"} <RedAsterisk /></label>
+                <h2>{hideFiles ? "Print settings" : "Attach exam file(s) to print"} <RedAsterisk /></h2>
                 {!hideFiles && <FileDropzone onFiles={onFilesChange} accept=".pdf"/>}
                 {/* Tooltips section */}
                 {(hideFiles || selectedFiles.length > 0) && (
