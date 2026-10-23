@@ -1,14 +1,14 @@
 "use client"
 // Print settings of one file of a print request (copies, pages, print side, bindings, color, scan)
 import { CrepFileSpecs } from "@/types/crepExam";
-import { BookOpenIcon, DocumentDuplicateIcon, DocumentIcon, DocumentTextIcon, SwatchIcon } from "@heroicons/react/24/outline";
+import { BookOpenIcon, ArrowPathIcon, DocumentIcon, DocumentTextIcon, SwatchIcon } from "@heroicons/react/24/outline";
 import { paperColors, paperFormats, printSides } from "@/app/lib/crep/fileSpecs";
 import Checkbox from "./Checkbox";
 import NumberField from "./NumberField";
 import ChoiceCards from "./ChoiceCards";
 
 const printSideUi: Record<string, { description?: string; icon: React.ReactNode }> = {
-    "recto-verso": { icon: <DocumentDuplicateIcon className="size-6" aria-hidden="true" /> },
+    "recto-verso": { icon: <ArrowPathIcon className="size-6" aria-hidden="true" /> },
     "recto": { icon: <DocumentIcon className="size-6" aria-hidden="true" /> },
 };
 const bindingUi: Record<string, { description?: string; icon: React.ReactNode }> = {
