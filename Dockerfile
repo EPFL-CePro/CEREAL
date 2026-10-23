@@ -7,7 +7,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:24.22.1 AS runner
+FROM node:24.22.1-alpine AS runner
 WORKDIR /app
 
 RUN apk add --no-cache unzip samba-client
