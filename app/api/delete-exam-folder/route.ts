@@ -1,7 +1,8 @@
 // app/api/delete-exam-folder/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { deleteExamFolder } from "@/app/lib/crep/upload";
-import { auth } from "@/auth";
+import {NextRequest, NextResponse} from "next/server";
+import {deleteExamFolder} from "@/app/lib/crep/upload";
+import {auth} from "@/auth";
+import {hasPermission, Permission} from "@/app/lib/routeAccess";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
@@ -10,7 +11,12 @@ export async function DELETE(req: NextRequest) {
   const session = await auth();
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({error: "Unauthorized"}, {status: 401});
+  }
+
+  // If user is not an admin
+  if (!hasPermission(session.user, Permission.ADMIN)){
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const formData = await req.formData();
