@@ -225,7 +225,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
         (document.getElementById("modal") as HTMLDialogElement | null)?.close();
     }
 
-    async function handleDeleteExam(examId: string, folderName: string, selectStatus:string) {
+    async function handleDeleteExam(examId: string, selectStatus:string) {
         if(!examId) return;
 
         const shouldDeleteFolder = ["registered", "registered-warning", "registered-error", "toPrint"].includes(selectStatus)
@@ -236,7 +236,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
         if(shouldDeleteFolder) {
             const formData = new FormData();
-            formData.append("folder_name", folderName || '');
+            formData.append("examId", examId);
 
             const res = await fetch("/api/delete-exam-folder", {
                 method: "DELETE",
@@ -560,7 +560,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     {/* Displays a dropdown if user has admin privileges */}
                     {user.isAdmin && (
                         <>                        
-                            <button type="button" className="btn btn-primary" onClick={() => handleDeleteExam(eventId, extendedProps.folderName, selectStatus)}>Delete</button>
+                            <button type="button" className="btn btn-primary" onClick={() => handleDeleteExam(eventId, selectStatus)}>Delete</button>
                             <select name="from" className="dropdown btn btn-secondary" id="from"
                                 value={selectStatus}
                                 onChange={(e) => setSelectStatus(e.target.value)}
