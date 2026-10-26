@@ -67,8 +67,7 @@ export async function deleteExamFolder(
     }
 
     const examDir = safeJoinPath(EXAM_FILES_UPLOAD_FOLDER, folder_name);
-    const resolvedBase = path.resolve(EXAM_FILES_UPLOAD_FOLDER, folder_name);
-    if(examDir === resolvedBase){
+    if(examDir === path.resolve(EXAM_FILES_UPLOAD_FOLDER)) {
         throw new Error("Cannot delete root upload directory");
     }
 
