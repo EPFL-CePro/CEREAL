@@ -49,12 +49,12 @@ export async function uploadExamFiles(
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const filePath = path.join(examDir, file.name);
+        const filePath = safeJoinPath(examDir, file.name);
 
         await writeFile(filePath, buffer);
         savedPaths.push(filePath);
     }
-    console.log("saved pathes:",savedPaths.toString());
+    console.log("Saved paths:",savedPaths.toString());
 
     return savedPaths;
 }
