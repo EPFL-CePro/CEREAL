@@ -28,7 +28,7 @@
     "net": "^1.0.2",
     "next": "15.5.28",
     "next-auth": "^5.0.0-beta.32",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^10.2.1",
     "pdf-lib": "^1.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -57,5 +57,11 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "postcss": "^8.5.15",
+    "next-auth": {
+      "nodemailer": "$nodemailer"
+    }
   }
 }
