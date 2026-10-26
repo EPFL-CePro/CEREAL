@@ -14,9 +14,9 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
-  const file = formData.get("file") as File;
+  const file = formData.get("file");
 
-  if (!file) {
+  if (!(file instanceof File)) {
     return NextResponse.json(
       { error: "No file uploaded" },
       { status: 400 }
@@ -24,10 +24,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const savedPath = await uploadAbsenceFile(file);
+    const fileName = await uploadAbsenceFile(file);
 
     return NextResponse.json({
-      savedPath
+      fileName
     });
   } catch (err) {
     console.error(err);

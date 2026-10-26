@@ -134,9 +134,13 @@ export default function App({ user }: diffExamFormProps) {
             body: formData
         });
         if (!res.ok) {
-            console.error(await res.text());
+            const error = await res.json().catch(() => null);
+            console.error(error);
+            openModal("File Error", error?.error ?? "An error occurred while uploading your absence file. Please try again.");
+            setIsSubmitting(false)
             return;
         }
+        const { fileName } = await res.json() as { fileName: string };
 
         const absence = await insertAbsence(
             {
@@ -145,7 +149,7 @@ export default function App({ user }: diffExamFormProps) {
                 last_name: user.last_name || '',
                 certificate_date_from: new Date(data.startingAbsenceDate),
                 certificate_date_to: new Date(data.endingAbsenceDate),
-                certificate_file_name: data.absenceFile[0].name,
+                certificate_file_name: fileName,
                 comment: data.comment,
                 sac_has_accepted: false,
                 sac_remark: ''

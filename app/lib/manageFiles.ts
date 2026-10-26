@@ -262,10 +262,12 @@ export async function uploadAbsenceFile(
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const filePath = safeJoinPath(absencesDir, file.name);
-    // TODO - Generate the file name dynamically so that a file cannot replace another one with the same name
+    // TODO - Add UUID to the file name, so that a file cannot replace another one with the same name
+    const fileName = path.basename(file.name);
+
+    const filePath = safeJoinPath(absencesDir, fileName);
     await writeFile(filePath, buffer);
     console.log("saved path:",filePath.toString());
 
-    return filePath;
+    return fileName;
 }
