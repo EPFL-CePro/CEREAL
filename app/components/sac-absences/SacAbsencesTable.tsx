@@ -1,6 +1,11 @@
 'use client'
 
-import { getAllAbsences, updateSACById } from "@/app/lib/database";
+import {
+    getAllAbsences,
+    updateAbsenceAccepted, updateAbsenceComment, updateAbsenceSacRemark,
+    updateRegistrationAccepted,
+    updateRegistrationIsaHasGrade, updateRegistrationSacRemark,
+} from "@/app/lib/database";
 import { exportAbsences, ExportMode } from "@/app/lib/exportAbsences";
 import { Absence } from "@/types/absence";
 import {
@@ -46,19 +51,18 @@ export function SacAbsencesTable() {
     function dateToString(date: Date | string) {
         return new Date(date).toLocaleDateString("fr-FR")
     }
-
-    function BooleanCheckbox({ defaultValue, tableName, columnName, id }: { defaultValue: boolean, tableName: string, columnName: string, id: string }) {
+    function BooleanCheckbox({defaultValue, absenceId, onUpdate}: {defaultValue: boolean, absenceId: string, onUpdate: (absenceId: string, value: boolean) => Promise<string>}) {
         return (
             <input
                 type="checkbox"
                 defaultChecked={defaultValue}
                 className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-green-600"
-                onChange={(event) => updateSACById(tableName, columnName, id, event.currentTarget.checked)}
+                onChange={(event) => onUpdate(absenceId, event.target.checked)}
             />
         )
     }
 
-    function TextareaRemarks({ defaultValue, tableName, columnName, id }: { defaultValue: string, tableName: string, columnName: string, id: string }) {
+    function TextareaRemarks({ defaultValue, id, onChange }: { defaultValue: string, id: string, onChange: (id: string, value: string) => Promise<string> }) {
         const logTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
         useEffect(() => {
@@ -81,7 +85,7 @@ export function SacAbsencesTable() {
                     }
 
                     logTimeoutRef.current = setTimeout(() => {
-                        updateSACById(tableName, columnName, id, value);
+                        onChange(id, value);
                     }, 1200);
                 }}
             />
@@ -266,25 +270,22 @@ export function SacAbsencesTable() {
                                 <td className="px-4 py-3 text-gray-700">
                                     <TextareaRemarks
                                         defaultValue={absence.comment}
-                                        tableName="exam_student_absence"
-                                        columnName="comment"
                                         id={absence.id}
+                                        onChange={updateAbsenceComment}
                                     />
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                     <BooleanCheckbox
                                         defaultValue={absence.sac_has_accepted}
-                                        tableName="exam_student_absence"
-                                        columnName="sac_has_accepted"
-                                        id={absence.id}
+                                        absenceId={absence.id}
+                                        onUpdate={updateAbsenceAccepted}
                                     />
                                 </td>
                                 <td className="px-4 py-3 text-gray-700">
                                     <TextareaRemarks
                                         defaultValue={absence.sac_remark}
-                                        tableName="exam_student_absence"
-                                        columnName="sac_remark"
                                         id={absence.id}
+                                        onChange={updateAbsenceSacRemark}
                                     />
                                 </td>
                                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{dateToString(absence.created_at)}</td>
@@ -311,25 +312,22 @@ export function SacAbsencesTable() {
                                                             <td className="px-3 py-2 text-center">
                                                                 <BooleanCheckbox
                                                                     defaultValue={exam.sac_has_accepted}
-                                                                    tableName="deferred_exam_registration"
-                                                                    columnName="sac_has_accepted"
-                                                                    id={exam.id}
+                                                                    absenceId={exam.id}
+                                                                    onUpdate={updateRegistrationAccepted}
                                                                 />
                                                             </td>
                                                             <td className="px-3 py-2 text-gray-700">
                                                                 <TextareaRemarks
                                                                     defaultValue={exam.sac_remark}
-                                                                    tableName="deferred_exam_registration"
-                                                                    columnName="sac_remark"
                                                                     id={exam.id}
+                                                                    onChange={updateRegistrationSacRemark}
                                                                 />
                                                             </td>
                                                             <td className="px-3 py-2 text-center">
                                                                 <BooleanCheckbox
                                                                     defaultValue={exam.isa_has_grade}
-                                                                    tableName="deferred_exam_registration"
-                                                                    columnName="isa_has_grade"
-                                                                    id={exam.id}
+                                                                    absenceId={exam.id}
+                                                                    onUpdate={updateRegistrationIsaHasGrade}
                                                                 />
                                                             </td>
                                                         </tr>
