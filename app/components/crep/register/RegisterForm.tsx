@@ -533,8 +533,12 @@ Next time, please register to the printing service earlier to make sur that the 
                     />
                 </FormSection>
                 <FormSection number={3} title="Billing and pickup">
-                    <label>Financial Center <RedAsterisk /></label>
+                    <label htmlFor="financial-center">Financial Center <RedAsterisk /></label>
+                    <Callout type="info">
+                        Contact your administration if you dont know your financial center.
+                    </Callout>
                     <input
+                        id="financial-center"
                         className="mb-2 p-2 border rounded-md accent-red-500 border-slate-300"
                         type="text"
                         placeholder="FCXXXX"
