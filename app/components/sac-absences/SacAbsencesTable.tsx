@@ -13,6 +13,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export function SacAbsencesTable() {
 
@@ -36,7 +37,7 @@ export function SacAbsencesTable() {
             // Refetch so that checkboxes/remarks edited in the table are taken into account
             const freshAbsences = await getAllAbsences();
             if (!exportAbsences(freshAbsences, exportMode)) {
-                alert("Nothing to export.");
+                toast.info("Nothing to export.");
             }
         } finally {
             setIsExporting(false);

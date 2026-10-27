@@ -25,6 +25,7 @@ import { GroupUser } from '@/types/groupUser'
 import { Teacher } from '@/types/teacher'
 import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, ViewColumnsIcon } from "@heroicons/react/24/outline";
 import Link from 'next/link'
+import { useConfirm } from '@/app/components/ConfirmProvider'
 
 interface ExamsTableProps {
   academicYear: string
@@ -81,6 +82,7 @@ const RemarkTextarea = React.memo(
 
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [globalFilter, setGlobalFilter] = React.useState('') // Plain text searching, searching in the whole table
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [exams, setExams] = React.useState<Exam[]>([])
@@ -740,7 +742,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               ease-in-out
             "
             onClick={async () => {
-              if(window.confirm("Are you sure that you want to delete this exam ? This action is irreversible.")) {
+              if(await confirm("Are you sure that you want to delete this exam ? This action is irreversible.")) {
                 await deleteExam(row.original.id);
                 setExams((currentExams) =>
                   currentExams.filter((exam) => exam.id !== row.original.id)
@@ -787,6 +789,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     teachersByCourse,
     updateExamInState,
     handleOpenExamDetails,
+    confirm,
     formatContact,
     getContactSearchText,
     compactSelectClassName,
@@ -962,9 +965,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   }
 
   function exportExams(exams:Exam[]) {
-    if(window.confirm(`This will export ${exams.length} exam${exams.length > 1 ? 's' : ''} to CSV. Are you sure that you want to continue ?`)) {
-      exportToCSV(exams)
-    }
+    exportToCSV(exams)
   }
 
   return (
