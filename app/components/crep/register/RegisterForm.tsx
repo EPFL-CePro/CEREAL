@@ -23,6 +23,7 @@ import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
 import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
 import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
 import { countPdfPages } from "@/app/lib/crep/pdfPages";
+import Callout from "@/app/components/Callout";
 
 interface RegisterProps {
     user: AppUser
@@ -544,11 +545,11 @@ Next time, please register to the printing service earlier to make sur that the 
                     <label>Contact <RedAsterisk /></label>
                     <ReactSelect control={control} label={"contact"} name={"contact"} isMultiChoice={false} instanceId={2} />
                     <label>Authorized persons</label>
-                    <div className="bg-red-600/30 border-1 border-red-500 rounded-xl p-3 text-sm">
+                    <Callout type="warning">
                         Only the persons that will be selected here will be authorized to come pick up the exam at the Repro.<br />
                         The Repro will ask for the Camipro of the person that came to pick up the exam.<br />
                         The Repro has the right to not give the exam to the person if they are not selected in this list.
-                    </div>
+                    </Callout>
                     <ReactSelect control={control} label={"authorized persons"} name={"authorizedPersons"} isMultiChoice={true} instanceId={3} />
                     <label>Additional remarks</label>
                     <textarea
