@@ -22,6 +22,8 @@ import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor";
 import { CrepFile } from "@/types/crepExam";
 import { FileSpecsFields } from "./crep/FileSpecsFields";
 import { getBindingLabel, validateFilesSpecs } from "../lib/crep/fileSpecs";
+import {toast} from "sonner";
+import { useConfirm } from "./ConfirmProvider";
 
 interface AppUser extends User {
     isAdmin?: boolean;
@@ -70,6 +72,7 @@ function AuthorizedPersonsAndFiles({ authorizedPersons = [], files = [], classNa
 }
 
 export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) {
+    const confirm = useConfirm();
     const eventSnapshotRef = useRef<{
         id?: string;
         title?: string;
@@ -230,7 +233,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
         const shouldDeleteFolder = ["registered", "registered-warning", "registered-error", "toPrint"].includes(selectStatus)
 
-        if (!window.confirm(`This will delete the exam from the database. ${shouldDeleteFolder ? "The exam folder will also be deleted." : ""} Are you sure you want to proceed ?`)) {
+        if (!await confirm(`This will delete the exam from the database. ${shouldDeleteFolder ? "The exam folder will also be deleted." : ""} Are you sure you want to proceed ?`)) {
             return;
         }
 
@@ -245,7 +248,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
             if (!res.ok) {
                 const error = await res.json().catch(() => null);
                 if (res.status === 404 && error?.code === "FOLDER_NOT_FOUND") {
-                    if (!window.confirm("The folder of this exam can not be found, do you want to delete the exam only from the database ?")) {
+                    if (!await confirm("The folder of this exam can not be found, do you want to delete the exam only from the database ?")) {
                         return;
                     }
 
@@ -254,8 +257,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                     return;
                 }
 
-                console.error(error);
-                window.alert("An error occurred while deleting the exam folder. Please try again.");
+                toast.error("An error occurred while deleting the exam folder. Please try again.");
                 return;
             }
         }
@@ -585,7 +587,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
                         const filesError = canEditModal ? validateFilesSpecs(files) : null;
                         if (filesError) {
-                            window.alert(filesError);
+                            toast.error(filesError);
                             setSelectStatus(previousStatus);
                             setIsSubmitting(false);
                             return;
@@ -599,7 +601,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         // If the old status was `registered`, `registered-warning` or `registered-error` and that the new status is `toPrint`, we notify the Repro with an email.
                         if (shouldNotifyRepro) {
                             // proceed only if confirmed, else prevent modal close and save
-                            if (!window.confirm("You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?")) {
+                            if (!await confirm("You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
                                 setIsSubmitting(false);
                                 return;
@@ -608,13 +610,13 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
                         if (shouldNotifyFinished) {
                             if(parseInt(boxes) <= 0 || parseFloat(priceUnit) <= 0 || parseFloat(priceTotal) <= 0) {
-                                window.alert("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
+                                toast.warning("To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total");
                                 setSelectStatus(previousStatus);
                                 setIsSubmitting(false);
                                 return;
                             }
                             // proceed only if confirmed, else prevent modal close and save
-                            if (!window.confirm("You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?")) {
+                            if (!await confirm("You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
                                 setIsSubmitting(false);
                                 return;
@@ -623,7 +625,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
 
                         if (selectedStatusNeedsAdmin) {
                             // proceed only if confirmed, else prevent modal close and save
-                            if (!window.confirm("You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?")) {
+                            if (!await confirm("You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?")) {
                                 setSelectStatus(previousStatus);
                                 setIsSubmitting(false);
                                 return;
