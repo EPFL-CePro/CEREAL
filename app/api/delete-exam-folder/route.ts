@@ -1,7 +1,10 @@
 // app/api/delete-exam-folder/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { deleteExamFolder } from "@/app/lib/crep/upload";
-import { auth } from "@/auth";
+import {NextRequest, NextResponse} from "next/server";
+import {deleteExamFolder, getExamFolderName} from "@/app/lib/crep/upload";
+import {auth} from "@/auth";
+import {hasPermission, Permission} from "@/app/lib/routeAccess";
+import {getCrepExamById} from "@/app/lib/crep/database";
+import {examPrePrintStatus} from "@/app/lib/examStatus";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
@@ -10,19 +13,39 @@ export async function DELETE(req: NextRequest) {
   const session = await auth();
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({error: "Unauthorized"}, {status: 401});
+  }
+
+  // If user is not an admin
+  if (!hasPermission(session.user, Permission.ADMIN)){
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const formData = await req.formData();
 
-  const folder_name = formData.get("folder_name");
+  const examId = formData.get("examId");
 
-  if (!folder_name || typeof folder_name !== "string") {
+  if (!examId || typeof examId !== "string") {
     return NextResponse.json(
-      { error: "Missing folder_name" },
+      { error: "Missing examId" },
       { status: 400 }
     );
   }
+
+  const exam = await getCrepExamById(examId);
+  if (!exam) {
+    return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+  }
+
+  if (!examPrePrintStatus.includes(exam.status)) {
+    return NextResponse.json(
+      { error: "The folder of this exam can no longer be deleted because the exam is already being printed or has been printed" },
+      { status: 409 }
+    );
+  }
+
+  // The folder is built on the server, never chosen by the client
+  const folder_name = getExamFolderName(exam);
 
   try {
     await deleteExamFolder(folder_name);

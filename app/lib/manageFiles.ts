@@ -2,8 +2,9 @@ import { BoFileForUser, XLSXFile } from "@/types/boFile";
 import {mkdir, writeFile, readdir, access, constants, rename, stat, readFile } from "fs/promises";
 import path from "path";
 import * as XLSX from "xlsx";
+import {safeJoinPath} from "@/app/lib/safePath";
 
-const examsFilesBasePath = process.env.DEFFERED_EXAMS_DIR;
+const DEFFERED_EXAMS_DIR = process.env.DEFFERED_EXAMS_DIR;
 
 
 export async function uploadXLSXFile(
@@ -11,10 +12,10 @@ export async function uploadXLSXFile(
     folder_name: string
 ): Promise<string> {
     console.log("start uploading XLSX file");
-    if (!examsFilesBasePath) {
+    if (!DEFFERED_EXAMS_DIR) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
-    const xlsxDirectory = path.join(examsFilesBasePath, folder_name);
+    const xlsxDirectory = path.join(DEFFERED_EXAMS_DIR, folder_name);
     console.log("XLSX directory :", xlsxDirectory.toString());
 
     //create folder
@@ -50,10 +51,10 @@ export async function uploadXLSXFile(
 export async function checkExistingXLSXFile(
     folder_name: string
 ): Promise<string> {
-    if (!examsFilesBasePath) {
+    if (!DEFFERED_EXAMS_DIR) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
-    const xlsxDirectory = path.join(examsFilesBasePath || '', folder_name);
+    const xlsxDirectory = path.join(DEFFERED_EXAMS_DIR || '', folder_name);
 
     try {
         await access(xlsxDirectory, constants.R_OK | constants.W_OK);
@@ -76,14 +77,14 @@ export async function checkExistingXLSXFile(
 export async function getExistingXLSXFile(
     folder_name: string
 ): Promise<XLSXFile | null> {
-    if (!examsFilesBasePath) {
+    if (!DEFFERED_EXAMS_DIR) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
 
     const name = await checkExistingXLSXFile(folder_name);
     if (!name) return null;
 
-    const filePath = path.join(examsFilesBasePath, folder_name, name);
+    const filePath = path.join(DEFFERED_EXAMS_DIR, folder_name, name);
     const [fileStats, buffer] = await Promise.all([
         stat(filePath),
         readFile(filePath),
@@ -144,14 +145,14 @@ export async function getExistingXLSXFile(
 export async function getExistingXLSXFileMetadata(
     folder_name: string
 ): Promise<Omit<XLSXFile, "content"> | null> {
-    if (!examsFilesBasePath) {
+    if (!DEFFERED_EXAMS_DIR) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
 
     const name = await checkExistingXLSXFile(folder_name);
     if (!name) return null;
 
-    const filePath = path.join(examsFilesBasePath, folder_name, name);
+    const filePath = path.join(DEFFERED_EXAMS_DIR, folder_name, name);
     const [fileStats, buffer] = await Promise.all([
         stat(filePath),
         readFile(filePath),
@@ -176,14 +177,14 @@ export async function getExistingXLSXFileMetadata(
 export async function getBOFileRowsForSciper(
     sciper: string
 ): Promise<BoFileForUser[] | null> {
-    if (!examsFilesBasePath) {
+    if (!DEFFERED_EXAMS_DIR) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
 
     const name = await checkExistingXLSXFile("BO");
     if (!name) return null;
 
-    const filePath = path.join(examsFilesBasePath, "BO", name);
+    const filePath = path.join(DEFFERED_EXAMS_DIR, "BO", name);
     const buffer = await readFile(filePath);
     const workbook = XLSX.read(buffer, { type: "buffer", cellNF: true });
     const firstSheetName = workbook.SheetNames[0] ?? "";
@@ -245,11 +246,13 @@ export async function getBOFileRowsForSciper(
 export async function uploadAbsenceFile(
     file: File
 ): Promise<string> {
+    // TODO - Maybe check the file type
     console.log("start upload absence file");
-    if (!examsFilesBasePath) {
+    if (!DEFFERED_EXAMS_DIR) {
         throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
     }
-    const absencesDir = path.join(examsFilesBasePath, "certificates");
+
+    const absencesDir = path.join(DEFFERED_EXAMS_DIR, "certificates");
     console.log("Absences Dir :", absencesDir.toString());
 
     //create folder
@@ -259,10 +262,12 @@ export async function uploadAbsenceFile(
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const filePath = path.join(absencesDir, file.name);
+    // TODO - Add UUID to the file name, so that a file cannot replace another one with the same name
+    const fileName = path.basename(file.name);
 
+    const filePath = safeJoinPath(absencesDir, fileName);
     await writeFile(filePath, buffer);
     console.log("saved path:",filePath.toString());
 
-    return filePath;
+    return fileName;
 }

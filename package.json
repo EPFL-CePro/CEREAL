@@ -28,7 +28,7 @@
     "net": "^1.0.2",
     "next": "15.5.28",
     "next-auth": "^5.0.0-beta.32",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^10.2.1",
     "pdf-lib": "^1.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -38,7 +38,7 @@
     "rsuite": "^5.83.3",
     "sonner": "^2.0.8",
     "tls": "^0.0.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -58,5 +58,11 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "postcss": "^8.5.15",
+    "next-auth": {
+      "nodemailer": "$nodemailer"
+    }
   }
 }

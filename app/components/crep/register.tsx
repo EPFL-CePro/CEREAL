@@ -228,7 +228,6 @@ export default function App({ user }: RegisterProps) {
 
             const exam_name = `${data.course.exam.title} (${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}`).join(', ')})`;
             const exam_code = data.course.exam.code;
-            const contact_name = contact?.lastname;
 
             function getEndDateOfPrinting(exam: CrepExam): Date {
                 return new Date(exam.print_date.getTime() + exam.print_duration * 60000);
@@ -359,7 +358,7 @@ export default function App({ user }: RegisterProps) {
                 status = 'reserved'
             }
 
-            const insertedExam = await insertExamForPrint(
+            const insertedExamId = await insertExamForPrint(
                 {
                     exam_name: exam_name,
                     exam_code: exam_code,
@@ -378,16 +377,14 @@ export default function App({ user }: RegisterProps) {
                 printFiles
             )
 
-            if (typeof (insertedExam) !== 'number') {
+            if (typeof (insertedExamId) !== 'number') {
                 openModal("Registration Error", "An error occurred while registering your exam. Please try again later.");
                 return;
             }
 
             if(!hideFiles) {
-                // send files to backend API
-                const folder_name = `${insertedExam}_${exam_code}_${contact_name}_${data.desiredDate}`;
                 const formData = new FormData();
-                formData.append("folder_name", folder_name);
+                formData.append('examId', String(insertedExamId));
 
                 selectedFiles.forEach(({ file }) => {
                     formData.append("files", file);

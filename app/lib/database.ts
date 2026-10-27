@@ -417,12 +417,57 @@ export async function getAbsenceCertificateFileNameById(id: string): Promise<str
     return rows[0]?.certificate_file_name ?? null;
 }
 
-// TODO - WARNING: Exposed via 'use server'. Dynamically interpolating table and column names leads to SQL Injection vulnerabilities.
-export async function updateSACById(tableName: string, columnName: string, id: string, value: boolean | string) {
+// SAC functions
+export async function updateAbsenceComment(absenceId: string, value: string){
     await requirePermission(Permission.SAC);
-    const [result] = await db.query(
-        `UPDATE ${tableName} SET ${columnName} = ? WHERE id = ?`,
-        [value, id]
+    const [result] = await db.execute(
+        `UPDATE exam_student_absence SET comment = ? WHERE id = ?`,
+        [ value, absenceId ]
+    );
+    return JSON.stringify(result);
+}
+
+export async function updateAbsenceAccepted(absenceId: string, value: boolean){
+    await requirePermission(Permission.SAC);
+    const [result] = await db.execute(
+        `UPDATE exam_student_absence SET sac_has_accepted = ? WHERE id = ?`,
+        [ value, absenceId ]
+    );
+    return JSON.stringify(result);
+}
+
+export async function updateAbsenceSacRemark(absenceId: string, value: string){
+    await requirePermission(Permission.SAC);
+    const [result] = await db.execute(
+        `UPDATE exam_student_absence SET sac_remark = ? WHERE id = ?`,
+        [ value, absenceId ]
+    );
+    return JSON.stringify(result);
+}
+
+export async function updateRegistrationAccepted(absenceId: string, value: boolean){
+    await requirePermission(Permission.SAC);
+    const [result] = await db.execute(
+        `UPDATE deferred_exam_registration SET sac_has_accepted = ? WHERE id = ?`,
+        [ value, absenceId ]
+    );
+    return JSON.stringify(result);
+}
+
+export async function updateRegistrationSacRemark(absenceId: string, value: string){
+    await requirePermission(Permission.SAC);
+    const [result] = await db.execute(
+        `UPDATE deferred_exam_registration SET sac_remark = ? WHERE id = ?`,
+        [ value, absenceId ]
+    );
+    return JSON.stringify(result);
+}
+
+export async function updateRegistrationIsaHasGrade(absenceId: string, value: boolean){
+    await requirePermission(Permission.SAC);
+    const [result] = await db.execute(
+        `UPDATE deferred_exam_registration SET isa_has_grade = ? WHERE id = ?`,
+        [ value, absenceId ]
     );
     return JSON.stringify(result);
 }

@@ -1,7 +1,9 @@
 // app/api/upload-exam-files/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { uploadExamFiles } from "@/app/lib/crep/upload";
+import {getExamFolderName, uploadExamFiles} from "@/app/lib/crep/upload";
 import { auth } from "@/auth";
+import {getCrepExamById} from "@/app/lib/crep/database";
+import {examPrePrintStatus} from "@/app/lib/examStatus";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
@@ -14,16 +16,24 @@ export async function POST(req: NextRequest) {
   }
 
   const formData = await req.formData();
+  const examId = String(formData.get("examId"));
 
-  const folder_name = formData.get("folder_name");
-  const files = formData.getAll("files") as File[];
+  // Check exam + access
+  const exam = await getCrepExamById(examId);
+  if(!exam)
+    return NextResponse.json({ error: "Exam not found" }, { status: 404 });
 
-  if (!folder_name || typeof folder_name !== "string") {
+  if(exam.registered_by !== session.user.email && !session.user.isAdmin)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if(!examPrePrintStatus.includes(exam.status))
     return NextResponse.json(
-      { error: "Missing folder_name" },
-      { status: 400 }
+        { error: "Exam files can no longer be modified because the exam is already being printed or has been printed" },
+        { status: 409 }
     );
-  }
+
+  const folder_name = getExamFolderName(exam);
+  const files = formData.getAll("files") as File[];
 
   if (!files || files.length === 0) {
     return NextResponse.json(
