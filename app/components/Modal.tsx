@@ -20,7 +20,7 @@ import { AuthorizedPersons } from "@/types/user";
 import { limitTextToLines } from "../lib/remarks";
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor";
 import { CrepFile } from "@/types/crepExam";
-import { FileSpecsFields } from "./crep/FileSpecsFields";
+import { FileSpecsFields } from "./crep/register/FileSpecsFields";
 import { getBindingLabel, validateFilesSpecs } from "../lib/crep/fileSpecs";
 import {toast} from "sonner";
 import { useConfirm } from "./ConfirmProvider";
