@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { components, OptionProps, GroupBase } from 'react-select';
 
 const CustomOption = (props: OptionProps<unknown, boolean, GroupBase<unknown>>) => {
@@ -17,11 +16,6 @@ const CustomOption = (props: OptionProps<unknown, boolean, GroupBase<unknown>>) 
       {children}
     </components.Option>
   );
-};
-
-CustomOption.propTypes = {
-  innerProps: PropTypes.object.isRequired,
-  children: PropTypes.node.isRequired
 };
 
 export default CustomOption;
