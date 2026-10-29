@@ -6,7 +6,7 @@ import { useState } from "react";
 import ReactSelect from "../forms/ReactSelect";
 import { validateFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api";
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail";
-import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dates/date-time";
+import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateInputValue } from "@/app/lib/dates/date-time";
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
 import { RegisterModal } from "../forms/RegisterModal";
@@ -185,7 +185,7 @@ export default function App({ user }: RegisterProps) {
                 return;
             }
 
-            else if (businessDaysBetween(formatDateYYYYMMDD(today), desiredDate) < MIN_BUSINESS_DAYS_BEFORE_DELIVERY) {
+            else if (businessDaysBetween(formatDateInputValue(today), desiredDate) < MIN_BUSINESS_DAYS_BEFORE_DELIVERY) {
                 const confirmed = await openConfirmationModal('Date Validation Warning', `There must be at least ${MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days between today and the desired delivery date.\n\nDo you still want to submit your exam?`);
                 if (!confirmed) {
                     return;
@@ -510,7 +510,7 @@ Next time, please register to the printing service earlier to make sur that the 
                                     else {
                                         d.setDate(d.getDate() - 1);
                                     }
-                                    const formatted = formatDateYYYYMMDD(d)
+                                    const formatted = formatDateInputValue(d)
                                     setValue("desiredDate", formatted, { shouldDirty: true, shouldValidate: true });
                                 },
                             })}

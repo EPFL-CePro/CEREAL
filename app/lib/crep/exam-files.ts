@@ -2,28 +2,38 @@
 import {mkdir, rm, unlink, writeFile} from "fs/promises";
 import path from "path";
 import { CrepExam } from "@/types/crepExam";
+import { Exam } from "@/types/exam";
 import { formatDateOnlyValue } from "../dates/date-time";
 import {safeJoinPath} from "@/app/lib/files/safe-path";
 
 const EXAM_FILES_UPLOAD_FOLDER = process.env.EXAM_FILES_UPLOAD_FOLDER;
 
+function getExamFilesFolder(): string {
+    if (!EXAM_FILES_UPLOAD_FOLDER) {
+        throw new Error("EXAM_FILES_UPLOAD_FOLDER is not set in environment variables");
+    }
+    return EXAM_FILES_UPLOAD_FOLDER;
+}
+
+// The contact is stored as a JSON string in the database.
+export function getExamContact(exam: CrepExam): Exam["contact"] {
+    return JSON.parse(exam.contact) as Exam["contact"];
+}
+
 export function getExamFolderName(exam: CrepExam): string {
-    const contact = JSON.parse(exam.contact) as { lastname: string };
+    const contact = getExamContact(exam);
     const desired = formatDateOnlyValue(exam.desired_date);
     return `${exam.id}_${exam.exam_code}_${contact.lastname}_${desired}`;
 }
 
 export async function deleteExamFile(folderName: string, filename: string): Promise<void> {
-    if (!EXAM_FILES_UPLOAD_FOLDER) {
-        throw new Error("EXAM_FILES_UPLOAD_FOLDER is not set in environment variables");
-    }
     if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
         throw new Error("Invalid filename");
     }
     if (folderName.includes('/') || folderName.includes('\\') || folderName.includes('..')) {
         throw new Error("Invalid folder name");
     }
-    const filePath = safeJoinPath(EXAM_FILES_UPLOAD_FOLDER, folderName, filename);
+    const filePath = safeJoinPath(getExamFilesFolder(), folderName, filename);
     await unlink(filePath);
 }
 
@@ -33,10 +43,7 @@ export async function uploadExamFiles(
     folder_name: string
 ): Promise<string[]> {
     console.log("start upload files");
-    if (!EXAM_FILES_UPLOAD_FOLDER) {
-        throw new Error("EXAM_FILES_UPLOAD_FOLDER is not set in environment variables");
-    }
-    const examDir = safeJoinPath(EXAM_FILES_UPLOAD_FOLDER, folder_name);
+    const examDir = safeJoinPath(getExamFilesFolder(), folder_name);
     console.log("Exam Dir :", examDir.toString());
 
     //create folder
@@ -62,12 +69,9 @@ export async function uploadExamFiles(
 export async function deleteExamFolder(
     folder_name: string
 ): Promise<void>  {
-    if (!EXAM_FILES_UPLOAD_FOLDER) {
-        throw new Error("EXAM_FILES_UPLOAD_FOLDER is not set in environment variables");
-    }
 
-    const examDir = safeJoinPath(EXAM_FILES_UPLOAD_FOLDER, folder_name);
-    if(examDir === path.resolve(EXAM_FILES_UPLOAD_FOLDER)) {
+    const examDir = safeJoinPath(getExamFilesFolder(), folder_name);
+    if(examDir === path.resolve(getExamFilesFolder())) {
         throw new Error("Cannot delete root upload directory");
     }
 

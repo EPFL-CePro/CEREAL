@@ -10,7 +10,6 @@ import {
     formatDateInputValue,
     formatDateOnlyValue,
     formatDateTimeInputValue,
-    formatDateYYYYMMDD,
     formatTimeInputValue,
     getDatePartFromDateTimeString,
     getTimePartFromDateTimeString,
@@ -635,7 +634,7 @@ export function Modal({ event, user, examStatus, exams, setExams }: ModalProps) 
                         if (shouldNotifyRepro) {
                             if (process.env.NODE_ENV !== "development") {
                                 const datePrintSchedule = new Date(extendedProps.printSchedule)
-                                const examURL = `https://cereal.epfl.ch/crep/?openExamId=${eventId}&day=${formatDateYYYYMMDD(datePrintSchedule)}`;
+                                const examURL = `https://cereal.epfl.ch/crep/?openExamId=${eventId}&day=${formatDateInputValue(datePrintSchedule)}`;
                                 await sendTemplatedMail("exam_ready_to_print", {
                                     examCode: extendedProps.code,
                                     description: extendedProps.description,

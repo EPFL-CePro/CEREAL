@@ -7,7 +7,7 @@ import interactionPlugin from '@fullcalendar/interaction'; // handles event clic
 import { useEffect, useRef, useState, useMemo, Dispatch } from "react";
 import { EventDropArg, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { getAllCrepExams, getAllNonAdminExams, updateExamDateById } from "@/app/lib/crep/database";
-import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateTimeInputValue, formatDateYYYYMMDD } from "@/app/lib/dates/date-time";
+import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateTimeInputValue, formatDateInputValue } from "@/app/lib/dates/date-time";
 import { Modal } from "../../Modal";
 import { User } from "next-auth";
 import { getAllowedExamStatus } from "@/app/lib/crep/exam-status";
@@ -218,7 +218,7 @@ export default function Calendar({ user }: CalendarProps) {
     if (clickedExam?.hiddenReservedExam || !clickedExam?.contact) return;
 
     const contact = JSON.parse(clickedExam.contact);
-    const folderName = `${clickedExam.id}_${clickedExam.code}_${contact.lastname}_${formatDateYYYYMMDD(clickedExam.desiredDate)}`;
+    const folderName = `${clickedExam.id}_${clickedExam.code}_${contact.lastname}_${formatDateInputValue(clickedExam.desiredDate)}`;
 
     calendarEvent.setExtendedProp('status', clickedExam.status);
     calendarEvent.setExtendedProp('remark', clickedExam.remark);
