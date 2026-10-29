@@ -6,16 +6,37 @@ import {safeJoinPath} from "@/app/lib/files/safe-path";
 
 const DEFFERED_EXAMS_DIR = process.env.DEFFERED_EXAMS_DIR;
 
+function getDeferredExamsDir(): string {
+    if (!DEFFERED_EXAMS_DIR) {
+        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
+    }
+    return DEFFERED_EXAMS_DIR;
+}
+
+// date-formatted cells are converted to an ISO string.
+function dateCellToIso(cell: XLSX.CellObject | undefined): string | null {
+    if (cell?.t !== "n" || typeof cell.v !== "number" || !XLSX.SSF.is_date(cell.z)) return null;
+
+    const parsedDate = XLSX.SSF.parse_date_code(cell.v);
+    if (!parsedDate) return null;
+
+    return new Date(Date.UTC(parsedDate.y, parsedDate.m - 1, parsedDate.d)).toISOString();
+}
+
+function getSheetHeaders(sheet: XLSX.WorkSheet, range: XLSX.Range): string[] {
+    return Array.from({ length: range.e.c - range.s.c + 1 }, (_, index) => {
+        const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + index })];
+        return cell?.v == null ? "" : String(cell.v);
+    });
+}
+
 
 export async function uploadXLSXFile(
     file: File,
     folder_name: string
 ): Promise<string> {
     console.log("start uploading XLSX file");
-    if (!DEFFERED_EXAMS_DIR) {
-        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
-    }
-    const xlsxDirectory = path.join(DEFFERED_EXAMS_DIR, folder_name);
+    const xlsxDirectory = path.join(getDeferredExamsDir(), folder_name);
     console.log("XLSX directory :", xlsxDirectory.toString());
 
     //create folder
@@ -51,10 +72,7 @@ export async function uploadXLSXFile(
 export async function checkExistingXLSXFile(
     folder_name: string
 ): Promise<string> {
-    if (!DEFFERED_EXAMS_DIR) {
-        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
-    }
-    const xlsxDirectory = path.join(DEFFERED_EXAMS_DIR || '', folder_name);
+    const xlsxDirectory = path.join(getDeferredExamsDir(), folder_name);
 
     try {
         await access(xlsxDirectory, constants.R_OK | constants.W_OK);
@@ -77,14 +95,10 @@ export async function checkExistingXLSXFile(
 export async function getExistingXLSXFile(
     folder_name: string
 ): Promise<XLSXFile | null> {
-    if (!DEFFERED_EXAMS_DIR) {
-        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
-    }
-
     const name = await checkExistingXLSXFile(folder_name);
     if (!name) return null;
 
-    const filePath = path.join(DEFFERED_EXAMS_DIR, folder_name, name);
+    const filePath = path.join(getDeferredExamsDir(), folder_name, name);
     const [fileStats, buffer] = await Promise.all([
         stat(filePath),
         readFile(filePath),
@@ -105,29 +119,18 @@ export async function getExistingXLSXFile(
 
     if (firstSheet?.["!ref"]) {
         const range = XLSX.utils.decode_range(firstSheet["!ref"]);
-        const headers = Array.from({ length: range.e.c - range.s.c + 1 }, (_, index) => {
-            const cell = firstSheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + index })];
-            return cell?.v == null ? "" : String(cell.v);
-        });
+        const headers = getSheetHeaders(firstSheet, range);
 
         for (let row = range.s.r + 1; row <= range.e.r; row++) {
             const contentRow = content[row - range.s.r - 1];
             if (!contentRow) continue;
 
-            /* Checking if the cell is a date, since XLSX lib sends back a number instead of a date.
-            If the cell is a number, trying to convert it as a date.
-            Made by Codex */ 
             for (let col = range.s.c; col <= range.e.c; col++) {
                 const header = headers[col - range.s.c];
                 if (!header) continue;
 
-                const cell = firstSheet[XLSX.utils.encode_cell({ r: row, c: col })];
-                if (cell?.t !== "n" || typeof cell.v !== "number" || !XLSX.SSF.is_date(cell.z)) continue;
-
-                const parsedDate = XLSX.SSF.parse_date_code(cell.v);
-                if (!parsedDate) continue;
-
-                contentRow[header] = new Date(Date.UTC(parsedDate.y, parsedDate.m - 1, parsedDate.d)).toISOString();
+                const isoDate = dateCellToIso(firstSheet[XLSX.utils.encode_cell({ r: row, c: col })]);
+                if (isoDate) contentRow[header] = isoDate;
             }
         }
     }
@@ -145,14 +148,10 @@ export async function getExistingXLSXFile(
 export async function getExistingXLSXFileMetadata(
     folder_name: string
 ): Promise<Omit<XLSXFile, "content"> | null> {
-    if (!DEFFERED_EXAMS_DIR) {
-        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
-    }
-
     const name = await checkExistingXLSXFile(folder_name);
     if (!name) return null;
 
-    const filePath = path.join(DEFFERED_EXAMS_DIR, folder_name, name);
+    const filePath = path.join(getDeferredExamsDir(), folder_name, name);
     const [fileStats, buffer] = await Promise.all([
         stat(filePath),
         readFile(filePath),
@@ -177,14 +176,10 @@ export async function getExistingXLSXFileMetadata(
 export async function getBOFileRowsForSciper(
     sciper: string
 ): Promise<BoFileForUser[] | null> {
-    if (!DEFFERED_EXAMS_DIR) {
-        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
-    }
-
     const name = await checkExistingXLSXFile("BO");
     if (!name) return null;
 
-    const filePath = path.join(DEFFERED_EXAMS_DIR, "BO", name);
+    const filePath = path.join(getDeferredExamsDir(), "BO", name);
     const buffer = await readFile(filePath);
     const workbook = XLSX.read(buffer, { type: "buffer", cellNF: true });
     const firstSheetName = workbook.SheetNames[0] ?? "";
@@ -193,10 +188,7 @@ export async function getBOFileRowsForSciper(
     if (!firstSheet?.["!ref"]) return [];
 
     const range = XLSX.utils.decode_range(firstSheet["!ref"]);
-    const rawHeaders = Array.from({ length: range.e.c - range.s.c + 1 }, (_, index) => {
-        const cell = firstSheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + index })];
-        return cell?.v == null ? "" : String(cell.v);
-    });
+    const rawHeaders = getSheetHeaders(firstSheet, range);
     const headers = rawHeaders.map((header, index) => {
         const normalizedHeader = header || "__EMPTY";
         const previousHeaderCount = rawHeaders
@@ -225,16 +217,7 @@ export async function getBOFileRowsForSciper(
             const header = headers[headerIndex];
 
             const cell = firstSheet[XLSX.utils.encode_cell({ r: row, c: col })];
-            let value = cell?.v ?? null;
-
-            if (cell?.t === "n" && typeof cell.v === "number" && XLSX.SSF.is_date(cell.z)) {
-                const parsedDate = XLSX.SSF.parse_date_code(cell.v);
-                if (parsedDate) {
-                    value = new Date(Date.UTC(parsedDate.y, parsedDate.m - 1, parsedDate.d)).toISOString();
-                }
-            }
-
-            rowContent[header] = value;
+            rowContent[header] = dateCellToIso(cell) ?? cell?.v ?? null;
         }
 
         rows.push(rowContent as BoFileForUser);
@@ -248,11 +231,7 @@ export async function uploadAbsenceFile(
 ): Promise<string> {
     // TODO - Maybe check the file type
     console.log("start upload absence file");
-    if (!DEFFERED_EXAMS_DIR) {
-        throw new Error("DEFFERED_EXAMS_DIR is not set in environment variables");
-    }
-
-    const absencesDir = path.join(DEFFERED_EXAMS_DIR, "certificates");
+    const absencesDir = path.join(getDeferredExamsDir(), "certificates");
     console.log("Absences Dir :", absencesDir.toString());
 
     //create folder

@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { Absence } from "@/types/absence";
 import { DiffExam } from "@/types/diffExam";
+import { formatDateInputValue } from "@/app/lib/dates/date-time";
 
 export type ExportMode = "all" | "accepted" | "by-student" | "by-exam";
 
@@ -8,13 +9,6 @@ type Row = Record<string, string | number>;
 
 function dateToString(date: Date | string) {
     return new Date(date).toLocaleDateString("fr-FR");
-}
-
-function dateToFileString(date: Date | string) {
-    const d = new Date(date);
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${d.getFullYear()}-${month}-${day}`;
 }
 
 function booleanToString(value: boolean | null | undefined) {
@@ -88,7 +82,7 @@ function writeRows(rows: Row[], sheetName: string, fileName: string) {
  Returns false when there is nothing to export.
 */
 export function exportAbsences(absences: Absence[], mode: ExportMode): boolean {
-    const today = dateToFileString(new Date());
+    const today = formatDateInputValue(new Date());
 
     switch (mode) {
         case "all":
@@ -120,7 +114,7 @@ export function exportAbsences(absences: Absence[], mode: ExportMode): boolean {
         case "by-exam": {
             const groups = new Map<string, { exam: DiffExam, rows: Row[] }>();
             for (const { absence, exam } of acceptedRegistrations(absences)) {
-                const key = `${exam.exam_code}_${dateToFileString(exam.exam_date)}`;
+                const key = `${exam.exam_code}_${formatDateInputValue(new Date(exam.exam_date))}`;
                 if (!groups.has(key)) groups.set(key, { exam, rows: [] });
                 groups.get(key)!.rows.push({
                     ...studentColumns(absence),

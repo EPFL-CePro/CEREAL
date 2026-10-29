@@ -65,11 +65,3 @@ export function getTimePartFromDateTimeString(value: string | null | undefined):
   const match = value.match(/[T ](\d{2}:\d{2})/);
   return match ? match[1] : "";
 }
-
-export function formatDateYYYYMMDD(date: Date) {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, "0");
-        const dd = String(date.getDate()).padStart(2, "0");
-
-        return `${yyyy}-${mm}-${dd}`
-    }

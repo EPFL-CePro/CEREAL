@@ -2,6 +2,7 @@ import { Session } from "next-auth";
 import { getAllCrepExamsForRepro, getCrepExamById } from "./database";
 import { examPrePrintStatus } from "./exam-status";
 import { CrepExam } from "@/types/crepExam";
+import { getExamContact } from "./exam-files";
 
 // Checks that the user can add/delete the files of an exam :
 // the user must be the contact of the exam, an admin, or the Repro, and the exam must not be printing/printed yet.
@@ -18,7 +19,7 @@ export async function checkCrepFileAccess(
     return { error: "Exam not found", status: 404 };
   }
 
-  const contact = JSON.parse(exam.contact) as { email: string };
+  const contact = getExamContact(exam);
 
   let canAccessAsRepro = false;
   if (session.user.hasCrepAccess && !session.user.isAdmin) {
