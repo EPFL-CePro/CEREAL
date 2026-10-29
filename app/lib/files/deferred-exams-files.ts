@@ -36,7 +36,7 @@ export async function uploadXLSXFile(
     folder_name: string
 ): Promise<string> {
     console.log("start uploading XLSX file");
-    const xlsxDirectory = path.join(getDeferredExamsDir(), folder_name);
+    const xlsxDirectory = safeJoinPath(getDeferredExamsDir(), folder_name);
     console.log("XLSX directory :", xlsxDirectory.toString());
 
     //create folder
@@ -46,13 +46,13 @@ export async function uploadXLSXFile(
     const existingXLSXFile = await checkExistingXLSXFile(folder_name);
 
     if(existingXLSXFile) {
-        const existingXLSXPath = path.join(xlsxDirectory, existingXLSXFile)
-        const backupXLSXFolderPath = path.join(xlsxDirectory, "old")
+        const existingXLSXPath = safeJoinPath(xlsxDirectory, existingXLSXFile)
+        const backupXLSXFolderPath = safeJoinPath(xlsxDirectory, "old")
 
         await mkdir(backupXLSXFolderPath, {recursive: true});
         console.log("backup XLSX folder already exists or has been created");
 
-        const backupExistingFilePath = path.join(backupXLSXFolderPath, existingXLSXFile);
+        const backupExistingFilePath = safeJoinPath(backupXLSXFolderPath, existingXLSXFile);
         await rename(existingXLSXPath, backupExistingFilePath)
         console.log(`${existingXLSXFile} has been backed up`)
     }
@@ -60,7 +60,7 @@ export async function uploadXLSXFile(
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const filePath = path.join(xlsxDirectory, file.name);
+    const filePath = safeJoinPath(xlsxDirectory, file.name);
 
     await writeFile(filePath, buffer);
 
@@ -72,7 +72,7 @@ export async function uploadXLSXFile(
 export async function checkExistingXLSXFile(
     folder_name: string
 ): Promise<string> {
-    const xlsxDirectory = path.join(getDeferredExamsDir(), folder_name);
+    const xlsxDirectory = safeJoinPath(getDeferredExamsDir(), folder_name);
 
     try {
         await access(xlsxDirectory, constants.R_OK | constants.W_OK);
@@ -98,7 +98,7 @@ export async function getExistingXLSXFile(
     const name = await checkExistingXLSXFile(folder_name);
     if (!name) return null;
 
-    const filePath = path.join(getDeferredExamsDir(), folder_name, name);
+    const filePath = safeJoinPath(getDeferredExamsDir(), folder_name, name);
     const [fileStats, buffer] = await Promise.all([
         stat(filePath),
         readFile(filePath),
@@ -151,7 +151,7 @@ export async function getExistingXLSXFileMetadata(
     const name = await checkExistingXLSXFile(folder_name);
     if (!name) return null;
 
-    const filePath = path.join(getDeferredExamsDir(), folder_name, name);
+    const filePath = safeJoinPath(getDeferredExamsDir(), folder_name, name);
     const [fileStats, buffer] = await Promise.all([
         stat(filePath),
         readFile(filePath),
@@ -179,7 +179,7 @@ export async function getBOFileRowsForSciper(
     const name = await checkExistingXLSXFile("BO");
     if (!name) return null;
 
-    const filePath = path.join(getDeferredExamsDir(), "BO", name);
+    const filePath = safeJoinPath(getDeferredExamsDir(), "BO", name);
     const buffer = await readFile(filePath);
     const workbook = XLSX.read(buffer, { type: "buffer", cellNF: true });
     const firstSheetName = workbook.SheetNames[0] ?? "";
@@ -231,7 +231,7 @@ export async function uploadAbsenceFile(
 ): Promise<string> {
     // TODO - Maybe check the file type
     console.log("start upload absence file");
-    const absencesDir = path.join(getDeferredExamsDir(), "certificates");
+    const absencesDir = safeJoinPath(getDeferredExamsDir(), "certificates");
     console.log("Absences Dir :", absencesDir.toString());
 
     //create folder
