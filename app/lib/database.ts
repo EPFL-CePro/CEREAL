@@ -3,6 +3,7 @@ import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { db } from "@/app/lib/db"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
+import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
 import { type EmailTemplate } from "@/types/emailTemplate"
 import { type Exam, type NewExam } from "@/types/exam"
@@ -17,80 +18,59 @@ import type { ResultSetHeader, RowDataPacket } from "mysql2"
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise<Service[]> {
-  const [rows] = await db.query("SELECT * FROM service")
-  return rows as Service[]
+  return (await prisma.service.findMany()) as Service[]
 }
 
 export async function insertService(
   service: Omit<Service, "id">,
 ): Promise<number> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "INSERT INTO service (code, description) VALUES (?, ?)",
-    [service.code, service.description],
-  )
-  return result.insertId
+  const created = await prisma.service.create({
+    data: { code: service.code, description: service.description },
+  })
+  return created.id
 }
 
-export async function deleteService(
-  service: Service,
-): Promise<ResultSetHeader> {
+export async function deleteService(service: Service): Promise<void> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "DELETE FROM service WHERE id = ?",
-    [service.id],
-  )
-  return result
+  await prisma.service.delete({ where: { id: service.id } })
 }
 
 export async function insertServiceLevel(
   serviceLevel: Omit<ServiceLevel, "id">,
 ): Promise<number> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "INSERT INTO service_level (code, name) VALUES (?, ?)",
-    [serviceLevel.code, serviceLevel.name],
-  )
-  return result.insertId
+  const created = await prisma.service_level.create({
+    data: { code: serviceLevel.code, name: serviceLevel.name },
+  })
+  return created.id
 }
 
 export async function deleteServiceLevel(
   serviceLevel: ServiceLevel,
-): Promise<ResultSetHeader> {
+): Promise<void> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "DELETE FROM service_level WHERE id = ?",
-    [serviceLevel.id],
-  )
-  return result
+  await prisma.service_level.delete({ where: { id: serviceLevel.id } })
 }
 
 export async function insertExamStatus(
   examStatus: Omit<ExamStatus, "id">,
 ): Promise<number> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "INSERT INTO exam_status (code, name, color) VALUES (?, ?, ?)",
-    [examStatus.code, examStatus.name, examStatus.color],
-  )
-  return result.insertId
+  const created = await prisma.exam_status.create({
+    data: { code: examStatus.code, name: examStatus.name },
+  })
+  return created.id
 }
 
-export async function deleteExamStatus(
-  examStatus: ExamStatus,
-): Promise<ResultSetHeader> {
+export async function deleteExamStatus(examStatus: ExamStatus): Promise<void> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "DELETE FROM exam_status WHERE id = ?",
-    [examStatus.id],
-  )
-  return result
+  await prisma.exam_status.delete({ where: { id: examStatus.id } })
 }
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllExamTypes(): Promise<ExamType[]> {
-  const [rows] = await db.query("SELECT * FROM exam_type")
-  return rows as ExamType[]
+  return (await prisma.exam_type.findMany()) as ExamType[]
 }
 
 // No permission check on purpose: used by the teachers form (every logged-in user).
@@ -177,10 +157,9 @@ export async function getCopyAndPageCountsByAcademicYear(
 
 // No permission check on purpose: reference data used by the teachers form (every logged-in user).
 export async function getServiceById(serviceId: string): Promise<Service[]> {
-  const [rows] = await db.query("SELECT * FROM service WHERE id = ?;", [
-    serviceId,
-  ])
-  return rows as Service[]
+  return (await prisma.service.findMany({
+    where: { id: Number(serviceId) },
+  })) as Service[]
 }
 
 export async function getAllExams(): Promise<Exam[]> {
@@ -208,14 +187,12 @@ export async function getExamsByAcademicYear(
 
 export async function getAllServiceLevels(): Promise<ServiceLevel[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query("SELECT * from service_level;")
-  return rows as ServiceLevel[]
+  return (await prisma.service_level.findMany()) as ServiceLevel[]
 }
 
 export async function getAllExamStatus(): Promise<ExamStatus[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query("SELECT * from exam_status;")
-  return rows as ExamStatus[]
+  return (await prisma.exam_status.findMany()) as ExamStatus[]
 }
 
 /* ----- UPDATES DB FROM EXAM TABLE ----- */
