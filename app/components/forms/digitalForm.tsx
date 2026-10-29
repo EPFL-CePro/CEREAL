@@ -2,12 +2,12 @@
 
 import { useRef, useState } from "react";
 import { User } from "next-auth";
-import { getAcademicYearOptions, getCurrentAcademicYear } from "@/app/lib/dates/academicYear";
+import { getAcademicYearOptions, getCurrentAcademicYear } from "@/app/lib/dates/academic-year";
 import { DigitalArchiveInputs } from "@/types/digitalArchiveInputs";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { RedAsterisk } from "../RedAsterisk";
 import ReactSelect from "./ReactSelect";
-import { sendTemplatedMail } from "@/app/lib/mail/mail";
+import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail";
 
 interface RegisterProps {
     user: AppUser

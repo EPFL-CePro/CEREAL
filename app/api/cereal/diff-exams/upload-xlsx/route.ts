@@ -1,7 +1,7 @@
 // app/api/cereal/diff-exams/upload-xlsx/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadXLSXFile } from "@/app/lib/files/manageFiles";
+import { uploadXLSXFile } from "@/app/lib/files/deferred-exams-files";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";

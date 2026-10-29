@@ -2,7 +2,7 @@ import { execFile } from "child_process";
 import { writeFile } from "fs/promises";
 import path from "path";
 import { promisify } from "util";
-import { fetchMultiplePersonsBySciper, fetchTeachersByCourseCode } from "@/app/lib/epfl/api";
+import { fetchMultiplePersonsBySciper, fetchTeachersByCourseCode } from "@/app/lib/epfl/epfl-api";
 
 const execFileAsync = promisify(execFile);
 

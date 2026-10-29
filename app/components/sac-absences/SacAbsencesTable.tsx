@@ -6,7 +6,7 @@ import {
     updateRegistrationAccepted,
     updateRegistrationIsaHasGrade, updateRegistrationSacRemark,
 } from "@/app/lib/database";
-import { exportAbsences, ExportMode } from "@/app/lib/sac/exportAbsences";
+import { exportAbsences, ExportMode } from "@/app/lib/sac/export-absences";
 import { Absence } from "@/types/absence";
 import {
     ColumnDef,

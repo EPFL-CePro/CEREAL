@@ -1,6 +1,6 @@
 import { Session } from "next-auth";
 import { getAllCrepExamsForRepro, getCrepExamById } from "./database";
-import { examPrePrintStatus } from "./examStatus";
+import { examPrePrintStatus } from "./exam-status";
 import { CrepExam } from "@/types/crepExam";
 
 // Checks that the user can add/delete the files of an exam :

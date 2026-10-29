@@ -1,5 +1,5 @@
-import type { NavIconName } from "@/app/lib/navigation/navIcons";
-import { canAccessRoute, type AccessUser } from "@/app/lib/auth/routeAccess";
+import type { NavIconName } from "@/app/lib/navigation/nav-icons";
+import { canAccessRoute, type AccessUser } from "@/app/lib/auth/route-access";
 
 export interface NavLink {
     label: string;

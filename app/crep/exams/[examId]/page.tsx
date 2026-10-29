@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "../../../../auth";
 import { Footer } from "../../../components/Footer";
 import { getAllCrepExamsForRepro, getCrepExamById } from "../../../lib/crep/database";
-import { examPrePrintStatus } from "../../../lib/crep/examStatus";
-import { formatDateOnlyValue } from "../../../lib/dates/dateTime";
+import { examPrePrintStatus } from "../../../lib/crep/exam-status";
+import { formatDateOnlyValue } from "../../../lib/dates/date-time";
 import { ExamFilesManager } from "../../../components/crep/exams/ExamFilesManager";
 import type { CrepExam } from "@/types/crepExam";
 

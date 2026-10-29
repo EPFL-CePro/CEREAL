@@ -4,17 +4,17 @@ import { useForm, SubmitHandler, useFieldArray } from "react-hook-form"
 import { getAllExamTypes, getAllServices, insertExam, getServiceById } from "@/app/lib/database";
 import { useEffect, useState } from "react";
 import ReactSelect from "./ReactSelect";
-import { sendTemplatedMail } from "@/app/lib/mail/mail";
+import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail";
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
 import { RegisterModal } from "./RegisterModal";
 import { Inputs } from "@/types/inputs";
 import { Service } from "@/types/service";
 import { ExamType } from "@/types/examType";
-import { fetchPersonBySciper } from "@/app/lib/epfl/api";
-import { getCurrentAcademicYear } from "@/app/lib/dates/academicYear";
+import { fetchPersonBySciper } from "@/app/lib/epfl/epfl-api";
+import { getCurrentAcademicYear } from "@/app/lib/dates/academic-year";
 import Link from "next/link";
-import { preventEnterSubmit } from "@/app/lib/forms/preventEnterSubmit";
+import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit";
 import { EPFLUser } from "@/types/user";
 
 interface RegisterProps {

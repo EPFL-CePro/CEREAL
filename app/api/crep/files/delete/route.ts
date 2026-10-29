@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { deleteCrepFile } from "@/app/lib/crep/database";
-import { deleteExamFile, getExamFolderName } from "@/app/lib/crep/upload";
-import { checkCrepFileAccess } from "@/app/lib/crep/fileAccess";
+import { deleteExamFile, getExamFolderName } from "@/app/lib/crep/exam-files";
+import { checkCrepFileAccess } from "@/app/lib/crep/file-access";
 
 export const runtime = "nodejs";
 

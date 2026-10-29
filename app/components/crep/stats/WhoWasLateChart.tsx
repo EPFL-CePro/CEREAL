@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart } from "@mui/x-charts/PieChart";
-import { MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/businessDays";
+import { MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/business-days";
 
 type TimingDatum = {
   id: string;

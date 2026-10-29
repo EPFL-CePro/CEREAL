@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { addCrepFiles } from "@/app/lib/crep/database";
-import { getExamFolderName, uploadExamFiles } from "@/app/lib/crep/upload";
-import { checkCrepFileAccess } from "@/app/lib/crep/fileAccess";
-import { validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
+import { getExamFolderName, uploadExamFiles } from "@/app/lib/crep/exam-files";
+import { checkCrepFileAccess } from "@/app/lib/crep/file-access";
+import { validateFilesSpecs } from "@/app/lib/crep/file-specs";
 import { CrepFileSpecs } from "@/types/crepExam";
 
 export const runtime = "nodejs";

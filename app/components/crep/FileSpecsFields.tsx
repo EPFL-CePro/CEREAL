@@ -2,7 +2,7 @@
 // Print settings of one file of a print request (copies, pages, print side, bindings, color, scan)
 import { useId } from "react";
 import { CrepFileSpecs } from "@/types/crepExam";
-import { paperColors, paperFormats, printSides } from "@/app/lib/crep/fileSpecs";
+import { paperColors, paperFormats, printSides } from "@/app/lib/crep/file-specs";
 
 interface FileSpecsFieldsProps {
     value: CrepFileSpecs;

@@ -1,10 +1,10 @@
 // app/api/delete-exam-folder/route.ts
 import {NextRequest, NextResponse} from "next/server";
-import {deleteExamFolder, getExamFolderName} from "@/app/lib/crep/upload";
+import {deleteExamFolder, getExamFolderName} from "@/app/lib/crep/exam-files";
 import {auth} from "@/auth";
-import {hasPermission, Permission} from "@/app/lib/auth/routeAccess";
+import {hasPermission, Permission} from "@/app/lib/auth/route-access";
 import {getCrepExamById} from "@/app/lib/crep/database";
-import {examPrePrintStatus} from "@/app/lib/crep/examStatus";
+import {examPrePrintStatus} from "@/app/lib/crep/exam-status";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
