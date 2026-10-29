@@ -95,12 +95,26 @@ export async function insertExam(exam: NewExam): Promise<number> {
     exam.contact,
   ]
 
-  const [result] = await db.execute<ResultSetHeader>(
-    "INSERT INTO exam (code, name, service_level_id, service_id, exam_type_id, exam_status_id, exam_date, academic_year_id, exam_semester, nb_students, nb_pages, total_pages, remark, responsible_id, contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    params,
-  )
-
-  return result.insertId
+  const created = await prisma.exam.create({
+    data: {
+      code: exam.code,
+      name: exam.name,
+      service_level_id: exam.service_level_id,
+      service_id: exam.service_id,
+      exam_type_id: exam.exam_type_id,
+      exam_status_id: exam.exam_status_id,
+      exam_date: exam.exam_date ? new Date(exam.exam_date) : null,
+      academic_year_id: exam.academic_year_id,
+      exam_semester: String(exam.exam_semester),
+      nb_students: exam.nb_students || null,
+      nb_pages: exam.nb_pages || null,
+      total_pages: exam.total_pages || null,
+      remark: exam.remark || null,
+      responsible_id: exam.responsible_id,
+      contact: JSON.parse(exam.contact),
+    },
+  })
+  return created.id
 }
 
 export async function getAcademicYearsFromExams(): Promise<string[]> {
@@ -164,25 +178,23 @@ export async function getServiceById(serviceId: string): Promise<Service[]> {
 
 export async function getAllExams(): Promise<Exam[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query("SELECT * FROM exam;")
-  return rows as Exam[]
+  return (await prisma.exam.findMany()) as unknown as Exam[]
 }
 
 export async function getExamById(examId: string): Promise<Exam[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query("SELECT * FROM exam WHERE id = ?;", [examId])
-  return rows as Exam[]
+  return (await prisma.exam.findMany({
+    where: { id: Number(examId) },
+  })) as unknown as Exam[]
 }
 
 export async function getExamsByAcademicYear(
   academicYear: string,
 ): Promise<Exam[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query(
-    "SELECT exam.* FROM exam WHERE exam.academic_year_id = ?;",
-    [academicYear],
-  )
-  return rows as Exam[]
+  return (await prisma.exam.findMany({
+    where: { academic_year_id: academicYear },
+  })) as unknown as Exam[]
 }
 
 export async function getAllServiceLevels(): Promise<ServiceLevel[]> {
@@ -201,47 +213,42 @@ export async function updateExamServiceLevel(
   serviceLevelId: string,
 ) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET service_level_id = ? WHERE id = ?;",
-    [serviceLevelId, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { service_level_id: Number(serviceLevelId) },
+  })
 }
 
 export async function updateExamService(examId: string, serviceId: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET service_id = ? WHERE id = ?;",
-    [serviceId, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { service_id: Number(serviceId) },
+  })
 }
 
 export async function updateExamType(examId: string, examTypeId: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET exam_type_id = ? WHERE id = ?;",
-    [examTypeId, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { exam_type_id: Number(examTypeId) },
+  })
 }
 
 export async function updateExamStatus(examId: string, examStatusId: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET exam_status_id = ? WHERE id = ?;",
-    [examStatusId, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { exam_status_id: Number(examStatusId) },
+  })
 }
 
 export async function updateExamDate(examId: string, examDate: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET exam_date = ? WHERE id = ?;",
-    [examDate, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { exam_date: examDate ? new Date(examDate) : null },
+  })
 }
 
 export async function updateExamStudentsNumber(
@@ -249,29 +256,26 @@ export async function updateExamStudentsNumber(
   nbStudents: string,
 ) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET nb_students = ? WHERE id = ?;",
-    [nbStudents, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { nb_students: nbStudents === "" ? null : Number(nbStudents) },
+  })
 }
 
 export async function updateExamPagesNumber(examId: string, nbPages: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET nb_pages = ? WHERE id = ?;",
-    [nbPages, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { nb_pages: nbPages === "" ? null : Number(nbPages) },
+  })
 }
 
 export async function updateExamRemark(examId: string, remark: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query("UPDATE exam SET remark = ? WHERE id = ?;", [
-    remark,
-    examId,
-  ])
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { remark },
+  })
 }
 
 export async function updateExamResponsible(
@@ -279,17 +283,15 @@ export async function updateExamResponsible(
   responsibleId: number | null,
 ) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE exam SET responsible_id = ? WHERE id = ?;",
-    [responsibleId, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam.update({
+    where: { id: Number(examId) },
+    data: { responsible_id: responsibleId },
+  })
 }
 
 export async function deleteExam(examId: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query("DELETE FROM exam WHERE id = ?;", [examId])
-  return JSON.stringify(result)
+  await prisma.exam.delete({ where: { id: Number(examId) } })
 }
 
 // Reconcile the email_template table with the EMAIL_TEMPLATES registry, which is
