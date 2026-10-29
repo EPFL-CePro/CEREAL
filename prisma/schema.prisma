@@ -1,8 +1,8 @@
-datasource db {
-    provider = "mysql"
+generator client {
+  provider     = "prisma-client"
+  moduleFormat = "esm"
 }
 
-generator client {
-    provider     = "prisma-client"
-    moduleFormat = "esm"
+datasource db {
+  provider = "mysql"
 }
