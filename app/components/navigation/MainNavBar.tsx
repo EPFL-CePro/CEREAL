@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
-import { adminNavGroups } from "@/app/lib/adminNavigation";
-import { filterNavGroups, type NavGroup } from "@/app/lib/navigation";
-import type { AccessUser } from "@/app/lib/routeAccess";
+import { adminNavGroups } from "@/app/lib/navigation/adminNavigation";
+import { filterNavGroups, type NavGroup } from "@/app/lib/navigation/navigation";
+import type { AccessUser } from "@/app/lib/auth/routeAccess";
 import { NavLinks } from "./NavLinks";
 
 // At the moment we only have admin menu

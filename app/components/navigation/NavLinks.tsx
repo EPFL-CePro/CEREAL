@@ -3,8 +3,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/16/solid";
-import type { NavGroup, NavLink } from "@/app/lib/navigation";
-import { navIcons } from "@/app/lib/navIcons";
+import type { NavGroup, NavLink } from "@/app/lib/navigation/navigation";
+import { navIcons } from "@/app/lib/navigation/navIcons";
 
 const linkClass = (isActive: boolean) =>
     `flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium whitespace-nowrap ${isActive ? "bg-primary text-white" : "hover:bg-(--background-secondary)"}`;

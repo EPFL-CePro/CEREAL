@@ -6,9 +6,9 @@ import { BoFileForUser } from "@/types/boFile";
 import { DiffExamFormInputs } from "@/types/diffExamForm";
 import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database";
 import { User } from "next-auth";
-import { sendTemplatedMail } from "@/app/lib/mail";
+import { sendTemplatedMail } from "@/app/lib/mail/mail";
 import { RegisterModal } from "./RegisterModal";
-import { preventEnterSubmit } from "@/app/lib/preventEnterSubmit";
+import { preventEnterSubmit } from "@/app/lib/forms/preventEnterSubmit";
 
 interface diffExamFormProps {
     user: AppUser

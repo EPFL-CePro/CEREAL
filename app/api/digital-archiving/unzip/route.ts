@@ -9,8 +9,8 @@ import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import type { ReadableStream } from "stream/web";
 import { NextRequest, NextResponse } from "next/server";
-import { courseArchivePath, isSafePathSegment } from "@/app/lib/archiveFolders";
-import { grantTeachersFullControl } from "@/app/lib/archivePermissions";
+import { courseArchivePath, isSafePathSegment } from "@/app/lib/archive/archiveFolders";
+import { grantTeachersFullControl } from "@/app/lib/archive/archivePermissions";
 
 export const runtime = "nodejs";
 

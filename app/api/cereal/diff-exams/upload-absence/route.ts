@@ -1,7 +1,7 @@
 // app/api/cereal/diff-exams/upload-absence/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadAbsenceFile } from "@/app/lib/manageFiles";
+import { uploadAbsenceFile } from "@/app/lib/files/manageFiles";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";

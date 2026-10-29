@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {getExamFolderName, uploadExamFiles} from "@/app/lib/crep/upload";
 import { auth } from "@/auth";
 import {getCrepExamById} from "@/app/lib/crep/database";
-import {examPrePrintStatus} from "@/app/lib/examStatus";
+import {examPrePrintStatus} from "@/app/lib/crep/examStatus";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";

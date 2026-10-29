@@ -7,10 +7,10 @@ import interactionPlugin from '@fullcalendar/interaction'; // handles event clic
 import { useEffect, useRef, useState, useMemo, Dispatch } from "react";
 import { EventDropArg, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { getAllCrepExams, getAllNonAdminExams, updateExamDateById } from "@/app/lib/crep/database";
-import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateTimeInputValue, formatDateYYYYMMDD } from "@/app/lib/dateTime";
+import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateTimeInputValue, formatDateYYYYMMDD } from "@/app/lib/dates/dateTime";
 import { Modal } from "../../Modal";
 import { User } from "next-auth";
-import { getAllowedExamStatus } from "@/app/lib/examStatus";
+import { getAllowedExamStatus } from "@/app/lib/crep/examStatus";
 import { Filters } from "../../Filters";
 import { ExamSearch } from "./ExamSearch";
 import { Legend } from "../../Legend";

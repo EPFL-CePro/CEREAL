@@ -1,4 +1,4 @@
-import {getAllowedExamStatus} from "@/app/lib/examStatus";
+import {getAllowedExamStatus} from "@/app/lib/crep/examStatus";
 
 interface LegendProps {
     isAdmin: boolean;

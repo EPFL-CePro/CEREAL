@@ -1,8 +1,8 @@
 "use client"
-import { fetchCourses } from "@/app/lib/api";
+import { fetchCourses } from "@/app/lib/epfl/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { getAllCrepExams, getAllExamsBetweenDates, getAllExamsByStatus } from "@/app/lib/crep/database";
-import { getAllowedExamStatus } from "@/app/lib/examStatus";
+import { getAllowedExamStatus } from "@/app/lib/crep/examStatus";
 import { User } from "next-auth";
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { DateRangePicker } from "rsuite";
