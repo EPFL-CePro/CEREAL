@@ -3,7 +3,6 @@ import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { db } from "@/app/lib/db"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
-import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
 import { type EmailTemplate } from "@/types/emailTemplate"
 import { type Exam, type NewExam } from "@/types/exam"
@@ -99,32 +98,36 @@ export async function insertExam(exam: NewExam): Promise<number> {
 
 export async function getAcademicYearsFromExams(): Promise<string[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query<
-    (RowDataPacket & { academic_year_id: string })[]
-  >(
-    'SELECT DISTINCT academic_year_id FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" ORDER BY academic_year_id ASC;',
-  )
-  return rows.map((row) => row.academic_year_id)
+  const rows = await prisma.exam.findMany({
+    where: { NOT: [{ academic_year_id: null }, { academic_year_id: "" }] },
+    select: { academic_year_id: true },
+    distinct: ["academic_year_id"],
+    orderBy: { academic_year_id: "asc" },
+  })
+  return rows.map((row) => row.academic_year_id as string)
 }
 
 export async function getExamCountsByAcademicYearAndService(
   semester: number | null,
 ): Promise<{ academicYearId: string; serviceId: number; count: number }[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query<
-    (RowDataPacket & {
-      academic_year_id: string
-      service_id: number
-      count: number
-    })[]
-  >(
-    'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL AND (? IS NULL OR exam_semester = ?) GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
-    [semester ?? null, semester ?? null],
-  )
+  const rows = await prisma.exam.groupBy({
+    by: ["academic_year_id", "service_id"],
+    where: {
+      NOT: [
+        { academic_year_id: null },
+        { academic_year_id: "" },
+        { service_id: null },
+      ],
+      ...(semester != null ? { exam_semester: String(semester) } : {}),
+    },
+    _count: { _all: true },
+    orderBy: { academic_year_id: "asc" },
+  })
   return rows.map((row) => ({
-    academicYearId: row.academic_year_id,
-    serviceId: row.service_id,
-    count: Number(row.count),
+    academicYearId: row.academic_year_id as string,
+    serviceId: row.service_id as number,
+    count: row._count._all,
   }))
 }
 
@@ -132,16 +135,18 @@ export async function getCopyAndPageCountsByAcademicYear(
   semester: number | null,
 ): Promise<{ academicYearId: string; copies: number; pages: number }[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query<
-    (RowDataPacket & {
-      academic_year_id: string
-      copies: number
-      pages: number
-    })[]
-  >(
-    'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies, COALESCE(SUM(nb_students * nb_pages), 0) AS pages FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND (? IS NULL OR exam_semester = ?) GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
-    [semester ?? null, semester ?? null],
-  )
+  const rows = await prisma.$queryRaw<
+    { academic_year_id: string; copies: unknown; pages: unknown }[]
+  >`
+        SELECT academic_year_id,
+                COALESCE(SUM(nb_students), 0) AS copies,
+                COALESCE(SUM(nb_students * nb_pages), 0) AS pages
+        FROM exam
+        WHERE academic_year_id IS NOT NULL AND academic_year_id <> ''
+          AND (${semester} IS NULL OR exam_semester = ${semester})
+        GROUP BY academic_year_id
+        ORDER BY academic_year_id ASC
+    `
   return rows.map((row) => ({
     academicYearId: row.academic_year_id,
     copies: Number(row.copies),
