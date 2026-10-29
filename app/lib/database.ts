@@ -3,6 +3,7 @@ import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { db } from "@/app/lib/db"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
+import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
 import { type EmailTemplate } from "@/types/emailTemplate"
 import { type Exam, type NewExam } from "@/types/exam"
@@ -556,43 +557,39 @@ export async function getAllCommentsForExam(
   examId: string,
 ): Promise<Comment[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query(
-    "SELECT * FROM comments WHERE exam_id = ? ORDER BY created_at DESC;",
-    [examId],
-  )
-  return rows as Comment[]
+  return (await prisma.comments.findMany({
+    where: { exam_id: Number(examId) },
+    orderBy: { created_at: "desc" },
+  })) as unknown as Comment[]
 }
 
 export async function insertComment(
   comment: Omit<Comment, "id" | "created_at">,
 ): Promise<number> {
   await requirePermission(Permission.ADMIN)
-  const params = [comment.exam_id, comment.content, comment.registered_by]
-
-  const [result] = await db.execute<ResultSetHeader>(
-    "INSERT INTO comments (exam_id, content, registered_by) VALUES (?, ?, ?)",
-    params,
-  )
-
-  return result.insertId
+  const created = await prisma.comments.create({
+    data: {
+      exam_id: comment.exam_id,
+      content: comment.content,
+      registered_by: comment.registered_by,
+    },
+  })
+  return created.id
 }
 
 export async function deleteComment(comment: Comment): Promise<number> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "DELETE FROM comments WHERE id = ?",
-    [comment.id],
-  )
-  return result.affectedRows
+  const result = await prisma.comments.deleteMany({ where: { id: comment.id } })
+  return result.count
 }
 
 export async function updateComment(
   comment: Pick<Comment, "id" | "content">,
 ): Promise<number> {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.execute<ResultSetHeader>(
-    "UPDATE comments SET content = ? WHERE id = ?",
-    [comment.content, comment.id],
-  )
-  return result.affectedRows
+  const result = await prisma.comments.updateMany({
+    where: { id: comment.id },
+    data: { content: comment.content },
+  })
+  return result.count
 }
