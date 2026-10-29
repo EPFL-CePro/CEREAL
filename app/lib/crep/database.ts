@@ -3,12 +3,12 @@
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import type { PoolConnection } from 'mysql2/promise';
 import { db } from '@/app/lib/db';
-import { requirePermission } from '@/app/lib/requirePermission';
-import { Permission } from '@/app/lib/routeAccess';
-import { examBlockingPrintStatus, examNotAdminStatus } from '../examStatus';
+import { requirePermission } from '@/app/lib/auth/requirePermission';
+import { Permission } from '@/app/lib/auth/routeAccess';
+import { examBlockingPrintStatus, examNotAdminStatus } from './examStatus';
 import { CrepExam, CrepFile, CrepFileSpecs } from '@/types/crepExam';
-import { formatDateTimeForDatabase } from '../dateTime';
-import { getAcademicYearDateRange } from '@/app/lib/academicYear';
+import { formatDateTimeForDatabase } from '../dates/dateTime';
+import { getAcademicYearDateRange } from '@/app/lib/dates/academicYear';
 import { getPrintingDurationInMinutes } from './printingDuration';
 import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from './fileSpecs';
 

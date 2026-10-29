@@ -2,8 +2,8 @@
 import {mkdir, rm, unlink, writeFile} from "fs/promises";
 import path from "path";
 import { CrepExam } from "@/types/crepExam";
-import { formatDateOnlyValue } from "../dateTime";
-import {safeJoinPath} from "@/app/lib/safePath";
+import { formatDateOnlyValue } from "../dates/dateTime";
+import {safeJoinPath} from "@/app/lib/files/safePath";
 
 const EXAM_FILES_UPLOAD_FOLDER = process.env.EXAM_FILES_UPLOAD_FOLDER;
 

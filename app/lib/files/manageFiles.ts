@@ -2,7 +2,7 @@ import { BoFileForUser, XLSXFile } from "@/types/boFile";
 import {mkdir, writeFile, readdir, access, constants, rename, stat, readFile } from "fs/promises";
 import path from "path";
 import * as XLSX from "xlsx";
-import {safeJoinPath} from "@/app/lib/safePath";
+import {safeJoinPath} from "@/app/lib/files/safePath";
 
 const DEFFERED_EXAMS_DIR = process.env.DEFFERED_EXAMS_DIR;
 

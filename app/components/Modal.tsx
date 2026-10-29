@@ -5,7 +5,7 @@ import React, { Dispatch, SetStateAction, useRef, useState } from "react";
 import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal, updateCrepExamFields, updateCrepFileSpecs } from "../lib/crep/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { PrintButton } from "./print/ReactToPrint";
-import { examNotAdminStatus } from "../lib/examStatus";
+import { examNotAdminStatus } from "../lib/crep/examStatus";
 import {
     formatDateInputValue,
     formatDateOnlyValue,
@@ -14,10 +14,10 @@ import {
     formatTimeInputValue,
     getDatePartFromDateTimeString,
     getTimePartFromDateTimeString,
-} from "../lib/dateTime";
-import { sendTemplatedMail } from "../lib/mail";
+} from "../lib/dates/dateTime";
+import { sendTemplatedMail } from "../lib/mail/mail";
 import { AuthorizedPersons } from "@/types/user";
-import { limitTextToLines } from "../lib/remarks";
+import { limitTextToLines } from "../lib/crep/remarks";
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor";
 import { CrepFile } from "@/types/crepExam";
 import { FileSpecsFields } from "./crep/FileSpecsFields";

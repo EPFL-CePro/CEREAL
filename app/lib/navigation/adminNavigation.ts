@@ -1,4 +1,4 @@
-import type { NavGroup } from "@/app/lib/navigation";
+import type { NavGroup } from "@/app/lib/navigation/navigation";
 
 export const adminNavGroups: NavGroup[] = [
     {

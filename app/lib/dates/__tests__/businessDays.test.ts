@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { businessDaysBetween } from '@/app/lib/businessDays'
+import { businessDaysBetween } from '@/app/lib/dates/businessDays'
 
 describe('businessDaysBetween', () => {
     it('counts Monday to Friday as 4 business days', () => {

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { stopImpersonation } from "@/app/lib/impersonation";
+import { stopImpersonation } from "@/app/lib/auth/impersonation";
 
 const roleLabels = {
 	sac: "SAC",

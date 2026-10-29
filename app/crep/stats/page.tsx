@@ -5,15 +5,15 @@ import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable
 import PrintingDurationHistogram, { PrintingDurationBucket } from "@/app/components/crep/stats/PrintingDurationHistogram";
 import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
 import { getCrepExamsByAcademicYear, getOldestCrepExamDate } from "@/app/lib/crep/database";
-import { formatDateOnlyValue } from "@/app/lib/dateTime";
+import { formatDateOnlyValue } from "@/app/lib/dates/dateTime";
 import { CrepExam } from "@/types/crepExam";
-import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/businessDays";
+import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/businessDays";
 import {
     getAcademicYearOfDate,
     getAcademicYearOptions,
     getCurrentAcademicYear,
     isSelectableAcademicYear,
-} from "@/app/lib/academicYear";
+} from "@/app/lib/dates/academicYear";
 import { redirect } from "next/navigation";
 
 export const metadata = {

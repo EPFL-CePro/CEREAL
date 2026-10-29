@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { fromDatabaseDateTime } from "@/app/lib/dateTime";
+import { fromDatabaseDateTime } from "@/app/lib/dates/dateTime";
 
 type ExamSearchProps = {
   exams: EventInput[];

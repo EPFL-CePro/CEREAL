@@ -1,6 +1,6 @@
 // TODO - Refactor: Rename it (serverGuard.ts) and move it in (app/lib/access/)
 import { auth } from "@/auth";
-import { hasPermission, Permission } from "@/app/lib/routeAccess";
+import { hasPermission, Permission } from "@/app/lib/auth/routeAccess";
 
 export async function requirePermission(permission: Permission) {
     const session = await auth();

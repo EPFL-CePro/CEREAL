@@ -6,12 +6,12 @@ import { Exam, NewExam } from '@/types/exam';
 import { ServiceLevel } from '@/types/serviceLevel';
 import { ExamStatus } from '@/types/examStatus';
 import { EmailTemplate } from '@/types/emailTemplate';
-import { EMAIL_TEMPLATES } from '@/app/lib/emailTemplates';
+import { EMAIL_TEMPLATES } from '@/app/lib/mail/emailTemplates';
 import type { Absence, NewAbsence } from '@/types/absence';
 import type { DiffExam, NewDiffExam } from '@/types/diffExam';
 import {db} from "@/app/lib/db";
-import { requirePermission } from "@/app/lib/requirePermission";
-import { Permission } from "@/app/lib/routeAccess";
+import { requirePermission } from "@/app/lib/auth/requirePermission";
+import { Permission } from "@/app/lib/auth/routeAccess";
 import { Comment } from '@/types/comment';
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
