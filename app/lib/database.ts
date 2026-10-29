@@ -75,26 +75,6 @@ export async function getAllExamTypes(): Promise<ExamType[]> {
 
 // No permission check on purpose: used by the teachers form (every logged-in user).
 export async function insertExam(exam: NewExam): Promise<number> {
-  const params = [
-    exam.code,
-    exam.name,
-    exam.service_level_id,
-    exam.service_id,
-    exam.exam_type_id,
-    exam.exam_status_id,
-    exam.exam_date || null,
-    exam.academic_year_id,
-    exam.exam_semester,
-    exam.nb_students || null,
-    exam.nb_pages || null,
-    exam.total_pages || null,
-    // exam.deadline_prep,
-    // exam.deadline_repro,
-    exam.remark || null,
-    exam.responsible_id,
-    exam.contact,
-  ]
-
   const created = await prisma.exam.create({
     data: {
       code: exam.code,
