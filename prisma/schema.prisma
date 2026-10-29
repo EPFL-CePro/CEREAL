@@ -7,3 +7,186 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+model comments {
+  id            Int      @id @default(autoincrement())
+  exam_id       Int
+  content       String?  @db.MediumText
+  registered_by Json
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  exam          exam     @relation(fields: [exam_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "comments_ibfk_1")
+
+  @@index([exam_id], map: "fk_exam_idx")
+}
+
+model crep {
+  id                 Int         @id @default(autoincrement())
+  exam_name          String      @db.VarChar(256)
+  exam_code          String      @db.VarChar(24)
+  status             String      @default("registered") @db.VarChar(32)
+  print_date         DateTime    @db.DateTime(0)
+  print_duration     Int         @default(0)
+  remark             String?     @db.MediumText
+  repro_remark       String?     @db.MediumText
+  exam_date          DateTime    @db.Date
+  contact            String      @db.MediumText
+  authorized_persons String      @db.MediumText
+  registered_by      String      @db.VarChar(256)
+  financial_center   String      @db.VarChar(10)
+  desired_date       DateTime    @db.Date
+  boxes              Int         @default(0)
+  price_unit         Float       @default(0) @db.Float
+  price_total        Float       @default(0) @db.Float
+  created_on         DateTime    @default(dbgenerated("(curdate())")) @db.Date
+  order_number       String?     @db.VarChar(32)
+  crep_file          crep_file[]
+}
+
+model crep_file {
+  id            Int     @id @default(autoincrement())
+  crep_id       Int
+  file_name     String? @db.VarChar(255)
+  exam_pages    Int
+  exam_students Int
+  paper_format  String  @db.VarChar(2)
+  paper_color   String  @db.VarChar(10)
+  print         String  @default("recto-verso") @db.VarChar(16)
+  need_scan     Boolean
+  crep          crep    @relation(fields: [crep_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_crep_file_crep")
+
+  @@unique([crep_id, file_name], map: "uq_crep_file_name")
+}
+
+model crep_log {
+  id                Int                 @id @default(autoincrement())
+  action            String              @db.VarChar(8)
+  date_time         DateTime            @db.DateTime(0)
+  crep_id           Int
+  exam_name         String              @db.VarChar(256)
+  delivery_date     DateTime            @db.DateTime(0)
+  exam_date         DateTime            @db.DateTime(0)
+  contact           String              @db.VarChar(256)
+  exam_code         String              @db.VarChar(24)
+  changes           Json?
+  user_notification user_notification[]
+}
+
+model deferred_exam_registration {
+  id                      Int                  @id @default(autoincrement())
+  exam_student_absence_id Int
+  exam_code               String               @db.VarChar(25)
+  exam_name               String               @db.VarChar(256)
+  exam_date               DateTime             @db.Date
+  sac_has_accepted        Boolean?
+  sac_remark              String?              @db.VarChar(500)
+  isa_has_grade           Boolean?
+  exam_student_absence    exam_student_absence @relation(fields: [exam_student_absence_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "deferred_exam_registration_ibfk_1")
+
+  @@index([exam_student_absence_id], map: "fk_exam_student_absence_idx")
+}
+
+model email_template {
+  id            Int     @id @default(autoincrement())
+  template_key  String  @unique(map: "template_key_UNIQUE") @db.VarChar(64)
+  section       String  @db.VarChar(45)
+  name          String  @db.VarChar(100)
+  subject       String? @db.Text
+  body          String? @db.Text
+  recipients_to String? @db.Text
+  recipients_cc String? @db.Text
+  reply_to      String? @db.Text
+}
+
+model exam {
+  id               Int            @id @default(autoincrement())
+  code             String?        @db.VarChar(30)
+  name             String?        @db.VarChar(150)
+  service_level_id Int?
+  service_id       Int?
+  exam_type_id     Int?
+  exam_status_id   Int?
+  exam_date        DateTime?      @db.Date
+  academic_year_id String?        @db.VarChar(20)
+  exam_semester    String?        @db.VarChar(10)
+  nb_students      Int?
+  nb_pages         Int?
+  total_pages      Int?
+  deadline_prep    DateTime?      @db.Date
+  deadline_repro   DateTime?      @db.Date
+  remark           String?        @db.Text
+  responsible_id   Int?
+  contact          Json?
+  comments         comments[]
+  exam_status      exam_status?   @relation(fields: [exam_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exam_exam_status")
+  exam_type        exam_type?     @relation(fields: [exam_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exam_exam_type")
+  service          service?       @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exam_service")
+  service_level    service_level? @relation(fields: [service_level_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_exam_service_level")
+
+  @@index([academic_year_id], map: "fk_exam_academic_year_idx")
+  @@index([exam_status_id], map: "fk_exam_status_idx")
+  @@index([exam_type_id], map: "fk_exam_type_idx")
+  @@index([responsible_id], map: "fk_responsible_idx")
+  @@index([service_level_id], map: "fk_service_level_idx")
+  @@index([service_id], map: "fk_services_idx")
+}
+
+model exam_status {
+  id    Int     @id @default(autoincrement())
+  code  String? @db.VarChar(45)
+  name  String? @db.VarChar(100)
+  color String? @db.VarChar(45)
+  exam  exam[]
+}
+
+model exam_student_absence {
+  id                         Int                          @id @default(autoincrement())
+  sciper                     Int
+  last_name                  String                       @db.VarChar(100)
+  first_name                 String                       @db.VarChar(100)
+  certificate_date_from      DateTime                     @db.Date
+  certificate_date_to        DateTime                     @db.Date
+  certificate_file_name      String?                      @db.VarChar(255)
+  created_at                 DateTime                     @default(now()) @db.DateTime(0)
+  comment                    String?                      @db.VarChar(500)
+  sac_has_accepted           Boolean?
+  sac_remark                 String?                      @db.VarChar(500)
+  deferred_exam_registration deferred_exam_registration[]
+}
+
+model exam_type {
+  id   Int     @id @default(autoincrement())
+  code String? @db.VarChar(20)
+  name String? @db.VarChar(50)
+  exam exam[]
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model scans {
+  scans Json
+
+  @@ignore
+}
+
+model service {
+  id          Int     @id @default(autoincrement())
+  code        String? @db.VarChar(45)
+  description String? @db.VarChar(100)
+  exam        exam[]
+}
+
+model service_level {
+  id   Int     @id @default(autoincrement())
+  code String? @db.VarChar(20)
+  name String? @db.VarChar(50)
+  exam exam[]
+}
+
+model user_notification {
+  log_id   Int
+  sciper   String    @db.VarChar(6)
+  read_at  DateTime? @db.DateTime(6)
+  crep_log crep_log  @relation(fields: [log_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_un_log")
+
+  @@id([log_id, sciper])
+  @@index([sciper, read_at, log_id], map: "idx_user_unread")
+}
