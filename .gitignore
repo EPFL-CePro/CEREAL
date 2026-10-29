@@ -90,3 +90,4 @@ Thumbs.db
 
 # Prisma
 /app/generated
+!/prisma/migrations/*/*.sql
