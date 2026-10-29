@@ -3,14 +3,14 @@
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import type { PoolConnection } from 'mysql2/promise';
 import { db } from '@/app/lib/db';
-import { requirePermission } from '@/app/lib/auth/requirePermission';
-import { Permission } from '@/app/lib/auth/routeAccess';
-import { examBlockingPrintStatus, examNotAdminStatus } from './examStatus';
+import { requirePermission } from '@/app/lib/auth/require-permission';
+import { Permission } from '@/app/lib/auth/route-access';
+import { examBlockingPrintStatus, examNotAdminStatus } from './exam-status';
 import { CrepExam, CrepFile, CrepFileSpecs } from '@/types/crepExam';
-import { formatDateTimeForDatabase } from '../dates/dateTime';
-import { getAcademicYearDateRange } from '@/app/lib/dates/academicYear';
-import { getPrintingDurationInMinutes } from './printingDuration';
-import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from './fileSpecs';
+import { formatDateTimeForDatabase } from '../dates/date-time';
+import { getAcademicYearDateRange } from '@/app/lib/dates/academic-year';
+import { getPrintingDurationInMinutes } from './print-duration';
+import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from './file-specs';
 
 type NewCrepFile = CrepFileSpecs & { file_name: string | null };
 

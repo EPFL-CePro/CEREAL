@@ -5,7 +5,7 @@ import Select from "react-select";
 import type { OptionProps, GroupBase, OptionsOrGroups, Theme, StylesConfig } from "react-select";
 import CustomOption from "./CustomOption";
 import { Control, Controller, ControllerRenderProps, FieldValues, Path } from "react-hook-form";
-import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/epfl/api";
+import { fetchCourses, fetchGroupPersons, fetchGroups, fetchPersonBySciper, fetchPersons } from "@/app/lib/epfl/epfl-api";
 import { Inputs } from "@/types/inputs";
 import { SelectOption } from "@/types/selectOption";
 import { toast } from "sonner";

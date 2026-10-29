@@ -224,7 +224,7 @@ function responsibleMailLine(r) {
   }
 }
 
-// Reimplementation of sendMail (app/lib/mail/mail.ts) for this standalone CLI script.
+// Reimplementation of sendMail (app/lib/mail/send-templated-mail.ts) for this standalone CLI script.
 function getMailSubjectPrefix() {
   return process.env.CEREAL_ENV === 'test' ? 'TEST - ' : '';
 }

@@ -1,7 +1,7 @@
 // app/api/cereal/diff-exams/get-bo-user/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getBOFileRowsForSciper } from "@/app/lib/files/manageFiles";
+import { getBOFileRowsForSciper } from "@/app/lib/files/deferred-exams-files";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";

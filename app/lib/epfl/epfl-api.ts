@@ -3,7 +3,7 @@ import { EPFLUser } from "@/types/user";
 import { CourseSelectOption, SelectOption } from "@/types/selectOption";
 import { GroupUser } from "@/types/groupUser";
 import { Teacher } from "@/types/teacher";
-import { getCurrentAcademicYear } from "@/app/lib/dates/academicYear";
+import { getCurrentAcademicYear } from "@/app/lib/dates/academic-year";
 
 function getOasisBaseUrl(): string {
     if (process.env.OASIS_BASE_URL) {

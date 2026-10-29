@@ -20,7 +20,7 @@ import { ServiceLevel } from '@/types/serviceLevel'
 import { Service } from '@/types/service'
 import { ExamType } from '@/types/examType'
 import { ExamStatus } from '@/types/examStatus'
-import { fetchCeproAdminsIT, fetchTeachersByCourseCode } from '@/app/lib/epfl/api'
+import { fetchCeproAdminsIT, fetchTeachersByCourseCode } from '@/app/lib/epfl/epfl-api'
 import { GroupUser } from '@/types/groupUser'
 import { Teacher } from '@/types/teacher'
 import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, ViewColumnsIcon } from "@heroicons/react/24/outline";

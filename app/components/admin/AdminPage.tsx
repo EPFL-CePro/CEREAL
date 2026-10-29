@@ -16,7 +16,7 @@ import {
   updateEmailTemplate,
 } from "@/app/lib/database";
 import { startImpersonation } from "@/app/lib/auth/impersonation";
-import { EMAIL_TEMPLATES, EmailTemplateKey } from "@/app/lib/mail/emailTemplates";
+import { EMAIL_TEMPLATES, EmailTemplateKey } from "@/app/lib/mail/email-templates";
 import { EmailTemplate } from "@/types/emailTemplate";
 import { ExamStatus } from "@/types/examStatus";
 import { Service } from "@/types/service";

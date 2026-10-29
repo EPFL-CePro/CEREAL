@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/app/components/ConfirmProvider";
 import { CrepFile, CrepFileSpecs } from "@/types/crepExam";
-import { defaultFileSpecs, pickFileSpecs, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
-import { countPdfPages } from "@/app/lib/crep/pdfPages";
+import { defaultFileSpecs, pickFileSpecs, validateFilesSpecs } from "@/app/lib/crep/file-specs";
+import { countPdfPages } from "@/app/lib/crep/pdf-pages";
 import { FileSpecsFields } from "../FileSpecsFields";
 
 type Props = {

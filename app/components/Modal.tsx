@@ -5,7 +5,7 @@ import React, { Dispatch, SetStateAction, useRef, useState } from "react";
 import { updateExamRemarkById, updateExamStatusById, updateExamReproRemarkById, deleteCrepExam, updateCrepBoxes, updateCrepPriceUnit, updateCrepPriceTotal, updateCrepExamFields, updateCrepFileSpecs } from "../lib/crep/database";
 import { EventApi, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
 import { PrintButton } from "./print/ReactToPrint";
-import { examNotAdminStatus } from "../lib/crep/examStatus";
+import { examNotAdminStatus } from "../lib/crep/exam-status";
 import {
     formatDateInputValue,
     formatDateOnlyValue,
@@ -14,14 +14,14 @@ import {
     formatTimeInputValue,
     getDatePartFromDateTimeString,
     getTimePartFromDateTimeString,
-} from "../lib/dates/dateTime";
-import { sendTemplatedMail } from "../lib/mail/mail";
+} from "../lib/dates/date-time";
+import { sendTemplatedMail } from "../lib/mail/send-templated-mail";
 import { AuthorizedPersons } from "@/types/user";
-import { limitTextToLines } from "../lib/crep/remarks";
+import { limitTextToLines } from "../lib/crep/remark-lines";
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor";
 import { CrepFile } from "@/types/crepExam";
 import { FileSpecsFields } from "./crep/FileSpecsFields";
-import { getBindingLabel, validateFilesSpecs } from "../lib/crep/fileSpecs";
+import { getBindingLabel, validateFilesSpecs } from "../lib/crep/file-specs";
 import {toast} from "sonner";
 import { useConfirm } from "./ConfirmProvider";
 

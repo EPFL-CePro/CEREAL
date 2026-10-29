@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { NextRequest, NextResponse } from 'next/server';
-import { canAccessRoute } from "@/app/lib/auth/routeAccess";
+import { canAccessRoute } from "@/app/lib/auth/route-access";
  
 export default async function middleware(req: NextRequest) {
 	const session = await auth();

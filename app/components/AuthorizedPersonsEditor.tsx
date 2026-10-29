@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import AsyncSelect from "react-select/async";
 import type { GroupBase, OptionsOrGroups, StylesConfig, Theme } from "react-select";
-import { fetchGroupPersons, fetchGroups, fetchPersons } from "@/app/lib/epfl/api";
+import { fetchGroupPersons, fetchGroups, fetchPersons } from "@/app/lib/epfl/epfl-api";
 import { AuthorizedPersons } from "@/types/user";
 import { SelectOption } from "@/types/selectOption";
 

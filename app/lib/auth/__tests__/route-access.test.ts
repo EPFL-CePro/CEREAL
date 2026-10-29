@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {canAccessRoute} from "@/app/lib/auth/routeAccess";
+import {canAccessRoute} from "@/app/lib/auth/route-access";
 
 describe('canAccessRoute', () => {
     it('denies the admin route to a user without any role', () => {

@@ -6,8 +6,8 @@ import {
     EmailTemplateKey,
     TemplateContext,
     renderString,
-} from '@/app/lib/mail/emailTemplates';
-import {sendMail} from "@/app/lib/mail/mailer";
+} from '@/app/lib/mail/email-templates';
+import {sendMail} from "@/app/lib/mail/send-mail";
 
 /* Send one of the admin-customizable emails. The template (subject, body,
 recipients) is loaded from the DB and falls back to the defaults defined in

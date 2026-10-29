@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
 import { CrepExam } from "@/types/crepExam";
-import { formatDateOnlyValue } from "@/app/lib/dates/dateTime";
-import { examStatus } from "@/app/lib/crep/examStatus";
+import { formatDateOnlyValue } from "@/app/lib/dates/date-time";
+import { examStatus } from "@/app/lib/crep/exam-status";
 
 type ExamsTableProps = {
   exams: CrepExam[];

@@ -4,21 +4,21 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import { getAllExamsBetweenDates, getBlockingExamsForDate, insertExamForPrint } from "@/app/lib/crep/database";
 import { useState } from "react";
 import ReactSelect from "../forms/ReactSelect";
-import { validateFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/epfl/api";
-import { sendTemplatedMail } from "@/app/lib/mail/mail";
-import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dates/dateTime";
+import { validateFinancialCenter, fetchMultiplePersonsBySciper, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api";
+import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail";
+import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateYYYYMMDD } from "@/app/lib/dates/date-time";
 import { User } from "next-auth";
 import { RedAsterisk } from "../RedAsterisk";
 import { RegisterModal } from "../forms/RegisterModal";
 import { Inputs } from "@/types/inputs";
 import { AuthorizedPersons } from "@/types/user";
-import { getPrintingDurationInMinutes } from "@/app/lib/crep/printingDuration";
-import { limitTextToLines } from "@/app/lib/crep/remarks";
-import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/businessDays";
-import { preventEnterSubmit } from "@/app/lib/forms/preventEnterSubmit";
+import { getPrintingDurationInMinutes } from "@/app/lib/crep/print-duration";
+import { limitTextToLines } from "@/app/lib/crep/remark-lines";
+import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/business-days";
+import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit";
 import { CrepExam, CrepFileSpecs } from "@/types/crepExam";
-import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/fileSpecs";
-import { countPdfPages } from "@/app/lib/crep/pdfPages";
+import { defaultFileSpecs, describeFile, getTotalCopies, validateFilesSpecs } from "@/app/lib/crep/file-specs";
+import { countPdfPages } from "@/app/lib/crep/pdf-pages";
 import { FileSpecsFields } from "./FileSpecsFields";
 
 interface RegisterProps {

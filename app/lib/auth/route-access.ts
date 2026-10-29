@@ -1,4 +1,3 @@
-// TODO - Refactor: Rename it (accessRules.ts) and move it in (app/lib/access/)
 export interface AccessUser {
 	isAdmin?: boolean;
 	hasCrepAccess?: boolean;

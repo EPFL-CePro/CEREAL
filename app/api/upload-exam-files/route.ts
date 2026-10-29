@@ -1,9 +1,9 @@
 // app/api/upload-exam-files/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import {getExamFolderName, uploadExamFiles} from "@/app/lib/crep/upload";
+import {getExamFolderName, uploadExamFiles} from "@/app/lib/crep/exam-files";
 import { auth } from "@/auth";
 import {getCrepExamById} from "@/app/lib/crep/database";
-import {examPrePrintStatus} from "@/app/lib/crep/examStatus";
+import {examPrePrintStatus} from "@/app/lib/crep/exam-status";
 
 // ensure Node.js runtime (needed for fs / NAS)
 export const runtime = "nodejs";
