@@ -14,10 +14,23 @@ function getOasisBaseUrl(): string {
         ? "https://oasis-t.epfl.ch:8484"
         : "https://oasis.epfl.ch:8484";
 }
-const EPFL_API_BASE = 'https://api.epfl.ch/v1';
+const EPFL_API_ORIGIN = 'https://api.epfl.ch';
+const EPFL_API_BASE = `${EPFL_API_ORIGIN}/v1`;
 const getApiEpflCredentials = () => Buffer.from(process.env.EPFL_API_USERNAME + ":" + process.env.EPFL_API_PASSWORD).toString('base64');
 
+const SCIPER_REGEX = /^\d{6}$/;
+
+function assertSciper(sciper: string): void {
+    if (!SCIPER_REGEX.test(sciper)) {
+        throw new Error("Invalid SCIPER");
+    }
+}
+
 function epflFetch(url: string | URL) {
+    if (new URL(url).origin !== EPFL_API_ORIGIN) {
+        throw new Error("Invalid EPFL API URL");
+    }
+
     const headers = new Headers();
     headers.set('Authorization', `Basic ${getApiEpflCredentials()}`);
     return fetch(url, {method: 'GET', headers});
@@ -93,6 +106,7 @@ export async function fetchGroupPersons(groupId: string): Promise<SelectOption[]
 }
 
 export async function fetchPersonBySciper(sciper: string): Promise<EPFLUser> {
+    assertSciper(sciper);
     const url = `${EPFL_API_BASE}/persons/${sciper}`;
     const res = await epflFetch(url);
     const data = await res.json();
@@ -100,7 +114,11 @@ export async function fetchPersonBySciper(sciper: string): Promise<EPFLUser> {
 }
 
 export async function fetchMultiplePersonsBySciper(scipersWithCommas: string): Promise<EPFLUser[]> {
-    const url = `${EPFL_API_BASE}/persons?ids=${encodeURIComponent(scipersWithCommas)}`;
+    const scipers = scipersWithCommas.split(",").filter(Boolean);
+    if (scipers.length === 0) return [];
+    scipers.forEach(assertSciper);
+
+    const url = `${EPFL_API_BASE}/persons?ids=${encodeURIComponent(scipers.join(","))}`;
     const res = await epflFetch(url);
     if (!res.ok) return [];
     const data = await res.json();

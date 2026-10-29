@@ -19,6 +19,8 @@ services:
       - ./db:/docker-entrypoint-initdb.d
     networks:
       - cereal-app-network
+    ports:
+      - '3306:3306'
   cereal-app:
     container_name: cereal-app
     image: node:24
