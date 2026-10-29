@@ -6,5 +6,7 @@ overrides:
   next-auth>nodemailer: "catalog:"
 
 allowBuilds:
+  '@prisma/engines': true
   "@tailwindcss/oxide": true
+  prisma: true
   unrs-resolver: true
