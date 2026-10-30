@@ -24,6 +24,7 @@ import {
 } from "@tanstack/react-table"
 
 import { useConfirm } from "@/app/components/ConfirmProvider"
+import ExamDetails from "@/app/components/exams/exams-table/ExamDetails"
 import RemarkTextarea from "@/app/components/exams/exams-table/RemarkTextarea"
 import { useColumnVisibility } from "@/app/components/exams/exams-table/use-column-visibility"
 import {
@@ -51,6 +52,7 @@ import {
   formatContact,
   getContactSearchText,
 } from "@/app/lib/exams/exam-contact"
+import { findById, formatIsoDate } from "@/app/lib/exams/exam-lookups"
 import { exportExamsToCsv } from "@/app/lib/exams/export-exams-csv"
 import { type Exam } from "@/types/exam"
 import { type ExamStatus } from "@/types/examStatus"
@@ -912,31 +914,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           table.getState().pagination.pageSize +
         1
   const endRow = rowCount === 0 ? 0 : startRow + rowCount - 1
-  const selectedServiceLevel = selectedExam
-    ? allServiceLevels.find(
-        (element: ServiceLevel) => element.id === selectedExam.service_level_id,
-      )?.name
-    : ""
-  const selectedService = selectedExam
-    ? allServices.find(
-        (element: Service) => element.id === selectedExam.service_id,
-      )?.code
-    : ""
-  const selectedExamType = selectedExam
-    ? allExamTypes.find(
-        (element: ExamType) => element.id === selectedExam.exam_type_id,
-      )?.code
-    : ""
-  const selectedExamStatus = selectedExam
-    ? allExamStatus.find(
-        (element: ExamStatus) => element.id === selectedExam.exam_status_id,
-      )?.code
-    : ""
-  const formattedSelectedExamDate = selectedExam?.exam_date
-    ? new Date(selectedExam.exam_date as string | Date)
-        .toISOString()
-        .split("T")[0]
-    : "Not set"
 
   return (
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-10 lg:px-14">
@@ -1294,129 +1271,21 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         </div>
 
         {selectedExam && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/25 backdrop-blur-sm">
-            <dialog
-              open
-              className="modal top-1/8 left-1/8 w-3/4 rounded-xl opacity-98 drop-shadow-2xl md:left-1/4 md:w-2/4"
-              onClose={() => {
-                setSelectedExam(null)
-              }}
-            >
-              <div className="rounded-xl bg-white p-8 text-slate-900">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Exam details
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold">
-                      {selectedExam.name}
-                    </h2>
-                    <p className="mt-1 font-mono text-sm text-slate-500">
-                      {selectedExam.code}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedExam(null)
-                    }}
-                    className="
-                    rounded-full
-                    border
-                    border-red-400
-                    px-3
-                    py-1
-                    text-sm
-                    text-gray-600
-                    hover:bg-red-600
-                    hover:text-white
-                    hover:cursor-pointer
-                    transition
-                    ease-in-out
-                  "
-                  >
-                    Close
-                  </button>
-                </div>
-
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Service level
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedServiceLevel || "Unknown"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Service
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedService || "Unknown"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Exam type
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedExamType || "Unknown"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Status
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedExamStatus || "Unknown"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Exam date
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {formattedSelectedExamDate}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Semester
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedExam.exam_semester}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Students
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedExam.nb_students ?? "Not set"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      Pages
-                    </p>
-                    <p className="mt-1 text-sm font-medium">
-                      {selectedExam.nb_pages ?? "Not set"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Remark
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm font-medium">
-                    {selectedExam.remark || "No remark"}
-                  </p>
-                </div>
-              </div>
-            </dialog>
-          </div>
+          <ExamDetails
+            exam={selectedExam}
+            labels={{
+              serviceLevel: findById(
+                allServiceLevels,
+                selectedExam.service_level_id,
+              )?.name,
+              service: findById(allServices, selectedExam.service_id)?.code,
+              examType: findById(allExamTypes, selectedExam.exam_type_id)?.code,
+              status: findById(allExamStatus, selectedExam.exam_status_id)
+                ?.code,
+              date: formatIsoDate(selectedExam.exam_date),
+            }}
+            onClose={() => setSelectedExam(null)}
+          />
         )}
       </div>
     </div>
