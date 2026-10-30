@@ -18,7 +18,7 @@
 
   --animate-wiggle: wiggle 1s cubic-bezier(0.83, 0, 0.17, 1) infinite; /* https://easings.net/#easeInOutQuint */
   @keyframes wiggle {
-    100%{
+    100% {
       transform: rotate(0);
     }
     75% {
@@ -227,7 +227,8 @@ td[role="presentation"] {
   }
 
   @keyframes pinkBreath {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 0 0 rgba(175, 22, 22, 0.25);
       transform: scale(1);
     }

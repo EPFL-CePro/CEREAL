@@ -1,36 +1,37 @@
-"use client";
+"use client"
 
-import { PieChart } from "@mui/x-charts/PieChart";
-import { MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/business-days";
+import { PieChart } from "@mui/x-charts/PieChart"
+
+import { MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/business-days"
 
 type TimingDatum = {
-  id: string;
-  label: string;
-  value: number;
-  color: string;
-};
+  id: string
+  label: string
+  value: number
+  color: string
+}
 
 type WhoWasLateChartProps = {
-  onTime: number;
-  late: number;
-  total: number;
-};
+  onTime: number
+  late: number
+  total: number
+}
 
 const chartColors = {
   onTime: "#1f2937",
   late: "#ef4444",
-};
+}
 
 function formatPercent(value: number, total: number) {
-  if (total === 0) return "0%";
-  return `${Math.round((value / total) * 100)}%`;
+  if (total === 0) return "0%"
+  return `${Math.round((value / total) * 100)}%`
 }
 
 export default function WhoWasLateChart({
   onTime,
   late,
 }: WhoWasLateChartProps) {
-  const usableTotal = onTime + late;
+  const usableTotal = onTime + late
   const data: TimingDatum[] = [
     {
       id: "on-time",
@@ -44,7 +45,7 @@ export default function WhoWasLateChart({
       value: late,
       color: chartColors.late,
     },
-  ];
+  ]
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -54,8 +55,10 @@ export default function WhoWasLateChart({
             Late registry
           </h1>
           <p className="mt-3 text-sm leading-6 text-gray-600">
-            An exam is considered &quot;late&quot; when the date of entry in the database is less than
-            {MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days before the desired delivery date.
+            An exam is considered &quot;late&quot; when the date of entry in the
+            database is less than
+            {MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days before the desired
+            delivery date.
           </p>
         </div>
       </div>
@@ -106,5 +109,5 @@ export default function WhoWasLateChart({
         </div>
       </div>
     </section>
-  );
+  )
 }
