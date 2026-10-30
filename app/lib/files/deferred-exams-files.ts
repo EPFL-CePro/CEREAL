@@ -45,7 +45,8 @@ function getSheetHeaders(sheet: XLSX.WorkSheet, range: XLSX.Range): string[] {
   return Array.from({ length: range.e.c - range.s.c + 1 }, (_, index) => {
     const cell =
       sheet[XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + index })]
-    return cell?.v === null ? "" : String(cell.v)
+    const value = cell?.v
+    return value === undefined || value === null ? "" : String(value)
   })
 }
 
