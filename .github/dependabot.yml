@@ -1,0 +1,77 @@
+version: 2
+registries:
+  dhi:
+    type: docker-registry
+    url: https://dhi.io
+    username: ${{secrets.DHI_REGISTRY_USERNAME}}
+    password: ${{secrets.DHI_REGISTRY_TOKEN}}
+    replaces-base: false
+
+updates:
+  # Pnpm dependencies
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "[deps]"
+    groups:
+      nextjs-security:
+        applies-to: security-updates
+        patterns:
+          - "next"
+          - "eslint-config-next"
+          - "@next/*"
+      npm-security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # Base image Node
+  - package-ecosystem: docker
+    directory: "/"
+    registries:
+      - dhi
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "[docker]"
+    ignore:
+      # Stay in the current major version -> LTS changes must be done manually
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
+    groups:
+      docker-images:
+        patterns:
+          - "*"
+
+  # Service images referenced in compose files
+  - package-ecosystem: docker-compose
+    directory: "/"
+    registries:
+      - dhi
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "[docker]"
+    groups:
+      compose-images:
+        patterns:
+          - "*"
+
+  # GitHub Actions used in .github/workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "[ci]"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
