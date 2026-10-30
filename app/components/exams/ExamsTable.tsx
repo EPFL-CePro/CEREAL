@@ -21,11 +21,11 @@ import {
   getSortedRowModel,
   type SortingState,
   useReactTable,
-  type VisibilityState,
 } from "@tanstack/react-table"
 
 import { useConfirm } from "@/app/components/ConfirmProvider"
 import RemarkTextarea from "@/app/components/exams/exams-table/RemarkTextarea"
+import { useColumnVisibility } from "@/app/components/exams/exams-table/use-column-visibility"
 import {
   deleteExam,
   getAcademicYearsFromExams,
@@ -64,14 +64,6 @@ interface ExamsTableProps {
   academicYear: string
 }
 
-const COLUMNS_STORAGE_KEY = "cereal.examsTable.columns"
-
-// Other column settings (size, ...) can be added here later
-type ColumnPreference = {
-  id: string
-  visible: boolean
-}
-
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
   const confirm = useConfirm()
@@ -81,10 +73,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   )
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [isColumnVisibilityLoaded, setIsColumnVisibilityLoaded] =
-    React.useState(false)
+  const { columnVisibility, onColumnVisibilityChange } = useColumnVisibility()
   const [academicYears, setAcademicYears] = React.useState<string[]>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -124,32 +113,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     },
     [],
   )
-
-  // Restoring the column props chosen by the user
-  React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem(COLUMNS_STORAGE_KEY)
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved)
-        if (Array.isArray(parsed)) {
-          const validPreferences = (parsed as ColumnPreference[]).filter(
-            (column) =>
-              typeof column?.id === "string" &&
-              typeof column.visible === "boolean",
-          )
-
-          const columnVisibility = Object.fromEntries(
-            validPreferences.map((column) => [column.id, column.visible]),
-          )
-
-          setColumnVisibility(columnVisibility)
-        }
-      }
-    } catch {
-      // localStorage unavailable or corrupted value: keeping every column visible
-    }
-    setIsColumnVisibilityLoaded(true)
-  }, [])
 
   React.useEffect(() => {
     let isActive = true
@@ -859,7 +822,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       pagination,
       columnVisibility,
     },
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -937,18 +900,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
-
-  React.useEffect(() => {
-    if (!isColumnVisibilityLoaded) return
-    try {
-      const preferences: ColumnPreference[] = table
-        .getAllLeafColumns()
-        .map((column) => ({ id: column.id, visible: column.getIsVisible() }))
-      localStorage.setItem(COLUMNS_STORAGE_KEY, JSON.stringify(preferences))
-    } catch {
-      // localStorage unavailable: the choice won't be remembered
-    }
-  }, [columnVisibility, isColumnVisibilityLoaded, table])
 
   const rowCount = table.getRowModel().rows.length
   const totalRows = table.getRowCount()
