@@ -56,13 +56,10 @@ export async function uploadExamFiles(
   files: File[],
   folderName: string,
 ): Promise<string[]> {
-  console.log("start upload files")
   const examDir = safeJoinPath(getExamFilesFolder(), folderName)
-  console.log("Exam Dir :", examDir.toString())
 
   //create folder
   await mkdir(examDir, { recursive: true })
-  console.log("folder created!")
 
   const savedPaths: string[] = []
   // TODO : Maybe check the file type ? size ?
@@ -75,7 +72,6 @@ export async function uploadExamFiles(
     await writeFile(filePath, buffer)
     savedPaths.push(filePath)
   }
-  console.log("Saved paths:", savedPaths.toString())
 
   return savedPaths
 }
@@ -86,10 +82,6 @@ export async function deleteExamFolder(folderName: string): Promise<void> {
     throw new Error("Cannot delete root upload directory")
   }
 
-  console.log(`Exam Dir To Delete : ${examDir}`)
-
   // Check the exam folder
-
   await rm(examDir, { recursive: true })
-  console.log("Folder deleted successfully.!")
 }
