@@ -16,7 +16,7 @@ export type ExamDetailsLabels = {
 type ExamDetailsProps = {
   exam: Exam
   labels: ExamDetailsLabels
-  onClose: () => void
+  onCloseAction: () => void
 }
 
 const EMPTY_LABEL = "Not set"
@@ -42,7 +42,7 @@ function DetailField({
 export default function ExamDetails({
   exam,
   labels,
-  onClose,
+  onCloseAction,
 }: ExamDetailsProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
@@ -67,9 +67,9 @@ export default function ExamDetails({
       ref={dialogRef}
       aria-labelledby="exam-details-title"
       className="m-auto w-3/4 rounded-xl p-0 drop-shadow-2xl backdrop:bg-slate-900/25 backdrop:backdrop-blur-sm md:w-2/4"
-      onClose={onClose}
+      onClose={onCloseAction}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget) onCloseAction()
       }}
     >
       <div className="rounded-xl bg-white p-8 text-slate-900">
@@ -85,7 +85,7 @@ export default function ExamDetails({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="rounded-full border border-red-400 px-3 py-1 text-sm text-gray-600 transition ease-in-out hover:cursor-pointer hover:bg-red-600 hover:text-white"
           >
             Close

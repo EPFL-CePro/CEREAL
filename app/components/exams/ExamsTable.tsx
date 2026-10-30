@@ -1284,7 +1284,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 ?.code,
               date: formatIsoDate(selectedExam.exam_date),
             }}
-            onClose={() => setSelectedExam(null)}
+            onCloseAction={() => setSelectedExam(null)}
           />
         )}
       </div>
