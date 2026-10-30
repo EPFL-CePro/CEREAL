@@ -1,39 +1,53 @@
-import { Session } from "next-auth";
-import { getAllCrepExamsForRepro, getCrepExamById } from "./database";
-import { examPrePrintStatus } from "./exam-status";
-import { CrepExam } from "@/types/crepExam";
-import { getExamContact } from "./exam-files";
+import { type Session } from "next-auth"
+
+import { type CrepExam } from "@/types/crepExam"
+
+import { getAllCrepExamsForRepro, getCrepExamById } from "./database"
+import { getExamContact } from "./exam-files"
+import { examPrePrintStatus } from "./exam-status"
 
 // Checks that the user can add/delete the files of an exam :
 // the user must be the contact of the exam, an admin, or the Repro, and the exam must not be printing/printed yet.
 export async function checkCrepFileAccess(
   session: Session | null,
-  examId: string
-): Promise<{ exam: CrepExam; error?: never } | { exam?: never; error: string; status: number }> {
+  examId: string,
+): Promise<
+  | { exam: CrepExam; error?: never }
+  | { exam?: never; error: string; status: number }
+> {
   if (!session?.user?.email) {
-    return { error: "Unauthorized", status: 401 };
+    return { error: "Unauthorized", status: 401 }
   }
 
-  const exam = await getCrepExamById(examId);
+  const exam = await getCrepExamById(examId)
   if (!exam) {
-    return { error: "Exam not found", status: 404 };
+    return { error: "Exam not found", status: 404 }
   }
 
-  const contact = getExamContact(exam);
+  const contact = getExamContact(exam)
 
-  let canAccessAsRepro = false;
+  let canAccessAsRepro = false
   if (session.user.hasCrepAccess && !session.user.isAdmin) {
-    const reproExams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[];
-    canAccessAsRepro = reproExams.some((reproExam) => reproExam.id === exam.id);
+    const reproExams = (await getAllCrepExamsForRepro(
+      session.user.email,
+    )) as CrepExam[]
+    canAccessAsRepro = reproExams.some((reproExam) => reproExam.id === exam.id)
   }
 
-  if (contact.email !== session.user.email && !session.user.isAdmin && !canAccessAsRepro) {
-    return { error: "Forbidden", status: 403 };
+  if (
+    contact.email !== session.user.email &&
+    !session.user.isAdmin &&
+    !canAccessAsRepro
+  ) {
+    return { error: "Forbidden", status: 403 }
   }
 
   if (!examPrePrintStatus.includes(exam.status)) {
-    return { error: "Exam files can no longer be modified at this status", status: 409 };
+    return {
+      error: "Exam files can no longer be modified at this status",
+      status: 409,
+    }
   }
 
-  return { exam };
+  return { exam }
 }

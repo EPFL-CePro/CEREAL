@@ -1,152 +1,178 @@
-import { auth } from "@/auth";
-import AcademicYearSelect from "@/app/components/AcademicYearSelect";
-import DeliveryDelayHistogram, { DeliveryDelayBucket } from "@/app/components/crep/stats/DeliveryDelayHistogram";
-import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable";
-import PrintingDurationHistogram, { PrintingDurationBucket } from "@/app/components/crep/stats/PrintingDurationHistogram";
-import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart";
-import { getCrepExamsByAcademicYear, getOldestCrepExamDate } from "@/app/lib/crep/database";
-import { formatDateOnlyValue } from "@/app/lib/dates/date-time";
-import { CrepExam } from "@/types/crepExam";
-import { businessDaysBetween, MIN_BUSINESS_DAYS_BEFORE_DELIVERY } from "@/app/lib/dates/business-days";
+import { redirect } from "next/navigation"
+
+import AcademicYearSelect from "@/app/components/AcademicYearSelect"
+import DeliveryDelayHistogram, {
+  type DeliveryDelayBucket,
+} from "@/app/components/crep/stats/DeliveryDelayHistogram"
+import ExamPrintStatsTable from "@/app/components/crep/stats/ExamPrintStatsTable"
+import PrintingDurationHistogram, {
+  type PrintingDurationBucket,
+} from "@/app/components/crep/stats/PrintingDurationHistogram"
+import WhoWasLateChart from "@/app/components/crep/stats/WhoWasLateChart"
 import {
-    getAcademicYearOfDate,
-    getAcademicYearOptions,
-    getCurrentAcademicYear,
-    isSelectableAcademicYear,
-} from "@/app/lib/dates/academic-year";
-import { redirect } from "next/navigation";
+  getCrepExamsByAcademicYear,
+  getOldestCrepExamDate,
+} from "@/app/lib/crep/database"
+import {
+  getAcademicYearOfDate,
+  getAcademicYearOptions,
+  getCurrentAcademicYear,
+  isSelectableAcademicYear,
+} from "@/app/lib/dates/academic-year"
+import {
+  businessDaysBetween,
+  MIN_BUSINESS_DAYS_BEFORE_DELIVERY,
+} from "@/app/lib/dates/business-days"
+import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
+import { auth } from "@/auth"
+import { type CrepExam } from "@/types/crepExam"
 
 export const metadata = {
-    title: "CREP - Stats",
+  title: "CREP - Stats",
 }
 
 function parseDate(value: Date | string | null | undefined) {
-    const dateValue = formatDateOnlyValue(value);
-    if (!dateValue) return null;
+  const dateValue = formatDateOnlyValue(value)
+  if (!dateValue) return null
 
-    const date = new Date(dateValue);
-    return Number.isNaN(date.getTime()) ? null : date;
+  const date = new Date(dateValue)
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
-function getDeliveryDelayBuckets(delayCounts: Map<number, number>): DeliveryDelayBucket[] {
-    if (delayCounts.size === 0) return [];
+function getDeliveryDelayBuckets(
+  delayCounts: Map<number, number>,
+): DeliveryDelayBucket[] {
+  if (delayCounts.size === 0) return []
 
-    const delays = Array.from(delayCounts.keys());
-    const minDelay = Math.min(...delays);
-    const maxDelay = Math.max(...delays);
-    const firstBucket = minDelay === 0 ? 0 : 1;
+  const delays = Array.from(delayCounts.keys())
+  const minDelay = Math.min(...delays)
+  const maxDelay = Math.max(...delays)
+  const firstBucket = minDelay === 0 ? 0 : 1
 
-    return Array.from(
-        { length: maxDelay - firstBucket + 1 },
-        (_, index) => {
-            const businessDays = firstBucket + index;
-            return {
-                businessDays,
-                count: delayCounts.get(businessDays) ?? 0,
-            };
-        }
-    );
+  return Array.from({ length: maxDelay - firstBucket + 1 }, (_, index) => {
+    const businessDays = firstBucket + index
+    return {
+      businessDays,
+      count: delayCounts.get(businessDays) ?? 0,
+    }
+  })
 }
 
 function getPrintStats(exams: CrepExam[]) {
-    const printDates = exams
-        .map((exam) => formatDateOnlyValue(exam.print_date))
-        .filter(Boolean);
-    const printDays = new Set(printDates).size;
+  const printDates = exams
+    .map((exam) => formatDateOnlyValue(exam.print_date))
+    .filter(Boolean)
+  const printDays = new Set(printDates).size
 
-    return {
-        averageExamsPerPrintDay: printDays === 0 ? 0 : printDates.length / printDays,
-    };
+  return {
+    averageExamsPerPrintDay:
+      printDays === 0 ? 0 : printDates.length / printDays,
+  }
 }
 
-function getPrintingDurationBuckets(exams: CrepExam[]): PrintingDurationBucket[] {
-    const buckets = [
-        { label: "0-1h", maxMinutes: 60, count: 0 },
-        { label: "1-2h", maxMinutes: 120, count: 0 },
-        { label: "2-3h", maxMinutes: 180, count: 0 },
-        { label: "3-4h", maxMinutes: 240, count: 0 },
-        { label: "+ 4h", maxMinutes: Infinity, count: 0 },
-    ];
+function getPrintingDurationBuckets(
+  exams: CrepExam[],
+): PrintingDurationBucket[] {
+  const buckets = [
+    { label: "0-1h", maxMinutes: 60, count: 0 },
+    { label: "1-2h", maxMinutes: 120, count: 0 },
+    { label: "2-3h", maxMinutes: 180, count: 0 },
+    { label: "3-4h", maxMinutes: 240, count: 0 },
+    { label: "+ 4h", maxMinutes: Infinity, count: 0 },
+  ]
 
-    exams.forEach((exam) => {
-        const duration = exam.print_duration;
-        const bucket = buckets.find(({ maxMinutes }) => duration <= maxMinutes);
-        if (bucket) bucket.count++;
-    });
+  exams.forEach((exam) => {
+    const duration = exam.print_duration
+    const bucket = buckets.find(({ maxMinutes }) => duration <= maxMinutes)
+    if (bucket) bucket.count++
+  })
 
-    return buckets.map(({ label, count }) => ({ label, count }));
+  return buckets.map(({ label, count }) => ({ label, count }))
 }
 
 export default async function Page({
-    searchParams,
+  searchParams,
 }: {
-    searchParams: Promise<{ academicYear?: string }>
+  searchParams: Promise<{ academicYear?: string }>
 }) {
-    const session = await auth();
-    if (!session?.user) return;
+  const session = await auth()
+  if (!session?.user) return
 
-    const currentAcademicYear = getCurrentAcademicYear();
-    const oldestExamDate = await getOldestCrepExamDate();
-    const minAcademicYear = oldestExamDate ? getAcademicYearOfDate(oldestExamDate) : currentAcademicYear;
-    const academicYears = getAcademicYearOptions(minAcademicYear, currentAcademicYear);
-    const { academicYear } = await searchParams;
-    const selectedAcademicYear = academicYear ?? currentAcademicYear;
+  const currentAcademicYear = getCurrentAcademicYear()
+  const oldestExamDate = await getOldestCrepExamDate()
+  const minAcademicYear = oldestExamDate
+    ? getAcademicYearOfDate(oldestExamDate)
+    : currentAcademicYear
+  const academicYears = getAcademicYearOptions(
+    minAcademicYear,
+    currentAcademicYear,
+  )
+  const { academicYear } = await searchParams
+  const selectedAcademicYear = academicYear ?? currentAcademicYear
 
-    if (!isSelectableAcademicYear(selectedAcademicYear, minAcademicYear, currentAcademicYear)) {
-        redirect(`/crep/stats?academicYear=${currentAcademicYear}`);
-    }
-
-    const exams = await getCrepExamsByAcademicYear(selectedAcademicYear) as CrepExam[];
-    const printStats = getPrintStats(exams);
-    const printingDurationBuckets = getPrintingDurationBuckets(exams);
-    const timingStats = exams.reduce(
-        (stats, exam) => {
-            const registeredDate = parseDate(exam.created_on);
-            const desiredDate = parseDate(exam.desired_date);
-
-            if (!registeredDate || !desiredDate) {
-                stats.ignored++;
-                return stats;
-            }
-
-            const businessDays = businessDaysBetween(registeredDate, desiredDate);
-            stats.delayCounts.set(
-                businessDays,
-                (stats.delayCounts.get(businessDays) ?? 0) + 1
-            );
-
-            if (businessDays < MIN_BUSINESS_DAYS_BEFORE_DELIVERY) {
-                stats.late++;
-            } else {
-                stats.onTime++;
-            }
-
-            return stats;
-        },
-        { late: 0, onTime: 0, ignored: 0, delayCounts: new Map<number, number>() }
-    );
-    const deliveryDelayBuckets = getDeliveryDelayBuckets(timingStats.delayCounts);
-
-    return (
-        <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-                <AcademicYearSelect
-                    academicYears={academicYears}
-                    selectedAcademicYear={selectedAcademicYear}
-                    basePath="/crep/stats"
-                />
-            </div>
-            <ExamPrintStatsTable
-                averageExamsPerPrintDay={printStats.averageExamsPerPrintDay}
-                totalExams={exams.length}
-            />
-            <PrintingDurationHistogram buckets={printingDurationBuckets} />
-            <WhoWasLateChart
-                total={exams.length}
-                onTime={timingStats.onTime}
-                late={timingStats.late}
-            />
-            <DeliveryDelayHistogram buckets={deliveryDelayBuckets} />
-        </main>
+  if (
+    !isSelectableAcademicYear(
+      selectedAcademicYear,
+      minAcademicYear,
+      currentAcademicYear,
     )
+  ) {
+    redirect(`/crep/stats?academicYear=${currentAcademicYear}`)
+  }
+
+  const exams = (await getCrepExamsByAcademicYear(
+    selectedAcademicYear,
+  )) as CrepExam[]
+  const printStats = getPrintStats(exams)
+  const printingDurationBuckets = getPrintingDurationBuckets(exams)
+  const timingStats = exams.reduce(
+    (stats, exam) => {
+      const registeredDate = parseDate(exam.created_on)
+      const desiredDate = parseDate(exam.desired_date)
+
+      if (!registeredDate || !desiredDate) {
+        stats.ignored++
+        return stats
+      }
+
+      const businessDays = businessDaysBetween(registeredDate, desiredDate)
+      stats.delayCounts.set(
+        businessDays,
+        (stats.delayCounts.get(businessDays) ?? 0) + 1,
+      )
+
+      if (businessDays < MIN_BUSINESS_DAYS_BEFORE_DELIVERY) {
+        stats.late++
+      } else {
+        stats.onTime++
+      }
+
+      return stats
+    },
+    { late: 0, onTime: 0, ignored: 0, delayCounts: new Map<number, number>() },
+  )
+  const deliveryDelayBuckets = getDeliveryDelayBuckets(timingStats.delayCounts)
+
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+        <AcademicYearSelect
+          academicYears={academicYears}
+          selectedAcademicYear={selectedAcademicYear}
+          basePath="/crep/stats"
+        />
+      </div>
+      <ExamPrintStatsTable
+        averageExamsPerPrintDay={printStats.averageExamsPerPrintDay}
+        totalExams={exams.length}
+      />
+      <PrintingDurationHistogram buckets={printingDurationBuckets} />
+      <WhoWasLateChart
+        total={exams.length}
+        onTime={timingStats.onTime}
+        late={timingStats.late}
+      />
+      <DeliveryDelayHistogram buckets={deliveryDelayBuckets} />
+    </main>
+  )
 }

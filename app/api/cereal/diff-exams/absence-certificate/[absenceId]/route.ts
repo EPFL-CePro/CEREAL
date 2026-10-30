@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import path from "path";
-import { auth } from "@/auth";
-import { getAbsenceCertificateFileNameById } from "@/app/lib/database";
+import { readFile } from "fs/promises"
+import path from "path"
 
-export const runtime = "nodejs";
+import { type NextRequest, NextResponse } from "next/server"
+
+import { getAbsenceCertificateFileNameById } from "@/app/lib/database"
+import { auth } from "@/auth"
+
+export const runtime = "nodejs"
 
 const contentTypes: Record<string, string> = {
   ".pdf": "application/pdf",
@@ -12,47 +14,61 @@ const contentTypes: Record<string, string> = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
-};
+}
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ absenceId: string }> }
+  { params }: { params: Promise<{ absenceId: string }> },
 ) {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user.hasSACAccess && !session?.user.isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { absenceId } = await params;
-  const fileName = await getAbsenceCertificateFileNameById(absenceId);
+  const { absenceId } = await params
+  const fileName = await getAbsenceCertificateFileNameById(absenceId)
 
   if (!fileName) {
-    return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Certificate not found" },
+      { status: 404 },
+    )
   }
 
-  const basePath = process.env.DEFFERED_EXAMS_DIR;
+  const basePath = process.env.DEFFERED_EXAMS_DIR
 
   if (!basePath) {
-    return NextResponse.json({ error: "Missing files directory" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Missing files directory" },
+      { status: 500 },
+    )
   }
 
-  const certificatesDir = path.resolve(basePath, "certificates");
-  const safeFileName = path.basename(fileName);
+  const certificatesDir = path.resolve(basePath, "certificates")
+  const safeFileName = path.basename(fileName)
 
   if (safeFileName !== fileName) {
-    return NextResponse.json({ error: "Invalid certificate filename" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid certificate filename" },
+      { status: 400 },
+    )
   }
 
-  const filePath = path.resolve(certificatesDir, safeFileName);
+  const filePath = path.resolve(certificatesDir, safeFileName)
 
   if (!filePath.startsWith(`${certificatesDir}${path.sep}`)) {
-    return NextResponse.json({ error: "Invalid certificate path" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid certificate path" },
+      { status: 400 },
+    )
   }
 
   try {
-    const file = await readFile(filePath);
-    const contentType = contentTypes[path.extname(safeFileName).toLowerCase()] ?? "application/octet-stream";
+    const file = await readFile(filePath)
+    const contentType =
+      contentTypes[path.extname(safeFileName).toLowerCase()] ??
+      "application/octet-stream"
 
     return new NextResponse(new Uint8Array(file).buffer, {
       headers: {
@@ -61,9 +77,12 @@ export async function GET(
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "private, no-store",
       },
-    });
+    })
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
+    console.error(err)
+    return NextResponse.json(
+      { error: "Certificate not found" },
+      { status: 404 },
+    )
   }
 }

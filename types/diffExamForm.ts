@@ -1,9 +1,9 @@
-import { BoFileForUser } from "./boFile";
+import { type BoFileForUser } from "./boFile"
 
 export type DiffExamFormInputs = {
-    startingAbsenceDate: string;
-    endingAbsenceDate: string;
-    absenceFile: File[];
-    diffExams: BoFileForUser[];
-    comment: string;
+  startingAbsenceDate: string
+  endingAbsenceDate: string
+  absenceFile: File[]
+  diffExams: BoFileForUser[]
+  comment: string
 }

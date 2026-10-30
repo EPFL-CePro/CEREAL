@@ -1,25 +1,30 @@
-import { auth } from "@/auth";
-import { adminNavGroups } from "@/app/lib/navigation/admin-navigation";
-import { filterNavGroups, type NavGroup } from "@/app/lib/navigation/navigation";
-import type { AccessUser } from "@/app/lib/auth/route-access";
-import { NavLinks } from "./NavLinks";
+import { adminNavGroups } from "@/app/lib/navigation/admin-navigation"
+import { filterNavGroups, type NavGroup } from "@/app/lib/navigation/navigation"
+import { auth } from "@/auth"
+
+import { NavLinks } from "./NavLinks"
+
+import type { AccessUser } from "@/app/lib/auth/route-access"
 
 // At the moment we only have admin menu
 function getNavGroups(user: AccessUser): NavGroup[] {
-    if (user.isAdmin) return adminNavGroups;
-    return [];
+  if (user.isAdmin) return adminNavGroups
+  return []
 }
 
 export async function MainNavBar() {
-    const session = await auth();
-    if (!session?.user) return null;
+  const session = await auth()
+  if (!session?.user) return null
 
-    const groups = filterNavGroups(getNavGroups(session.user), session.user);
-    if (groups.length === 0) return null;
+  const groups = filterNavGroups(getNavGroups(session.user), session.user)
+  if (groups.length === 0) return null
 
-    return (
-        <nav aria-label="Main navigation" className="relative z-50 w-full border-b border-gray-200 px-6 sm:px-12 py-2">
-            <NavLinks groups={groups} />
-        </nav>
-    );
+  return (
+    <nav
+      aria-label="Main navigation"
+      className="relative z-50 w-full border-b border-gray-200 px-6 sm:px-12 py-2"
+    >
+      <NavLinks groups={groups} />
+    </nav>
+  )
 }

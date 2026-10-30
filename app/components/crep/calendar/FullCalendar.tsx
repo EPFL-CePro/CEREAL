@@ -1,80 +1,105 @@
 "use client"
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import listPlugin from '@fullcalendar/list';
-import interactionPlugin from '@fullcalendar/interaction'; // handles event clicks
-import { useEffect, useRef, useState, useMemo, Dispatch } from "react";
-import { EventDropArg, EventInput, EventSourceInput } from "@fullcalendar/core/index.js";
-import { getAllCrepExams, getAllNonAdminExams, updateExamDateById } from "@/app/lib/crep/database";
-import { fromDatabaseDateTime, formatDateTimeForDatabase, formatDateTimeInputValue, formatDateInputValue } from "@/app/lib/dates/date-time";
-import { Modal } from "../../Modal";
-import { User } from "next-auth";
-import { getAllowedExamStatus } from "@/app/lib/crep/exam-status";
-import { Filters } from "../../Filters";
-import { ExamSearch } from "./ExamSearch";
-import { Legend } from "../../Legend";
-import { EventApi } from "@fullcalendar/core";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, useMemo, type Dispatch } from "react"
+
+import { useSearchParams } from "next/navigation"
+
+import {
+  type EventDropArg,
+  type EventInput,
+  type EventSourceInput,
+  type EventApi,
+} from "@fullcalendar/core/index.js"
+import dayGridPlugin from "@fullcalendar/daygrid"
+import interactionPlugin from "@fullcalendar/interaction" // handles event clicks
+import listPlugin from "@fullcalendar/list"
+import FullCalendar from "@fullcalendar/react"
+import timeGridPlugin from "@fullcalendar/timegrid"
+import { type User } from "next-auth"
+
+import {
+  getAllCrepExams,
+  getAllNonAdminExams,
+  updateExamDateById,
+} from "@/app/lib/crep/database"
+import { getAllowedExamStatus } from "@/app/lib/crep/exam-status"
+import {
+  fromDatabaseDateTime,
+  formatDateTimeForDatabase,
+  formatDateTimeInputValue,
+  formatDateInputValue,
+} from "@/app/lib/dates/date-time"
+
+import { ExamSearch } from "./ExamSearch"
+import { Filters } from "../../Filters"
+import { Legend } from "../../Legend"
+import { Modal } from "../../Modal"
 
 interface CalendarProps {
   user: AppUser
 }
 
 interface AppUser extends User {
-  isAdmin?: boolean;
+  isAdmin?: boolean
 }
 
-function getEndDateOfPrinting(printDate: Date, printDurationInMinutes: number): Date {
+function getEndDateOfPrinting(
+  printDate: Date,
+  printDurationInMinutes: number,
+): Date {
   return new Date(
-    fromDatabaseDateTime(printDate).getTime() +
-      printDurationInMinutes * 60000
-  );
+    fromDatabaseDateTime(printDate).getTime() + printDurationInMinutes * 60000,
+  )
 }
 
 function isSameCalendarDay(date: Date, targetDate: Date) {
-  return date.getFullYear() === targetDate.getFullYear() &&
+  return (
+    date.getFullYear() === targetDate.getFullYear() &&
     date.getMonth() === targetDate.getMonth() &&
-    date.getDate() === targetDate.getDate();
+    date.getDate() === targetDate.getDate()
+  )
 }
 
 export default function Calendar({ user }: CalendarProps) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<EventApi>();
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<EventApi>()
 
-  const searchParams = useSearchParams();
-  const openExamIdParam = searchParams.get('openExamId');
-  const openExamParam = searchParams.get('openExam');
-  const dayParam = searchParams.get('day');
-  const hasOpenedExamFromQueryRef = useRef(false);
+  const searchParams = useSearchParams()
+  const openExamIdParam = searchParams.get("openExamId")
+  const openExamParam = searchParams.get("openExam")
+  const dayParam = searchParams.get("day")
+  const hasOpenedExamFromQueryRef = useRef(false)
 
-  const [exams, setExams] = useState<EventSourceInput | undefined>();
-  const calRef = useRef<FullCalendar | null>(null);
+  const [exams, setExams] = useState<EventSourceInput | undefined>()
+  const calRef = useRef<FullCalendar | null>(null)
 
-  const [filters, setFilters] = useState<{ label: string, value: string }[]>([]);
+  const [filters, setFilters] = useState<{ label: string; value: string }[]>([])
   const availableStatus = useMemo(
     () => getAllowedExamStatus(user.isAdmin || false),
-    [user.isAdmin]
-  );
+    [user.isAdmin],
+  )
   useEffect(() => {
-    (async function () {
-      const data = (user.isAdmin ? await getAllCrepExams() : await getAllNonAdminExams()) as unknown as EventInput[];
-      const startDate = new Date();
+    ;(async function () {
+      const data = (user.isAdmin
+        ? await getAllCrepExams()
+        : await getAllNonAdminExams()) as unknown as EventInput[]
+      const startDate = new Date()
 
       const filteredData = data.map((e: EventInput, i: number) => {
-        const currentStart = new Date(startDate);
-        currentStart.setDate(startDate.getDate() + i);
+        const currentStart = new Date(startDate)
+        currentStart.setDate(startDate.getDate() + i)
 
-        const currentEnd = new Date(currentStart);
-        currentEnd.setHours(currentStart.getHours() + 1);
-        const hiddenReservedExam = !user.isAdmin && e.status == "reserved";
+        const currentEnd = new Date(currentStart)
+        currentEnd.setHours(currentStart.getHours() + 1)
+        const hiddenReservedExam = !user.isAdmin && e.status === "reserved"
         const eventColor = hiddenReservedExam
           ? "oklch(0.4997 0 0)"
-          : availableStatus.find(status => status.value === e.status)?.fcColor;
+          : availableStatus.find((status) => status.value === e.status)?.fcColor
         return {
           title: hiddenReservedExam ? "" : `${e.exam_code} - ${e.exam_name}`,
           start: formatDateTimeInputValue(fromDatabaseDateTime(e.print_date)),
-          end: formatDateTimeInputValue(getEndDateOfPrinting(e.print_date, e.print_duration)),
+          end: formatDateTimeInputValue(
+            getEndDateOfPrinting(e.print_date, e.print_duration),
+          ),
           description: e.exam_name,
           durationEditable: false,
           id: e.id,
@@ -97,236 +122,289 @@ export default function Calendar({ user }: CalendarProps) {
           hiddenReservedExam,
         }
       })
-      setExams(filteredData);
-    })();
+      setExams(filteredData)
+    })()
   }, [availableStatus, user.isAdmin])
 
   const startOfDay = (date: Date) => {
-    const copy = new Date(date);
-    copy.setHours(0, 0, 0, 0);
-    return copy;
-  };
+    const copy = new Date(date)
+    copy.setHours(0, 0, 0, 0)
+    return copy
+  }
 
   const handleEventDrop = async (arg: EventDropArg) => {
-    const id = arg.event.id;
-    const startDate = arg.event.start;
+    const id = arg.event.id
+    const startDate = arg.event.start
     const formattedStartDate = arg.event.startStr
       ? arg.event.startStr.slice(0, 19).replace("T", " ")
-      : formatDateTimeForDatabase(startDate || new Date());
+      : formatDateTimeForDatabase(startDate || new Date())
     const formattedEventStart = arg.event.startStr
       ? arg.event.startStr.slice(0, 19)
-      : startDate ? formatDateTimeInputValue(startDate) : undefined;
+      : startDate
+        ? formatDateTimeInputValue(startDate)
+        : undefined
     const formattedEventEnd = arg.event.endStr
       ? arg.event.endStr.slice(0, 19)
-      : arg.event.end ? formatDateTimeInputValue(arg.event.end) : undefined;
+      : arg.event.end
+        ? formatDateTimeInputValue(arg.event.end)
+        : undefined
     const previousEventStart = arg.oldEvent.startStr
       ? arg.oldEvent.startStr.slice(0, 19)
-      : arg.oldEvent.start ? formatDateTimeInputValue(arg.oldEvent.start) : undefined;
+      : arg.oldEvent.start
+        ? formatDateTimeInputValue(arg.oldEvent.start)
+        : undefined
     const previousEventEnd = arg.oldEvent.endStr
       ? arg.oldEvent.endStr.slice(0, 19)
-      : arg.oldEvent.end ? formatDateTimeInputValue(arg.oldEvent.end) : undefined;
+      : arg.oldEvent.end
+        ? formatDateTimeInputValue(arg.oldEvent.end)
+        : undefined
 
-    const newStart = arg.event.start;
-    const examDateRaw = arg.event.extendedProps.examDate;
+    const newStart = arg.event.start
+    const examDateRaw = arg.event.extendedProps.examDate
 
     if (!newStart || !examDateRaw) {
-      arg.revert();
-      return;
+      arg.revert()
+      return
     }
 
-    const movedDate = startOfDay(newStart);
-    const examDate = startOfDay(new Date(examDateRaw));
+    const movedDate = startOfDay(newStart)
+    const examDate = startOfDay(new Date(examDateRaw))
 
     if (movedDate > examDate) {
-      arg.revert();
-      return;
+      arg.revert()
+      return
     }
 
     if (!formattedEventStart) {
-      arg.revert();
-      return;
+      arg.revert()
+      return
     }
 
-    setExams((currentExams: EventSourceInput | undefined) => Array.isArray(currentExams)
-      ? currentExams.map((exam: EventInput) => exam.id == id
-        ? {
-          ...exam,
-          start: formattedEventStart,
-          end: formattedEventEnd,
-        }
-        : exam)
-      : currentExams
-    );
-    eventsCacheRef.current = { key: "", events: [] };
+    setExams((currentExams: EventSourceInput | undefined) =>
+      Array.isArray(currentExams)
+        ? currentExams.map((exam: EventInput) =>
+            exam.id === id
+              ? {
+                  ...exam,
+                  start: formattedEventStart,
+                  end: formattedEventEnd,
+                }
+              : exam,
+          )
+        : currentExams,
+    )
+    eventsCacheRef.current = { key: "", events: [] }
 
     try {
       await updateExamDateById(id, formattedStartDate)
     } catch (error) {
-      setExams((currentExams: EventSourceInput | undefined) => Array.isArray(currentExams)
-        ? currentExams.map((exam: EventInput) => exam.id == id
-          ? {
-            ...exam,
-            start: previousEventStart,
-            end: previousEventEnd,
-          }
-          : exam)
-        : currentExams
-      );
-      eventsCacheRef.current = { key: "", events: [] };
-      arg.revert();
-      console.error("Failed to update exam print date", error);
+      setExams((currentExams: EventSourceInput | undefined) =>
+        Array.isArray(currentExams)
+          ? currentExams.map((exam: EventInput) =>
+              exam.id === id
+                ? {
+                    ...exam,
+                    start: previousEventStart,
+                    end: previousEventEnd,
+                  }
+                : exam,
+            )
+          : currentExams,
+      )
+      eventsCacheRef.current = { key: "", events: [] }
+      arg.revert()
+      console.error("Failed to update exam print date", error)
     }
   }
 
-  const eventsCacheRef = useRef<{ key: string; events: EventInput[] }>({ key: "", events: [] });
+  const eventsCacheRef = useRef<{ key: string; events: EventInput[] }>({
+    key: "",
+    events: [],
+  })
 
   const statusColorMap = useMemo(() => {
-    const m = new Map<string, string>();
-    (availableStatus || []).forEach(s => m.set(s.value, s.fcColor || "#000000"));
-    return m;
-  }, [availableStatus]);
+    const m = new Map<string, string>()
+    ;(availableStatus || []).forEach((s) =>
+      m.set(s.value, s.fcColor || "#000000"),
+    )
+    return m
+  }, [availableStatus])
 
   function parseDayParam(value: string): Date | null {
-    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/); // YYYY-MM-DD
-    if (!match) return null;
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/) // YYYY-MM-DD
+    if (!match) return null
 
-    const [, year, month, day] = match;
-    const parsedDate = new Date(Number(year), Number(month) - 1, Number(day));
+    const [, year, month, day] = match
+    const parsedDate = new Date(Number(year), Number(month) - 1, Number(day))
 
     if (
       parsedDate.getFullYear() !== Number(year) ||
       parsedDate.getMonth() !== Number(month) - 1 ||
       parsedDate.getDate() !== Number(day)
     ) {
-      return null;
+      return null
     }
 
-    return parsedDate;
+    return parsedDate
   }
 
   const targetDayDate = useMemo(() => {
-    if (!dayParam) return undefined;
+    if (!dayParam) return undefined
 
-    const targetDate = parseDayParam(dayParam);
-    if (!targetDate) return undefined;
+    const targetDate = parseDayParam(dayParam)
+    if (!targetDate) return undefined
 
-    return targetDate;
-  }, [dayParam]);
+    return targetDate
+  }, [dayParam])
 
   function openExamModal(calendarEvent: EventApi, examsList: EventInput[]) {
-    const clickedExam = examsList.find((e: EventInput) => e.id == calendarEvent.id);
-    if (clickedExam?.hiddenReservedExam || !clickedExam?.contact) return;
+    const clickedExam = examsList.find(
+      (e: EventInput) => e.id === calendarEvent.id,
+    )
+    if (clickedExam?.hiddenReservedExam || !clickedExam?.contact) return
 
-    const contact = JSON.parse(clickedExam.contact);
-    const folderName = `${clickedExam.id}_${clickedExam.code}_${contact.lastname}_${formatDateInputValue(clickedExam.desiredDate)}`;
+    const contact = JSON.parse(clickedExam.contact)
+    const folderName = `${clickedExam.id}_${clickedExam.code}_${contact.lastname}_${formatDateInputValue(clickedExam.desiredDate)}`
 
-    calendarEvent.setExtendedProp('status', clickedExam.status);
-    calendarEvent.setExtendedProp('remark', clickedExam.remark);
-    calendarEvent.setExtendedProp('reproRemark', clickedExam.reproRemark);
-    calendarEvent.setExtendedProp('financialCenter', clickedExam.financialCenter);
-    calendarEvent.setExtendedProp('examDate', clickedExam.examDate);
-    calendarEvent.setExtendedProp('contact', JSON.parse(clickedExam.contact));
-    calendarEvent.setExtendedProp('authorizedPersons', JSON.parse(clickedExam.authorizedPersons)); // Necessary since it's an Array of objects.
-    calendarEvent.setExtendedProp('files', clickedExam.files); // Array of `CrepFile`, each file with its own print settings
-    calendarEvent.setExtendedProp('desiredDate', clickedExam.desiredDate);
-    calendarEvent.setExtendedProp('folderName', folderName);
-    calendarEvent.setExtendedProp('printSchedule', clickedExam.start);
-    calendarEvent.setExtendedProp('boxes', clickedExam.boxes);
-    calendarEvent.setExtendedProp('priceUnit', clickedExam.priceUnit);
-    calendarEvent.setExtendedProp('priceTotal', clickedExam.priceTotal);
-    calendarEvent.setExtendedProp('orderNumber', clickedExam.orderNumber);
-    setSelectedEvent(calendarEvent);
+    calendarEvent.setExtendedProp("status", clickedExam.status)
+    calendarEvent.setExtendedProp("remark", clickedExam.remark)
+    calendarEvent.setExtendedProp("reproRemark", clickedExam.reproRemark)
+    calendarEvent.setExtendedProp(
+      "financialCenter",
+      clickedExam.financialCenter,
+    )
+    calendarEvent.setExtendedProp("examDate", clickedExam.examDate)
+    calendarEvent.setExtendedProp("contact", JSON.parse(clickedExam.contact))
+    calendarEvent.setExtendedProp(
+      "authorizedPersons",
+      JSON.parse(clickedExam.authorizedPersons),
+    ) // Necessary since it's an Array of objects.
+    calendarEvent.setExtendedProp("files", clickedExam.files) // Array of `CrepFile`, each file with its own print settings
+    calendarEvent.setExtendedProp("desiredDate", clickedExam.desiredDate)
+    calendarEvent.setExtendedProp("folderName", folderName)
+    calendarEvent.setExtendedProp("printSchedule", clickedExam.start)
+    calendarEvent.setExtendedProp("boxes", clickedExam.boxes)
+    calendarEvent.setExtendedProp("priceUnit", clickedExam.priceUnit)
+    calendarEvent.setExtendedProp("priceTotal", clickedExam.priceTotal)
+    calendarEvent.setExtendedProp("orderNumber", clickedExam.orderNumber)
+    setSelectedEvent(calendarEvent)
 
-    const dialog = document.getElementById("modal") as HTMLDialogElement | null;
-    dialog?.showModal();
-    setModalOpen(true);
+    const dialog = document.getElementById("modal") as HTMLDialogElement | null
+    dialog?.showModal()
+    setModalOpen(true)
   }
 
   function handleSearchSelect(exam: EventInput) {
-    const api = calRef.current?.getApi();
-    if (!api || !exam.start) return;
+    const api = calRef.current?.getApi()
+    if (!api || !exam.start) return
 
-    const printDate = new Date(exam.start as string);
-    if (Number.isNaN(printDate.getTime())) return;
+    const printDate = new Date(exam.start as string)
+    if (Number.isNaN(printDate.getTime())) return
 
     // Jump the calendar to the week of the selected exam, then open its modal.
-    api.gotoDate(printDate);
+    api.gotoDate(printDate)
 
     window.requestAnimationFrame(() => {
-      const calendarEvent = api.getEventById(String(exam.id));
-      if (!calendarEvent || !Array.isArray(exams)) return;
-      openExamModal(calendarEvent, exams as EventInput[]);
-    });
+      const calendarEvent = api.getEventById(String(exam.id))
+      if (!calendarEvent || !Array.isArray(exams)) return
+      openExamModal(calendarEvent, exams as EventInput[])
+    })
   }
 
   useEffect(() => {
-    if ((!openExamIdParam && !openExamParam) || hasOpenedExamFromQueryRef.current || !Array.isArray(exams)) return;
+    if (
+      (!openExamIdParam && !openExamParam) ||
+      hasOpenedExamFromQueryRef.current ||
+      !Array.isArray(exams)
+    )
+      return
 
     const examToOpenById = openExamIdParam
-      ? exams.find((exam: EventInput) => String(exam.id) === openExamIdParam && !!exam.start)
-      : undefined;
+      ? exams.find(
+          (exam: EventInput) =>
+            String(exam.id) === openExamIdParam && !!exam.start,
+        )
+      : undefined
 
     if (examToOpenById) {
       const frameId = window.requestAnimationFrame(() => {
-        const calendarEvent = calRef.current?.getApi().getEventById(String(examToOpenById.id));
-        if (!calendarEvent) return;
+        const calendarEvent = calRef.current
+          ?.getApi()
+          .getEventById(String(examToOpenById.id))
+        if (!calendarEvent) return
 
-        openExamModal(calendarEvent, exams as EventInput[]);
-        hasOpenedExamFromQueryRef.current = true;
-      });
+        openExamModal(calendarEvent, exams as EventInput[])
+        hasOpenedExamFromQueryRef.current = true
+      })
 
-      return () => window.cancelAnimationFrame(frameId);
+      return () => window.cancelAnimationFrame(frameId)
     }
 
-    if (!openExamParam) return;
+    if (!openExamParam) return
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
     const examToOpen = exams
-      .filter((exam: EventInput) => exam.code == openExamParam && !!exam.start)
+      .filter((exam: EventInput) => exam.code === openExamParam && !!exam.start)
       .map((exam: EventInput) => ({
         exam,
         printStartDate: new Date(exam.start as string),
       }))
       .filter(({ printStartDate }) => {
-        if (Number.isNaN(printStartDate.getTime())) return false;
+        if (Number.isNaN(printStartDate.getTime())) return false
 
-        const printDay = new Date(printStartDate);
-        printDay.setHours(0, 0, 0, 0);
-        return targetDayDate ? isSameCalendarDay(printDay, targetDayDate) : printDay >= today;
+        const printDay = new Date(printStartDate)
+        printDay.setHours(0, 0, 0, 0)
+        return targetDayDate
+          ? isSameCalendarDay(printDay, targetDayDate)
+          : printDay >= today
       })
-      .sort((a, b) => a.printStartDate.getTime() - b.printStartDate.getTime())[0]?.exam;
+      .sort(
+        (a, b) => a.printStartDate.getTime() - b.printStartDate.getTime(),
+      )[0]?.exam
 
-    if (!examToOpen) return;
+    if (!examToOpen) return
 
     const frameId = window.requestAnimationFrame(() => {
-      const calendarEvent = calRef.current?.getApi().getEventById(String(examToOpen.id));
-      if (!calendarEvent) return;
+      const calendarEvent = calRef.current
+        ?.getApi()
+        .getEventById(String(examToOpen.id))
+      if (!calendarEvent) return
 
-      openExamModal(calendarEvent, exams as EventInput[]);
-      hasOpenedExamFromQueryRef.current = true;
-    });
+      openExamModal(calendarEvent, exams as EventInput[])
+      hasOpenedExamFromQueryRef.current = true
+    })
 
-    return () => window.cancelAnimationFrame(frameId);
-  }, [exams, openExamIdParam, openExamParam, targetDayDate]);
+    return () => window.cancelAnimationFrame(frameId)
+  }, [exams, openExamIdParam, openExamParam, targetDayDate])
 
   function makeEventsKey(
     examsArr: EventSourceInput,
-    filtersArr: { label: string, value: string }[],
+    filtersArr: { label: string; value: string }[],
     examStatusArr: {
-      value: string;
-      label: string;
-      color: string;
-      hexColor: string;
-      fcColor: string;
-      needsAdmin: boolean;
-    }[]) {
-    const examsPart = Array.isArray(examsArr) ? examsArr.map(e => `${e.id}:${e.status}:${e.start}:${e.end}:${e.boxes}:${e.orderNumber}`).join("|") : "";
-    const filtersPart = (filtersArr || []).map(f => f.value).join(",");
-    const statusPart = (examStatusArr || []).map(s => `${s.value}:${s.fcColor}`).join(",");
+      value: string
+      label: string
+      color: string
+      hexColor: string
+      fcColor: string
+      needsAdmin: boolean
+    }[],
+  ) {
+    const examsPart = Array.isArray(examsArr)
+      ? examsArr
+          .map(
+            (e) =>
+              `${e.id}:${e.status}:${e.start}:${e.end}:${e.boxes}:${e.orderNumber}`,
+          )
+          .join("|")
+      : ""
+    const filtersPart = (filtersArr || []).map((f) => f.value).join(",")
+    const statusPart = (examStatusArr || [])
+      .map((s) => `${s.value}:${s.fcColor}`)
+      .join(",")
 
     // Key to invalidate the cache if something changed using the exams, the filters or the status.
-    return `${examsPart}::${filtersPart}::${statusPart}`;
+    return `${examsPart}::${filtersPart}::${statusPart}`
   }
 
   return (
@@ -334,13 +412,19 @@ export default function Calendar({ user }: CalendarProps) {
       <div className=" w-full flex flex-row justify-between gap-4 flex-wrap md:flex-nowrap">
         <div className="flex flex-grow-8 flex-row">
           <div className="flex-col ml-4 gap-4 grid grid-cols-4">
-            <Legend isAdmin={!!user?.isAdmin}/>
+            <Legend isAdmin={!!user?.isAdmin} />
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-start">
           <div className="flex-min-2 md:min-w-64 w-full md:w-auto">
             <ExamSearch
-              exams={Array.isArray(exams) ? (exams as EventInput[]).filter((exam) => !exam.hiddenReservedExam) : []}
+              exams={
+                Array.isArray(exams)
+                  ? (exams as EventInput[]).filter(
+                      (exam) => !exam.hiddenReservedExam,
+                    )
+                  : []
+              }
               onSelect={handleSearchSelect}
             />
           </div>
@@ -354,7 +438,11 @@ export default function Calendar({ user }: CalendarProps) {
         </div>
       </div>
       <FullCalendar
-        key={targetDayDate ? targetDayDate.toISOString().slice(0, 10) : "current-week"}
+        key={
+          targetDayDate
+            ? targetDayDate.toISOString().slice(0, 10)
+            : "current-week"
+        }
         ref={calRef}
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -366,83 +454,112 @@ export default function Calendar({ user }: CalendarProps) {
         timeZone="Europe/Zurich"
         expandRows={true}
         slotLabelFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
         }}
         eventTimeFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
         }}
         headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
         }}
         views={{
-          dayGridMonth: { buttonText: 'Month' },
-          timeGridWeek: { buttonText: 'Week' },
-          timeGridDay: { buttonText: 'Day' },
-          listWeek: { buttonText: 'List' },
+          dayGridMonth: { buttonText: "Month" },
+          timeGridWeek: { buttonText: "Week" },
+          timeGridDay: { buttonText: "Day" },
+          listWeek: { buttonText: "List" },
         }}
         eventClick={(info) => {
-          if (info.event.extendedProps.hiddenReservedExam) return;
-          if (!Array.isArray(exams)) return;
-          openExamModal(info.event, exams as EventInput[]);
+          if (info.event.extendedProps.hiddenReservedExam) return
+          if (!Array.isArray(exams)) return
+          openExamModal(info.event, exams as EventInput[])
         }}
         editable={user.isAdmin ? true : false}
         selectable={true}
         events={(info, successCallback) => {
-          if (!exams) return successCallback([]);
+          if (!exams) return successCallback([])
 
-          const key = makeEventsKey(exams, filters, availableStatus);
+          const key = makeEventsKey(exams, filters, availableStatus)
 
           // If nothing changed, send back the cache
           if (eventsCacheRef.current.key === key) {
-            return successCallback(eventsCacheRef.current.events);
+            return successCallback(eventsCacheRef.current.events)
           }
 
           // Else, calculate the exams list + inject colors
-          const allSelectedFiltersValues = filters.map((item: { label: string, value: string }) => item.value);
-          const filteredEvents = allSelectedFiltersValues.length === 0
-            ? exams
-            : (exams as EventInput[]).filter((ev) => allSelectedFiltersValues.includes(ev.status));
+          const allSelectedFiltersValues = filters.map(
+            (item: { label: string; value: string }) => item.value,
+          )
+          const filteredEvents =
+            allSelectedFiltersValues.length === 0
+              ? exams
+              : (exams as EventInput[]).filter((ev) =>
+                  allSelectedFiltersValues.includes(ev.status),
+                )
 
-          const prepared = (filteredEvents as EventInput[]).map((ev: EventInput) => {
-            const color = ev.hiddenReservedExam
-              ? "oklch(0.4997 0 0)"
-              : statusColorMap.get(ev.status) || "#000000";
+          const prepared = (filteredEvents as EventInput[]).map(
+            (ev: EventInput) => {
+              const color = ev.hiddenReservedExam
+                ? "oklch(0.4997 0 0)"
+                : statusColorMap.get(ev.status) || "#000000"
 
-            const eventStartPrintDate = new Date(ev.start as string);
-            const today = new Date();
-            const isToday = eventStartPrintDate.setHours(0, 0, 0, 0) === today.setHours(0, 0, 0, 0);
-            const isBreathingPrint = isToday && ev.status === "toPrint";
-            const isMovable = ["registered", "registered-warning", "registered-error", "toPrint", "reserved"].includes(ev.status) && user.isAdmin;
+              const eventStartPrintDate = new Date(ev.start as string)
+              const today = new Date()
+              const isToday =
+                eventStartPrintDate.setHours(0, 0, 0, 0) ===
+                today.setHours(0, 0, 0, 0)
+              const isBreathingPrint = isToday && ev.status === "toPrint"
+              const isMovable =
+                [
+                  "registered",
+                  "registered-warning",
+                  "registered-error",
+                  "toPrint",
+                  "reserved",
+                ].includes(ev.status) && user.isAdmin
 
-            return {
-              ...ev,
-              backgroundColor: color,
-              borderColor: isToday && ev.status == "toPrint" ? "#ff47c5" : color,
-              classNames: [
-                isBreathingPrint ? "fc-event-breathing-pink" : ""
-              ].filter(Boolean),
-              extendedProps: { ...(ev.extendedProps || {}), status: ev.status, remark: ev.remark, reproRemark: ev.reproRemark, examDate: ev.examDate, boxes: ev.boxes, hiddenReservedExam: ev.hiddenReservedExam },
-              startEditable: isMovable,
-            };
-          });
+              return {
+                ...ev,
+                backgroundColor: color,
+                borderColor:
+                  isToday && ev.status === "toPrint" ? "#ff47c5" : color,
+                classNames: [
+                  isBreathingPrint ? "fc-event-breathing-pink" : "",
+                ].filter(Boolean),
+                extendedProps: {
+                  ...(ev.extendedProps || {}),
+                  status: ev.status,
+                  remark: ev.remark,
+                  reproRemark: ev.reproRemark,
+                  examDate: ev.examDate,
+                  boxes: ev.boxes,
+                  hiddenReservedExam: ev.hiddenReservedExam,
+                },
+                startEditable: isMovable,
+              }
+            },
+          )
 
           // Put new results in cache
-          eventsCacheRef.current = { key, events: prepared };
-          successCallback(prepared);
+          eventsCacheRef.current = { key, events: prepared }
+          successCallback(prepared)
         }}
         allDaySlot={false}
         eventDrop={handleEventDrop}
       />
       {/* dialog modal starts empty, then is populated with event details on click. Closing the modal will reset the state. */}
-      <dialog id="modal" className="modal fixed inset-0 z-50 m-0 h-dvh w-screen max-h-none max-w-none overflow-y-auto bg-transparent p-4 backdrop:backdrop-blur-xs open:flex open:items-center open:justify-center md:p-8" onClose={() => {
-        setModalOpen(false);
-      }}>
+      <dialog
+        id="modal"
+        className="modal fixed inset-0 z-50 m-0 h-dvh w-screen max-h-none max-w-none overflow-y-auto bg-transparent p-4 backdrop:backdrop-blur-xs open:flex open:items-center open:justify-center md:p-8"
+        onClose={() => {
+          setModalOpen(false)
+        }}
+      >
         {modalOpen && (
           <Modal
             event={selectedEvent}
@@ -452,7 +569,7 @@ export default function Calendar({ user }: CalendarProps) {
             examStatus={availableStatus}
           />
         )}
-      </dialog >
+      </dialog>
     </div>
-  );
+  )
 }

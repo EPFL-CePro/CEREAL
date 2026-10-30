@@ -1,141 +1,172 @@
-import NextAuth, { Account } from 'next-auth';
-import type { JWT } from 'next-auth/jwt';
-import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
+import NextAuth, { type Account } from "next-auth"
+import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 
-const AUTHORIZED_CREP_GROUP = 'CEREAL-CREP_AppGrpU';
-const AUTHORIZED_SAC_GROUP = 'CEREAL-SAC_AppGrpU';
-const ADMIN_GROUP = 'CEREAL-admin_AppGrpU';
+import type { JWT } from "next-auth/jwt"
 
-const decodeJWT = (token: string) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+const AUTHORIZED_CREP_GROUP = "CEREAL-CREP_AppGrpU"
+const AUTHORIZED_SAC_GROUP = "CEREAL-SAC_AppGrpU"
+const ADMIN_GROUP = "CEREAL-admin_AppGrpU"
 
-const getGroups = (groups: unknown): string[] => Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : [];
-const getStringClaim = (claim: unknown): string => typeof claim === 'string' ? claim : '';
+const decodeJWT = (token: string) =>
+  JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString())
 
-const createSessionToken = (token: JWT, idToken: Record<string, unknown>, accessToken: Record<string, unknown>) => {
-	const groups = getGroups(idToken.groups);
-	const firstName = getStringClaim(idToken.given_name);
-	const lastName = getStringClaim(idToken.family_name);
+const getGroups = (groups: unknown): string[] =>
+  Array.isArray(groups)
+    ? groups.filter((group): group is string => typeof group === "string")
+    : []
+const getStringClaim = (claim: unknown): string =>
+  typeof claim === "string" ? claim : ""
+export interface Iglou {
+  peperoni: string
+}
 
-	return {
-		name: `${firstName} ${lastName}`.trim(),
-		email: typeof idToken.email === 'string' ? idToken.email : token.email,
-		picture: token.picture || '',
-		oid: typeof idToken.oid === 'string' ? idToken.oid : '',
-		tid: typeof accessToken.tid === 'string' ? accessToken.tid : '',
-		uniqueid: typeof idToken.uniqueid === 'string' ? idToken.uniqueid : '',
-		username: typeof idToken.gaspar === 'string' ? idToken.gaspar : '',
-		hasCrepAccess: groups.includes(AUTHORIZED_CREP_GROUP),
-		hasSACAccess: groups.includes(AUTHORIZED_SAC_GROUP),
-		isAdmin: groups.includes(ADMIN_GROUP),
-		first_name: firstName,
-		last_name: lastName,
-	};
-};
+const createSessionToken = (
+  token: JWT,
+  idToken: Record<string, unknown>,
+  accessToken: Record<string, unknown>,
+) => {
+  const groups = getGroups(idToken.groups)
+  const firstName = getStringClaim(idToken.given_name)
+  const lastName = getStringClaim(idToken.family_name)
+
+  return {
+    name: `${firstName} ${lastName}`.trim(),
+    email: typeof idToken.email === "string" ? idToken.email : token.email,
+    picture: token.picture || "",
+    oid: typeof idToken.oid === "string" ? idToken.oid : "",
+    tid: typeof accessToken.tid === "string" ? accessToken.tid : "",
+    uniqueid: typeof idToken.uniqueid === "string" ? idToken.uniqueid : "",
+    username: typeof idToken.gaspar === "string" ? idToken.gaspar : "",
+    hasCrepAccess: groups.includes(AUTHORIZED_CREP_GROUP),
+    hasSACAccess: groups.includes(AUTHORIZED_SAC_GROUP),
+    isAdmin: groups.includes(ADMIN_GROUP),
+    first_name: firstName,
+    last_name: lastName,
+  }
+}
 
 const sanitizeExistingToken = (token: JWT) => {
-	const groups = getGroups(token.groups);
-	let tid = typeof token.tid === 'string' ? token.tid : '';
+  const groups = getGroups(token.groups)
+  let tid = typeof token.tid === "string" ? token.tid : ""
 
-	if (!tid && typeof token.access_token === 'string') {
-		tid = decodeJWT(token.access_token).tid || '';
-	}
+  if (!tid && typeof token.access_token === "string") {
+    tid = decodeJWT(token.access_token).tid || ""
+  }
 
-	return {
-		name: token.name || '',
-		email: token.email || '',
-		picture: token.picture || '',
-		oid: token.oid || '',
-		tid,
-		uniqueid: token.uniqueid || '',
-		username: token.username || '',
-		hasCrepAccess: token.hasCrepAccess ?? groups.includes(AUTHORIZED_CREP_GROUP),
-		hasSACAccess: token.hasSACAccess ?? groups.includes(AUTHORIZED_SAC_GROUP),
-		isAdmin: token.isAdmin ?? groups.includes(ADMIN_GROUP),
-		first_name: token.first_name || '',
-		last_name: token.last_name || '',
-		impersonate: token.impersonate ?? null,
-		error: token.error,
-	};
-};
+  return {
+    name: token.name || "",
+    email: token.email || "",
+    picture: token.picture || "",
+    oid: token.oid || "",
+    tid,
+    uniqueid: token.uniqueid || "",
+    username: token.username || "",
+    hasCrepAccess:
+      token.hasCrepAccess ?? groups.includes(AUTHORIZED_CREP_GROUP),
+    hasSACAccess: token.hasSACAccess ?? groups.includes(AUTHORIZED_SAC_GROUP),
+    isAdmin: token.isAdmin ?? groups.includes(ADMIN_GROUP),
+    first_name: token.first_name || "",
+    last_name: token.last_name || "",
+    impersonate: token.impersonate ?? null,
+    error: token.error,
+  }
+}
 
 export const { handlers, signIn, signOut, auth, unstable_update } = NextAuth({
-	// 12h absolute session: rights (Entra groups) are refreshed at each login, which is silent as long as the Microsoft SSO session is valid.
-	session: { maxAge: 12 * 60 * 60 },
-	providers: [
-		MicrosoftEntraID({
-			clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
-			clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
-			issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER!,
-			authorization: {
-				params: {
-					scope: 'openid email profile',
-				},
-			},
-		}),
-	],
-	callbacks: {
-		authorized: async ({ auth }) => !!auth,
-		jwt: async ({ token, account, trigger, session }: { token: JWT; account?: Account | null; trigger?: string; session?: { user?: { impersonating?: JWT['impersonate'] } } }) => {
-			try {
-				if (account?.access_token && account?.id_token) {
-					const accessToken = decodeJWT(account.access_token);
-					const idToken = decodeJWT(account.id_token);
+  // 12h absolute session: rights (Entra groups) are refreshed at each login, which is silent as long as the Microsoft SSO session is valid.
+  session: { maxAge: 12 * 60 * 60 },
+  providers: [
+    MicrosoftEntraID({
+      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
+      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
+      issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER!,
+      authorization: {
+        params: {
+          scope: "openid email profile",
+        },
+      },
+    }),
+  ],
+  callbacks: {
+    authorized: async ({ auth }) => !!auth,
+    jwt: async ({
+      token,
+      account,
+      trigger,
+      session,
+    }: {
+      token: JWT
+      account?: Account | null
+      trigger?: string
+      session?: { user?: { impersonating?: JWT["impersonate"] } }
+    }) => {
+      try {
+        if (account?.access_token && account?.id_token) {
+          const accessToken = decodeJWT(account.access_token)
+          const idToken = decodeJWT(account.id_token)
 
-					return createSessionToken(token, idToken, accessToken);
-				}
+          return createSessionToken(token, idToken, accessToken)
+        }
 
-				const sanitizedToken = sanitizeExistingToken(token);
+        const sanitizedToken = sanitizeExistingToken(token)
 
-				// Only real admins can start or stop an impersonation.
-				if (trigger === 'update' && sanitizedToken.isAdmin && session?.user && 'impersonating' in session.user) {
-					sanitizedToken.impersonate = session.user.impersonating ?? null;
-				}
+        // Only real admins can start or stop an impersonation.
+        if (
+          trigger === "update" &&
+          sanitizedToken.isAdmin &&
+          session?.user &&
+          "impersonating" in session.user
+        ) {
+          sanitizedToken.impersonate = session.user.impersonating ?? null
+        }
 
-				return sanitizedToken;
-			} catch (error) {
-				console.error('Error processing tokens:', error);
-				return {
-					name: token.name || '',
-					email: token.email || '',
-					picture: token.picture || '',
-					hasCrepAccess: false,
-					hasSACAccess: false,
-					isAdmin: false,
-					first_name: token.first_name || '',
-					last_name: token.last_name || '',
-					error: 'TokenProcessingError',
-				};
-			}
-		},
-		session: async ({ session, token }) => {
-			// When an admin impersonates another type of user, only the rights are replaced, the identity is kept.
-			const impersonate = token.isAdmin ? token.impersonate ?? null : null;
-			const rights = impersonate ? {
-				hasCrepAccess: impersonate === 'crep',
-				hasSACAccess: impersonate === 'sac',
-				isAdmin: false,
-			} : {
-				hasCrepAccess: Boolean(token.hasCrepAccess),
-				hasSACAccess: Boolean(token.hasSACAccess),
-				isAdmin: Boolean(token.isAdmin),
-			};
+        return sanitizedToken
+      } catch (error) {
+        console.error("Error processing tokens:", error)
+        return {
+          name: token.name || "",
+          email: token.email || "",
+          picture: token.picture || "",
+          hasCrepAccess: false,
+          hasSACAccess: false,
+          isAdmin: false,
+          first_name: token.first_name || "",
+          last_name: token.last_name || "",
+          error: "TokenProcessingError",
+        }
+      }
+    },
+    session: async ({ session, token }) => {
+      // When an admin impersonates another type of user, only the rights are replaced, the identity is kept.
+      const impersonate = token.isAdmin ? (token.impersonate ?? null) : null
+      const rights = impersonate
+        ? {
+            hasCrepAccess: impersonate === "crep",
+            hasSACAccess: impersonate === "sac",
+            isAdmin: false,
+          }
+        : {
+            hasCrepAccess: Boolean(token.hasCrepAccess),
+            hasSACAccess: Boolean(token.hasSACAccess),
+            isAdmin: Boolean(token.isAdmin),
+          }
 
-			return {
-				...session,
-				user: {
-					email: token?.email || session.user?.email || '',
-					name: token?.name || '',
-					image: session.user?.image || null,
-					sciper: token?.uniqueid || '',
-					username: token?.username || '',
-					oid: token.oid || '',
-					tid: token.tid || '',
-					...rights,
-					first_name: token.first_name || '',
-					last_name: token.last_name || '',
-					impersonating: impersonate,
-				},
-			};
-		},
-	},
-});
+      return {
+        ...session,
+        user: {
+          email: token?.email || session.user?.email || "",
+          name: token?.name || "",
+          image: session.user?.image || null,
+          sciper: token?.uniqueid || "",
+          username: token?.username || "",
+          oid: token.oid || "",
+          tid: token.tid || "",
+          ...rights,
+          first_name: token.first_name || "",
+          last_name: token.last_name || "",
+          impersonating: impersonate,
+        },
+      }
+    },
+  },
+})

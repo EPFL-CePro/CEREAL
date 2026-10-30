@@ -1,113 +1,139 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useConfirm } from "@/app/components/ConfirmProvider";
-import { CrepFile, CrepFileSpecs } from "@/types/crepExam";
-import { defaultFileSpecs, pickFileSpecs, validateFilesSpecs } from "@/app/lib/crep/file-specs";
-import { countPdfPages } from "@/app/lib/crep/pdf-pages";
-import { FileSpecsFields } from "../FileSpecsFields";
+import { useState } from "react"
+
+import { useRouter } from "next/navigation"
+
+import { useConfirm } from "@/app/components/ConfirmProvider"
+import {
+  defaultFileSpecs,
+  pickFileSpecs,
+  validateFilesSpecs,
+} from "@/app/lib/crep/file-specs"
+import { countPdfPages } from "@/app/lib/crep/pdf-pages"
+import { type CrepFile, type CrepFileSpecs } from "@/types/crepExam"
+
+import { FileSpecsFields } from "../FileSpecsFields"
 
 type Props = {
-  examId: number;
-  files: CrepFile[];
-  editable: boolean;
-};
+  examId: number
+  files: CrepFile[]
+  editable: boolean
+}
 
 export function ExamFilesManager({ examId, files, editable }: Props) {
-  const router = useRouter();
-  const confirm = useConfirm();
+  const router = useRouter()
+  const confirm = useConfirm()
   // Files selected to be added, each one with its own print settings
-  const [newFiles, setNewFiles] = useState<{ file: File; specs: CrepFileSpecs }[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [newFiles, setNewFiles] = useState<
+    { file: File; specs: CrepFileSpecs }[]
+  >([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleDelete(file: CrepFile) {
-    if (!(await confirm(`Delete the file « ${file.file_name ?? "File not uploaded yet"} » ?`))) return;
-    setBusy(true);
-    setError(null);
+    if (
+      !(await confirm(
+        `Delete the file « ${file.file_name ?? "File not uploaded yet"} » ?`,
+      ))
+    )
+      return
+    setBusy(true)
+    setError(null)
     try {
       const res = await fetch("/api/crep/files/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ examId, fileId: file.id }),
-      });
+      })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data?.error ?? "Error to delete file");
-        return;
+        const data = await res.json().catch(() => ({}))
+        setError(data?.error ?? "Error to delete file")
+        return
       }
-      router.refresh();
+      router.refresh()
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
 
   function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files) return;
+    if (!e.target.files) return
 
-    const selectedFiles = Array.from(e.target.files);
-    const merged = [...newFiles];
+    const selectedFiles = Array.from(e.target.files)
+    const merged = [...newFiles]
     selectedFiles.forEach((file) => {
-      if (merged.some((selected) => selected.file.name === file.name)) return;
+      if (merged.some((selected) => selected.file.name === file.name)) return
       // Print settings are pre-filled with the ones of the previous file
-      const previousSpecs = merged.length > 0
-        ? merged[merged.length - 1].specs
-        : files.length > 0 ? pickFileSpecs(files[files.length - 1]) : defaultFileSpecs;
-      merged.push({ file, specs: { ...previousSpecs } });
-    });
-    setNewFiles(merged);
+      const previousSpecs =
+        merged.length > 0
+          ? merged[merged.length - 1].specs
+          : files.length > 0
+            ? pickFileSpecs(files[files.length - 1])
+            : defaultFileSpecs
+      merged.push({ file, specs: { ...previousSpecs } })
+    })
+    setNewFiles(merged)
 
     // The page count read from the PDF takes the lead over the inherited one
     selectedFiles.forEach(async (file) => {
-      const pages = await countPdfPages(file);
-      if (pages === null) return;
-      setNewFiles((prev) => prev.map((selected) => selected.file === file
-        ? { ...selected, specs: { ...selected.specs, exam_pages: pages } }
-        : selected));
-    });
+      const pages = await countPdfPages(file)
+      if (pages === null) return
+      setNewFiles((prev) =>
+        prev.map((selected) =>
+          selected.file === file
+            ? { ...selected, specs: { ...selected.specs, exam_pages: pages } }
+            : selected,
+        ),
+      )
+    })
 
     // allow selecting the same file again later
-    e.target.value = "";
+    e.target.value = ""
   }
 
   async function handleAdd(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (newFiles.length === 0) return;
+    e.preventDefault()
+    if (newFiles.length === 0) return
 
-    const filesError = validateFilesSpecs(newFiles.map(({ file, specs }) => ({ file_name: file.name, ...specs })));
+    const filesError = validateFilesSpecs(
+      newFiles.map(({ file, specs }) => ({ file_name: file.name, ...specs })),
+    )
     if (filesError) {
-      setError(filesError);
-      return;
+      setError(filesError)
+      return
     }
 
-    setBusy(true);
-    setError(null);
+    setBusy(true)
+    setError(null)
     try {
-      const formData = new FormData();
-      formData.append("examId", String(examId));
-      newFiles.forEach(({ file }) => formData.append("files", file));
-      formData.append("specs", JSON.stringify(newFiles.map(({ specs }) => specs)));
+      const formData = new FormData()
+      formData.append("examId", String(examId))
+      newFiles.forEach(({ file }) => formData.append("files", file))
+      formData.append(
+        "specs",
+        JSON.stringify(newFiles.map(({ specs }) => specs)),
+      )
 
       const res = await fetch("/api/crep/files/add", {
         method: "POST",
         body: formData,
-      });
+      })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({}))
         if (data?.collisions?.length) {
           setError(
-            `A file with the same name already exists : ${data.collisions.join(", ")}. Please rename it before adding it.`
-          );
+            `A file with the same name already exists : ${data.collisions.join(", ")}. Please rename it before adding it.`,
+          )
         } else {
-          setError(data?.error ?? "Error to add file");
+          setError(data?.error ?? "Error to add file")
         }
-        return;
+        return
       }
-      setNewFiles([]);
-      router.refresh();
+      setNewFiles([])
+      router.refresh()
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
 
@@ -134,19 +160,22 @@ export function ExamFilesManager({ examId, files, editable }: Props) {
         ) : (
           <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200">
             {files.map((file) => (
-              <li
-                key={file.id}
-                className="flex flex-col gap-3 px-4 py-3"
-              >
+              <li key={file.id} className="flex flex-col gap-3 px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
-                  <span className={`truncate font-mono text-sm ${file.file_name ? "" : "italic text-slate-500"}`}>
+                  <span
+                    className={`truncate font-mono text-sm ${file.file_name ? "" : "italic text-slate-500"}`}
+                  >
                     {file.file_name ?? "File not uploaded yet"}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleDelete(file)}
                     disabled={!editable || busy || files.length <= 1}
-                    title={files.length <= 1 ? "A request needs at least one file. Add the new file before deleting this one." : undefined}
+                    title={
+                      files.length <= 1
+                        ? "A request needs at least one file. Add the new file before deleting this one."
+                        : undefined
+                    }
                     className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 hover:cursor-pointer"
                   >
                     Delete
@@ -177,10 +206,16 @@ export function ExamFilesManager({ examId, files, editable }: Props) {
               {newFiles.map(({ file, specs }, index) => (
                 <li key={file.name} className="flex flex-col gap-3 px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="truncate font-mono text-sm">{file.name}</span>
+                    <span className="truncate font-mono text-sm">
+                      {file.name}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
+                      onClick={() =>
+                        setNewFiles((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
                       disabled={busy}
                       className="text-red-600 text-xs underline hover:cursor-pointer"
                     >
@@ -189,7 +224,15 @@ export function ExamFilesManager({ examId, files, editable }: Props) {
                   </div>
                   <FileSpecsFields
                     value={specs}
-                    onChange={(nextSpecs) => setNewFiles((prev) => prev.map((selected, i) => i === index ? { ...selected, specs: nextSpecs } : selected))}
+                    onChange={(nextSpecs) =>
+                      setNewFiles((prev) =>
+                        prev.map((selected, i) =>
+                          i === index
+                            ? { ...selected, specs: nextSpecs }
+                            : selected,
+                        ),
+                      )
+                    }
                   />
                 </li>
               ))}
@@ -205,5 +248,5 @@ export function ExamFilesManager({ examId, files, editable }: Props) {
         </form>
       )}
     </div>
-  );
+  )
 }

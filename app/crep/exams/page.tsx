@@ -1,37 +1,48 @@
-import { auth } from "../../../auth";
-import { Footer } from "../../components/Footer";
-import { ExamsManageFilesTable } from "../../components/crep/exams/ExamsManageFilesTable";
-import { getAllCrepExams, getAllCrepExamsForRepro, getCrepExamsByContactEmail } from "../../lib/crep/database";
-import { CrepExam } from "@/types/crepExam";
+import { type CrepExam } from "@/types/crepExam"
+
+import { auth } from "../../../auth"
+import { ExamsManageFilesTable } from "../../components/crep/exams/ExamsManageFilesTable"
+import { Footer } from "../../components/Footer"
+import {
+  getAllCrepExams,
+  getAllCrepExamsForRepro,
+  getCrepExamsByContactEmail,
+} from "../../lib/crep/database"
 
 export const metadata = {
   title: "CREP - My exams",
-};
+}
 
 export default async function ProfilePage() {
-  const session = await auth();
-  if (!session?.user?.email) return;
+  const session = await auth()
+  if (!session?.user?.email) return
 
-  let exams:CrepExam[];
+  let exams: CrepExam[]
 
-  if(session.user.isAdmin) {
-    exams = (await getAllCrepExams()) as CrepExam[];
+  if (session.user.isAdmin) {
+    exams = (await getAllCrepExams()) as CrepExam[]
   } else if (session.user.hasCrepAccess) {
-    exams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[];
+    exams = (await getAllCrepExamsForRepro(session.user.email)) as CrepExam[]
   } else {
-    exams = (await getCrepExamsByContactEmail(session.user.email)) as CrepExam[];
+    exams = (await getCrepExamsByContactEmail(session.user.email)) as CrepExam[]
   }
 
   return (
     <div className="font-sans grid grid-rows items-center justify-items-center px-6 sm:px-12 gap-8 pt-16 sm:pb-0">
       <div className="w-full max-w-7xl mb-8">
-        <h1 className="text-2xl font-semibold mb-6">My exams registered for printing</h1>
-        <ExamsManageFilesTable exams={exams} isAdmin={session.user.isAdmin} hasAccess={session.user.hasCrepAccess} />
+        <h1 className="text-2xl font-semibold mb-6">
+          My exams registered for printing
+        </h1>
+        <ExamsManageFilesTable
+          exams={exams}
+          isAdmin={session.user.isAdmin}
+          hasAccess={session.user.hasCrepAccess}
+        />
       </div>
-      
+
       <div className="mb-12">
         <Footer />
       </div>
     </div>
-  );
+  )
 }

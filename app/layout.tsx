@@ -1,39 +1,43 @@
-import type { Metadata } from "next";
-import { Geist, JetBrains_Mono } from "next/font/google";
-import 'rsuite/dist/rsuite-no-reset.min.css';
-import "./globals.css";
-import { CustomProvider } from "rsuite";
-import { ImpersonationBanner } from "./components/ImpersonationBanner";
-import { MainNavBar } from "./components/navigation/MainNavBar";
-import { Toaster } from 'sonner';
-import { ConfirmProvider } from "./components/ConfirmProvider";
+import { Geist, JetBrains_Mono } from "next/font/google"
+
+import "rsuite/dist/rsuite-no-reset.min.css"
+import "./globals.css"
+import { CustomProvider } from "rsuite"
+import { Toaster } from "sonner"
+
+import { ConfirmProvider } from "./components/ConfirmProvider"
+import { ImpersonationBanner } from "./components/ImpersonationBanner"
+import { MainNavBar } from "./components/navigation/MainNavBar"
+
+import type { Metadata } from "next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-});
+})
 
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
-});
+})
 
 export const metadata: Metadata = {
   title: "CEREAL",
-  description: "CEREAL (CePro Examens Regroupement Encadrement Administration Logistique), a tool for everything that concerns managing exams at CePro @EPFL.",
-};
+  description:
+    "CEREAL (CePro Examens Regroupement Encadrement Administration Logistique), a tool for everything that concerns managing exams at CePro @EPFL.",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${jetBrainsMono.variable} antialiased`}
       >
-        <Toaster position="top-center" richColors/>
+        <Toaster position="top-center" richColors />
         <ImpersonationBanner />
         <MainNavBar />
         <ConfirmProvider>
@@ -41,5 +45,5 @@ export default function RootLayout({
         </ConfirmProvider>
       </body>
     </html>
-  );
+  )
 }

@@ -1,8 +1,8 @@
-import { CourseSelectOption } from "./selectOption";
+import { type CourseSelectOption } from "./selectOption"
 
 export type DigitalArchiveInputs = {
-    academicYear: string;
-    course: CourseSelectOption | null;
-    numberCopies: number;
-    papersManagement: string;
+  academicYear: string
+  course: CourseSelectOption | null
+  numberCopies: number
+  papersManagement: string
 }

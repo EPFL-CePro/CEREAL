@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { BarChart } from "@mui/x-charts/BarChart";
+import { BarChart } from "@mui/x-charts/BarChart"
 
 export type PrintingDurationBucket = {
-  label: string;
-  count: number;
-};
+  label: string
+  count: number
+}
 
 type PrintingDurationHistogramProps = {
-  buckets: PrintingDurationBucket[];
-};
+  buckets: PrintingDurationBucket[]
+}
 
 export default function PrintingDurationHistogram({
   buckets,
 }: PrintingDurationHistogramProps) {
-  const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+  const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0)
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -67,5 +67,5 @@ export default function PrintingDurationHistogram({
         )}
       </div>
     </section>
-  );
+  )
 }

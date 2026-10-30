@@ -4,18 +4,21 @@
 <hr>
 
 ## Where am I ?
-CEREAL *(or, Cepro Examens Regroupement Encadrement Administration Logistique)* is an application developed by the [CePro] at [EPFL].
+
+CEREAL _(or, Cepro Examens Regroupement Encadrement Administration Logistique)_ is an application developed by the [CePro] at [EPFL].
 
 In short terms, it's a big application used to manage everything that concerns exams at EPFL.
 
 It is used by students, teachers, assistants, employees, but mainly, exams coordinators (CePro, Repro, SAC, ...)
 
 ## Bugs / Features requests
+
 If you found a bug in the application or want to submit a new feature idea, please open an [issue] on this repository.
 
 Your issue have to be clear, concise, and with the correct tags and prefix. If not, it may be refused.
 
 ## Table Of Contents
+
 - [Where am I ?](#where-am-i-)
 - [Bugs / Features requests](#bugs--features-requests)
 - [Table Of Contents](#table-of-contents)
@@ -31,22 +34,27 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 - [Contributors](#contributors)
 
 ## Features
+
 ### For all users
+
 - Exams registration
 - Deferred exams registration & absence submission
 - Exams printing registration
 
 ### For the Repro
+
 - See the printing calendar
 - Manage exams printing status (toPrint, printing, finished, ...)
 - Easily manage their printing schedule
 
 ### For the SAC
+
 - See all absences and registrations for deferred exams
 - Easily open absences files
 - Visual way to validate (or not) absences and registrations, making the coordination with the CePro easier.
 
 ### For the admins of the application
+
 - See & manage all exams registered to CePro' services
 - Validate exams files before being sent for printing to the Repro
 - Email notifications for basically everything
@@ -54,6 +62,7 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 - Impersonation
 
 ## Technologies
+
 - [Next.js]
 - [MySQL]
 - [Docker] for containerization
@@ -64,6 +73,7 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 - [phpMyAdmin] to manage the database visually
 
 ## How to run ?
+
 1. Clone this repository
 2. Rename the `env.example` file into `.env`
 3. Insert your valid data in the `.env` file
@@ -71,9 +81,11 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 5. Go to http://localhost:3000/
 
 ## How to deploy ?
+
 If you are meant to deploy the application in test or production, please refer to the Ansible OPS configuration, available on [CEREAL.ops]
 
 ## Contributing
+
 If you are willing to contribute to this project in any way, please do ! But respect these few rules first.
 
 1. Your changes have to be made on a specific branch with a clear name, for example `feature/loading-spinner-after-submitting-exams`
@@ -101,7 +113,6 @@ If you are willing to contribute to this project in any way, please do ! But res
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
-
 
 [Ansible]: https://docs.ansible.com/
 [CePro]: https://cepro.epfl.ch/

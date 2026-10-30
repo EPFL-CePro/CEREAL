@@ -1,24 +1,24 @@
-"use client";
+"use client"
 
-import { BarChart } from "@mui/x-charts/BarChart";
+import { BarChart } from "@mui/x-charts/BarChart"
 
 export type DeliveryDelayBucket = {
-  businessDays: number;
-  count: number;
-};
+  businessDays: number
+  count: number
+}
 
 type DeliveryDelayHistogramProps = {
-  buckets: DeliveryDelayBucket[];
-};
+  buckets: DeliveryDelayBucket[]
+}
 
 function formatDayLabel(days: number) {
-  return `${days} day${days > 1 ? "s" : ""}`;
+  return `${days} day${days > 1 ? "s" : ""}`
 }
 
 export default function DeliveryDelayHistogram({
   buckets,
 }: DeliveryDelayHistogramProps) {
-  const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+  const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0)
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -27,7 +27,8 @@ export default function DeliveryDelayHistogram({
           Desired delivery delay
         </h2>
         <p className="mt-3 text-sm leading-6 text-gray-600">
-          Number of days between the registry in the database and the desired delivery date.
+          Number of days between the registry in the database and the desired
+          delivery date.
         </p>
       </div>
 
@@ -72,5 +73,5 @@ export default function DeliveryDelayHistogram({
         )}
       </div>
     </section>
-  );
+  )
 }

@@ -1,34 +1,41 @@
-"use client";
-import { User } from "next-auth";
-import dynamic from "next/dynamic";
-import { StylesConfig } from "react-select";
-const Select = dynamic(() => import("react-select"), { ssr: false });
-import chroma from "chroma-js";
-import { Dispatch, SetStateAction } from "react";
+"use client"
+import { type Dispatch, type SetStateAction } from "react"
+
+import dynamic from "next/dynamic"
+
+import chroma from "chroma-js"
+import { type User } from "next-auth"
+import { type StylesConfig } from "react-select"
+
+const Select = dynamic(() => import("react-select"), { ssr: false })
 
 interface AppUser extends User {
-  isAdmin?: boolean;
+  isAdmin?: boolean
 }
 
 interface StatusOption {
-  value: string;
-  label: string;
-  color: string;
-  needsAdmin: boolean;
-  fcColor: string;
-  hexColor: string;
+  value: string
+  label: string
+  color: string
+  needsAdmin: boolean
+  fcColor: string
+  hexColor: string
 }
 
 interface FiltersProps {
-  examStatus?: StatusOption[];
-  user: AppUser;
-  setFilters: Dispatch<SetStateAction<unknown>>;
+  examStatus?: StatusOption[]
+  user: AppUser
+  setFilters: Dispatch<SetStateAction<unknown>>
 }
 
 const colourStyles: StylesConfig<StatusOption, true> = {
-  control: (styles) => ({ ...styles, backgroundColor: 'white', ":focus-within": { borderColor: 'red', boxShadow: '0 0 0 1px red', }, }),
+  control: (styles) => ({
+    ...styles,
+    backgroundColor: "white",
+    ":focus-within": { borderColor: "red", boxShadow: "0 0 0 1px red" },
+  }),
   option: (styles, { data, isDisabled, isFocused, isSelected }) => {
-    const color = chroma(data.hexColor);
+    const color = chroma(data.hexColor)
     return {
       ...styles,
       backgroundColor: isDisabled
@@ -39,30 +46,30 @@ const colourStyles: StylesConfig<StatusOption, true> = {
             ? color.alpha(0.1).css()
             : undefined,
       color: isDisabled
-        ? '#ccc'
+        ? "#ccc"
         : isSelected
-          ? chroma.contrast(color, 'white') > 2
-            ? 'white'
-            : 'black'
+          ? chroma.contrast(color, "white") > 2
+            ? "white"
+            : "black"
           : data.hexColor,
-      cursor: isDisabled ? 'not-allowed' : 'default',
+      cursor: isDisabled ? "not-allowed" : "default",
 
-      ':active': {
-        ...styles[':active'],
+      ":active": {
+        ...styles[":active"],
         backgroundColor: !isDisabled
           ? isSelected
             ? data.hexColor
             : color.alpha(0.3).css()
           : undefined,
       },
-    };
+    }
   },
   multiValue: (styles, { data }) => {
-    const color = chroma(data.hexColor);
+    const color = chroma(data.hexColor)
     return {
       ...styles,
       backgroundColor: color.alpha(0.1).css(),
-    };
+    }
   },
   multiValueLabel: (styles, { data }) => ({
     ...styles,
@@ -71,13 +78,13 @@ const colourStyles: StylesConfig<StatusOption, true> = {
   multiValueRemove: (styles, { data }) => ({
     ...styles,
     color: data.hexColor,
-    ':hover': {
+    ":hover": {
       backgroundColor: data.hexColor,
-      color: 'white',
-      cursor: 'pointer',
+      color: "white",
+      cursor: "pointer",
     },
   }),
-};
+}
 
 export function Filters({ examStatus, setFilters }: FiltersProps) {
   return (

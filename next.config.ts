@@ -1,13 +1,14 @@
-import type { NextConfig } from "next";
-import { version } from "./package.json";
+import { version } from "./package.json"
+
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   env: {
     APP_VERSION: version,
   },
   experimental: {
-    middlewareClientMaxBodySize: '200mb',
+    middlewareClientMaxBodySize: "200mb",
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

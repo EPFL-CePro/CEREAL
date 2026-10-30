@@ -1,6 +1,6 @@
 export type ExamStatus = {
-  id: number;
-  code: string;
-  name: string;
-  color: string;
-};
+  id: number
+  code: string
+  name: string
+  color: string
+}

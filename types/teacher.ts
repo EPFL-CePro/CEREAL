@@ -1,5 +1,5 @@
 export type Teacher = {
-    firstname: string;
-    name: string;
-    sciper?: string;
-};
+  firstname: string
+  name: string
+  sciper?: string
+}

@@ -1,16 +1,17 @@
-import { auth } from "@/auth";
-import RegisterForm from "../../components/crep/register"
+import { auth } from "@/auth"
+
+import RegisterForm from "../../components/crep/Register"
 
 export const metadata = {
-    title: "CREP - Register",
+  title: "CREP - Register",
 }
 
 export default async function Page() {
-    const session = await auth();
-    if (!session?.user) return;
-    return (
-        <main>
-            <RegisterForm user={session.user}/>
-        </main>
-    )
+  const session = await auth()
+  if (!session?.user) return
+  return (
+    <main>
+      <RegisterForm user={session.user} />
+    </main>
+  )
 }

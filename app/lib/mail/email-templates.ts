@@ -1,39 +1,39 @@
 export type Placeholder = {
-    token: string;
-    desc: string;
-};
+  token: string
+  desc: string
+}
 
 export type TemplateDefinition = {
-    section: string;
-    name: string;
-    placeholders: Placeholder[];
-    defaults: {
-        subject: string;
-        body: string;
-        to: string;
-        cc: string;
-        replyTo: string;
-    };
-};
+  section: string
+  name: string
+  placeholders: Placeholder[]
+  defaults: {
+    subject: string
+    body: string
+    to: string
+    cc: string
+    replyTo: string
+  }
+}
 
 export const EMAIL_TEMPLATES = {
-    exam_services_confirmation: {
-        section: "CEREAL",
-        name: "Exam services subscription confirmation",
-        placeholders: [
-            { token: "course", desc: "Course code" },
-            { token: "teachers", desc: "Teachers list" },
-            { token: "contactEmail", desc: "Contact email" },
-            { token: "examTypes", desc: "Selected exam types" },
-            { token: "service", desc: "Service description" },
-            { token: "serviceLevel", desc: "Service level" },
-            { token: "examDates", desc: "Exam dates per type (multi-line)" },
-            { token: "remark", desc: "Remarks" },
-            { token: "registrant.email", desc: "Registrant email (recipient)" },
-        ],
-        defaults: {
-            subject: "CePro - exam services subscription confirmation",
-            body: `
+  exam_services_confirmation: {
+    section: "CEREAL",
+    name: "Exam services subscription confirmation",
+    placeholders: [
+      { token: "course", desc: "Course code" },
+      { token: "teachers", desc: "Teachers list" },
+      { token: "contactEmail", desc: "Contact email" },
+      { token: "examTypes", desc: "Selected exam types" },
+      { token: "service", desc: "Service description" },
+      { token: "serviceLevel", desc: "Service level" },
+      { token: "examDates", desc: "Exam dates per type (multi-line)" },
+      { token: "remark", desc: "Remarks" },
+      { token: "registrant.email", desc: "Registrant email (recipient)" },
+    ],
+    defaults: {
+      subject: "CePro - exam services subscription confirmation",
+      body: `
 Hello,
 Your subscription to our exam services has been successfully registered:
 
@@ -57,30 +57,46 @@ Best
 
 CePro
 `,
-            to: "{{teachers}}",
-            cc: "{{contactEmail}}, {{registrant.email}}, cepro-exams@epfl.ch",
-            replyTo: "",
-        },
+      to: "{{teachers}}",
+      cc: "{{contactEmail}}, {{registrant.email}}, cepro-exams@epfl.ch",
+      replyTo: "",
     },
+  },
 
-    crep_printing_confirmation: {
-        section: "CREP",
-        name: "Exam printing service subscription confirmation",
-        placeholders: [
-            { token: "attentionPrefix", desc: "Subject prefix when attention required (computed)" },
-            { token: "attentionBlock", desc: "Warning/error block, empty if none (computed)" },
-            { token: "course", desc: "Course label" },
-            { token: "examDate", desc: "Exam date" },
-            { token: "desiredDate", desc: "Desired delivery date" },
-            { token: "contact", desc: "Contact (firstname lastname (email))" },
-            { token: "authorizedPersonsLine", desc: "Authorized persons line, empty if none (computed)" },
-            { token: "files", desc: "Files to print, one per line, with their print settings" },
-            { token: "remarkLine", desc: "Additional remarks line, empty if none (computed)" },
-            { token: "registrant.email", desc: "Registrant email (recipient)" },
-        ],
-        defaults: {
-            subject: "{{attentionPrefix}}CePro - Exam printing service subscription confirmation",
-            body: `
+  crep_printing_confirmation: {
+    section: "CREP",
+    name: "Exam printing service subscription confirmation",
+    placeholders: [
+      {
+        token: "attentionPrefix",
+        desc: "Subject prefix when attention required (computed)",
+      },
+      {
+        token: "attentionBlock",
+        desc: "Warning/error block, empty if none (computed)",
+      },
+      { token: "course", desc: "Course label" },
+      { token: "examDate", desc: "Exam date" },
+      { token: "desiredDate", desc: "Desired delivery date" },
+      { token: "contact", desc: "Contact (firstname lastname (email))" },
+      {
+        token: "authorizedPersonsLine",
+        desc: "Authorized persons line, empty if none (computed)",
+      },
+      {
+        token: "files",
+        desc: "Files to print, one per line, with their print settings",
+      },
+      {
+        token: "remarkLine",
+        desc: "Additional remarks line, empty if none (computed)",
+      },
+      { token: "registrant.email", desc: "Registrant email (recipient)" },
+    ],
+    defaults: {
+      subject:
+        "{{attentionPrefix}}CePro - Exam printing service subscription confirmation",
+      body: `
 Hello,
 Your subscription to our exam printing service has been registered:
 {{attentionBlock}}
@@ -92,23 +108,26 @@ Your subscription to our exam printing service has been registered:
 {{authorizedPersonsLine}}
 - Files: {{files}}
 {{remarkLine}}`,
-            to: "{{registrant.email}}",
-            cc: "cepro-exams@epfl.ch",
-            replyTo: "",
-        },
+      to: "{{registrant.email}}",
+      cc: "cepro-exams@epfl.ch",
+      replyTo: "",
     },
+  },
 
-    exam_ready_to_print: {
-        section: "CREP",
-        name: "Exam ready to print",
-        placeholders: [
-            { token: "examCode", desc: "Exam code (used in subject)" },
-            { token: "description", desc: "Exam description" },
-            { token: "examURL", desc: "Direct link to the exam in the app (computed)" },
-        ],
-        defaults: {
-            subject: "Exam {{examCode}} is ready to be printed",
-            body: `
+  exam_ready_to_print: {
+    section: "CREP",
+    name: "Exam ready to print",
+    placeholders: [
+      { token: "examCode", desc: "Exam code (used in subject)" },
+      { token: "description", desc: "Exam description" },
+      {
+        token: "examURL",
+        desc: "Direct link to the exam in the app (computed)",
+      },
+    ],
+    defaults: {
+      subject: "Exam {{examCode}} is ready to be printed",
+      body: `
 Hello,
 
 The exam {{description}} status has been set to "toPrint" in CREP.
@@ -118,25 +137,28 @@ You can see the exam in the app directly by clicking on this link : {{examURL}}
 Best,
 CePro team
 `,
-            to: "examen.repro@epfl.ch",
-            cc: "",
-            replyTo: "",
-        },
+      to: "examen.repro@epfl.ch",
+      cc: "",
+      replyTo: "",
     },
+  },
 
-    exam_ready_to_pickup: {
-        section: "CREP",
-        name: "Exam ready to pick up",
-        placeholders: [
-            { token: "examCode", desc: "Exam code (used in subject)" },
-            { token: "description", desc: "Exam description" },
-            { token: "boxes", desc: "Number of boxes" },
-            { token: "contact.email", desc: "Contact email (recipient)" },
-            { token: "authorizedPersons", desc: "Authorized persons emails (CC recipient)" },
-        ],
-        defaults: {
-            subject: "Exam {{examCode}} is ready to be picked up",
-            body: `
+  exam_ready_to_pickup: {
+    section: "CREP",
+    name: "Exam ready to pick up",
+    placeholders: [
+      { token: "examCode", desc: "Exam code (used in subject)" },
+      { token: "description", desc: "Exam description" },
+      { token: "boxes", desc: "Number of boxes" },
+      { token: "contact.email", desc: "Contact email (recipient)" },
+      {
+        token: "authorizedPersons",
+        desc: "Authorized persons emails (CC recipient)",
+      },
+    ],
+    defaults: {
+      subject: "Exam {{examCode}} is ready to be picked up",
+      body: `
 Hello,
 
 The exam {{description}} has been finished printing and is ready to be picked up at the Repro.
@@ -148,25 +170,28 @@ Click on this link to see the Repro's opening hours : https://www.epfl.ch/campus
 Best,
 CePro team
 `,
-            to: "{{contact.email}}",
-            cc: "{{authorizedPersons}}",
-            replyTo: "examen.repro@epfl.ch",
-        },
+      to: "{{contact.email}}",
+      cc: "{{authorizedPersons}}",
+      replyTo: "examen.repro@epfl.ch",
     },
+  },
 
-    absence_confirmation: {
-        section: "CEREAL",
-        name: "Deferred exams & absence submission",
-        placeholders: [
-            { token: "registrant.email", desc: "User submitting the absence (email)" },
-            { token: "dateFrom", desc: "Starting date of the absence" },
-            { token: "dateTo", desc: "Ending date of the absence" },
-            { token: "diff_exams", desc: "List of exams user registers to" },
-            { token: "remark", desc: "Remark about the absence" },
-        ],
-        defaults: {
-            subject: "Absence & deferred exams submission",
-            body: `
+  absence_confirmation: {
+    section: "CEREAL",
+    name: "Deferred exams & absence submission",
+    placeholders: [
+      {
+        token: "registrant.email",
+        desc: "User submitting the absence (email)",
+      },
+      { token: "dateFrom", desc: "Starting date of the absence" },
+      { token: "dateTo", desc: "Ending date of the absence" },
+      { token: "diff_exams", desc: "List of exams user registers to" },
+      { token: "remark", desc: "Remark about the absence" },
+    ],
+    defaults: {
+      subject: "Absence & deferred exams submission",
+      body: `
 Hello,
 
 A new absence and deferred exams subscription has been submitted.
@@ -189,26 +214,32 @@ Best
 
 CePro
 `,
-            to: "{{registrant.email}}",
-            cc: "annonce-absence-examen@groupes.epfl.ch",
-            replyTo: "",
-        },
+      to: "{{registrant.email}}",
+      cc: "annonce-absence-examen@groupes.epfl.ch",
+      replyTo: "",
     },
+  },
 
-    archiving_confirmation: {
-        section: "CEREAL",
-        name: "Digital archiving confirmation",
-        placeholders: [
-            { token: "registrant.email", desc: "User submitting (email)" },
-            { token: "courseName", desc: "Course for the archive" },
-            { token: "academicYear", desc: "Academic year of the archive" },
-            { token: "pdfsNumber", desc: "Number of PDFs files in the archive" },
-            { token: "papersManagement", desc: "Choosen method for exam papers management" },
-            { token: "nasPath", desc: "Folder on the NAS where the archive is stored" },
-        ],
-        defaults: {
-            subject: "Digital archive of exam",
-            body: `
+  archiving_confirmation: {
+    section: "CEREAL",
+    name: "Digital archiving confirmation",
+    placeholders: [
+      { token: "registrant.email", desc: "User submitting (email)" },
+      { token: "courseName", desc: "Course for the archive" },
+      { token: "academicYear", desc: "Academic year of the archive" },
+      { token: "pdfsNumber", desc: "Number of PDFs files in the archive" },
+      {
+        token: "papersManagement",
+        desc: "Choosen method for exam papers management",
+      },
+      {
+        token: "nasPath",
+        desc: "Folder on the NAS where the archive is stored",
+      },
+    ],
+    defaults: {
+      subject: "Digital archive of exam",
+      body: `
 Hello,
 
 Your digital archive has been saved.
@@ -225,24 +256,27 @@ Best
 
 CePro
 `,
-            to: "{{registrant.email}}",
-            cc: "cepro-exams@epfl.ch",
-            replyTo: "",
-        },
+      to: "{{registrant.email}}",
+      cc: "cepro-exams@epfl.ch",
+      replyTo: "",
     },
-};
+  },
+}
 
 // Keys are derived from the registry, so adding or removing a template is a
 // single edit to EMAIL_TEMPLATES above (no separate union to keep in sync).
-export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES;
+export type EmailTemplateKey = keyof typeof EMAIL_TEMPLATES
 
-export type TemplateContext = Record<string, string | number | null | undefined>;
+export type TemplateContext = Record<string, string | number | null | undefined>
 
 // Replace every {{token}} occurrence with its value from the context.
 // Unknown tokens (or null/undefined values) resolve to an empty string.
-export function renderString(template: string, context: TemplateContext): string {
-    return template.replace(/{{\s*([\w.]+)\s*}}/g, (_match, token: string) => {
-        const value = context[token];
-        return value === null || value === undefined ? "" : String(value);
-    });
+export function renderString(
+  template: string,
+  context: TemplateContext,
+): string {
+  return template.replace(/{{\s*([\w.]+)\s*}}/g, (_match, token: string) => {
+    const value = context[token]
+    return value === null || value === undefined ? "" : String(value)
+  })
 }

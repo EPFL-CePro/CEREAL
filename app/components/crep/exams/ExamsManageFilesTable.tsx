@@ -1,54 +1,62 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { useDeferredValue, useMemo, useState } from "react";
-import { CrepExam } from "@/types/crepExam";
-import { formatDateOnlyValue } from "@/app/lib/dates/date-time";
-import { examStatus } from "@/app/lib/crep/exam-status";
+import { useDeferredValue, useMemo, useState } from "react"
+
+import Link from "next/link"
+
+import { examStatus } from "@/app/lib/crep/exam-status"
+import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
+import { type CrepExam } from "@/types/crepExam"
 
 type ExamsTableProps = {
-  exams: CrepExam[];
-  isAdmin: boolean;
-  hasAccess: boolean;
-};
+  exams: CrepExam[]
+  isAdmin: boolean
+  hasAccess: boolean
+}
 
 type Contact = {
-  firstname?: string;
-  lastname?: string;
-  email?: string;
-};
+  firstname?: string
+  lastname?: string
+  email?: string
+}
 
 type SearchableExam = {
-  exam: CrepExam;
-  contact: Contact;
-  desiredDate: string;
-  searchText: string;
-};
+  exam: CrepExam
+  contact: Contact
+  desiredDate: string
+  searchText: string
+}
 
-const statusByValue = new Map(examStatus.map((status) => [status.value, status]));
+const statusByValue = new Map(
+  examStatus.map((status) => [status.value, status]),
+)
 
 function parseContact(value: string): Contact {
   try {
-    const parsed = JSON.parse(value) as Contact;
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed = JSON.parse(value) as Contact
+    return parsed && typeof parsed === "object" ? parsed : {}
   } catch {
-    return {};
+    return {}
   }
 }
 
 function normalize(value: unknown): string {
-  return String(value ?? "").toLowerCase();
+  return String(value ?? "").toLowerCase()
 }
 
-export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableProps) {
-  const [query, setQuery] = useState("");
-  const deferredQuery = useDeferredValue(query);
+export function ExamsManageFilesTable({
+  exams,
+  isAdmin,
+  hasAccess,
+}: ExamsTableProps) {
+  const [query, setQuery] = useState("")
+  const deferredQuery = useDeferredValue(query)
 
   const searchableExams = useMemo<SearchableExam[]>(
     () =>
       exams.map((exam) => {
-        const contact = parseContact(exam.contact);
-        const desiredDate = formatDateOnlyValue(exam.desired_date);
+        const contact = parseContact(exam.contact)
+        const desiredDate = formatDateOnlyValue(exam.desired_date)
         const searchText = [
           ...Object.values(exam),
           desiredDate,
@@ -57,29 +65,31 @@ export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableP
           contact.email,
         ]
           .map(normalize)
-          .join(" ");
+          .join(" ")
 
-        return { exam, contact, desiredDate, searchText };
+        return { exam, contact, desiredDate, searchText }
       }),
-    [exams]
-  );
+    [exams],
+  )
 
   const filteredExams = useMemo(() => {
-    const search = deferredQuery.trim().toLowerCase();
-    if (!search) return searchableExams;
+    const search = deferredQuery.trim().toLowerCase()
+    if (!search) return searchableExams
 
-    return searchableExams.filter(({ searchText }) => searchText.includes(search));
-  }, [deferredQuery, searchableExams]);
+    return searchableExams.filter(({ searchText }) =>
+      searchText.includes(search),
+    )
+  }, [deferredQuery, searchableExams])
 
   if (exams.length === 0) {
     return (
       <p className="text-slate-600">
         You are not the contact person of any exam.
       </p>
-    );
+    )
   }
 
-  const shouldSeeContactAndStatus = isAdmin || hasAccess;
+  const shouldSeeContactAndStatus = isAdmin || hasAccess
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200">
@@ -103,8 +113,12 @@ export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableP
               <th className="px-4 py-3">Code</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Desired print date</th>
-              {shouldSeeContactAndStatus && <th className="px-4 py-3">Contact person</th>}
-              {shouldSeeContactAndStatus && <th className="px-4 py-3">Status</th>}
+              {shouldSeeContactAndStatus && (
+                <th className="px-4 py-3">Contact person</th>
+              )}
+              {shouldSeeContactAndStatus && (
+                <th className="px-4 py-3">Status</th>
+              )}
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -120,7 +134,7 @@ export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableP
               </tr>
             ) : (
               filteredExams.map(({ exam, contact, desiredDate }) => {
-                const status = statusByValue.get(exam.status);
+                const status = statusByValue.get(exam.status)
 
                 return (
                   <tr key={exam.id} className="border-t border-slate-200">
@@ -136,7 +150,9 @@ export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableP
                       <td className="px-4 py-3">
                         <span
                           className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white text-nowrap"
-                          style={{ backgroundColor: status?.hexColor ?? "#64748b" }}
+                          style={{
+                            backgroundColor: status?.hexColor ?? "#64748b",
+                          }}
                         >
                           {status?.label ?? exam.status}
                         </span>
@@ -151,12 +167,12 @@ export function ExamsManageFilesTable({ exams, isAdmin, hasAccess }: ExamsTableP
                       </Link>
                     </td>
                   </tr>
-                );
+                )
               })
             )}
           </tbody>
         </table>
       </div>
     </div>
-  );
+  )
 }

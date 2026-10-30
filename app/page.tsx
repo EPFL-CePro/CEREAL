@@ -1,13 +1,23 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Footer } from "./components/Footer";
-import { auth } from "@/auth";
+import Image from "next/image"
+import Link from "next/link"
+
+import { auth } from "@/auth"
+
+import { Footer } from "./components/Footer"
 
 export const metadata = {
   title: "CEREAL",
-};
+}
 
-function LinkHref({ href, display, description }: { href: string, display: string, description: string } ) {
+function LinkHref({
+  href,
+  display,
+  description,
+}: {
+  href: string
+  display: string
+  description: string
+}) {
   return (
     <Link
       href={href}
@@ -36,8 +46,8 @@ function LinkHref({ href, display, description }: { href: string, display: strin
 }
 
 export default async function Home() {
-  const session = await auth();
-  if (!session?.user) return;
+  const session = await auth()
+  if (!session?.user) return
 
   return (
     <main className="min-h-screen bg-white px-6 py-8 text-slate-950 sm:px-10">
@@ -60,8 +70,13 @@ export default async function Home() {
             </div>
             <div className="max-w-3xl space-y-4 text-base leading-7 text-slate-600 sm:text-lg">
               <p>
-                CEREAL (<i>Cepro Examens Regroupement Encadrement Administration Logistique</i>)
-                is a tool used to manage everything that concerns exams at EPFL.
+                CEREAL (
+                <i>
+                  Cepro Examens Regroupement Encadrement Administration
+                  Logistique
+                </i>
+                ) is a tool used to manage everything that concerns exams at
+                EPFL.
               </p>
 
               <p>
@@ -72,24 +87,37 @@ export default async function Home() {
                   target="_blank"
                 >
                   CePro
-                </Link>,
-                which is in charge of the coordination of the exams between professors, students, reprography, ...
+                </Link>
+                , which is in charge of the coordination of the exams between
+                professors, students, reprography, ...
               </p>
             </div>
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex gap-6">
-                {(session.user.isAdmin) && (
-                  <LinkHref href="/admin" display="Admin" description="Manage CEREAL." />
-                )}
+              {session.user.isAdmin && (
+                <LinkHref
+                  href="/admin"
+                  display="Admin"
+                  description="Manage CEREAL."
+                />
+              )}
             </div>
             <div className="flex gap-6">
-                {(session.user.isAdmin || session.user.hasCrepAccess) && (
-                  <LinkHref href="/crep" display="Repro — CREP" description="Tool for coordination betweeh the CePro and the Repro." />
-                )}
-                {(session.user.isAdmin || session.user.hasSACAccess) && (
-                  <LinkHref href="/sac-absences" display="SAC — absences" description="Review and manage student absence requests." />
-                )}
+              {(session.user.isAdmin || session.user.hasCrepAccess) && (
+                <LinkHref
+                  href="/crep"
+                  display="Repro — CREP"
+                  description="Tool for coordination betweeh the CePro and the Repro."
+                />
+              )}
+              {(session.user.isAdmin || session.user.hasSACAccess) && (
+                <LinkHref
+                  href="/sac-absences"
+                  display="SAC — absences"
+                  description="Review and manage student absence requests."
+                />
+              )}
             </div>
           </div>
         </section>
@@ -97,5 +125,5 @@ export default async function Home() {
         <Footer />
       </div>
     </main>
-  );
+  )
 }

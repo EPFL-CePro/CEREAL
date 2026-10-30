@@ -1,13 +1,13 @@
-import { DefaultSession } from "next-auth";
+import { type DefaultSession } from "next-auth"
 
 declare module "next-auth" {
   interface User {
-    sciper: string;
-    hasCrepAccess?: boolean;
-    hasSACAccess?: boolean;
-    isAdmin?: boolean;
-    first_name?: string;
-    last_name?: string;
+    sciper: string
+    hasCrepAccess?: boolean
+    hasSACAccess?: boolean
+    isAdmin?: boolean
+    first_name?: string
+    last_name?: string
   }
 
   interface Session {
@@ -21,23 +21,23 @@ declare module "next-auth" {
       isAdmin: boolean
       first_name: string
       last_name: string
-      impersonating?: 'sac' | 'crep' | 'none' | null
+      impersonating?: "sac" | "crep" | "none" | null
     } & DefaultSession["user"]
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    oid?: string;
-    tid?: string;
-    uniqueid?: string;
-    username?: string;
-    hasCrepAccess?: boolean;
-    hasSACAccess?: boolean;
-    isAdmin?: boolean;
-    first_name: string;
-    last_name: string;
-    impersonate?: 'sac' | 'crep' | 'none' | null;
-    error?: string;
+    oid?: string
+    tid?: string
+    uniqueid?: string
+    username?: string
+    hasCrepAccess?: boolean
+    hasSACAccess?: boolean
+    isAdmin?: boolean
+    first_name: string
+    last_name: string
+    impersonate?: "sac" | "crep" | "none" | null
+    error?: string
   }
 }

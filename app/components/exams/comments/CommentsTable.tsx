@@ -1,62 +1,113 @@
-'use client';
-import { Comment } from '@/types/comment';
-import { useState } from 'react';
-import CommentModal from './CommentModal';
-import { User } from 'next-auth';
-import { deleteComment, insertComment, updateComment } from '@/app/lib/database';
-import { useRouter } from 'next/navigation';
-import { useConfirm } from '@/app/components/ConfirmProvider';
-import { Exam } from '@/types/exam';
-import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
+"use client"
+import { useState } from "react"
+
+import { useRouter } from "next/navigation"
+
+import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline"
+import { type User } from "next-auth"
+
+import { useConfirm } from "@/app/components/ConfirmProvider"
+import { deleteComment, insertComment, updateComment } from "@/app/lib/database"
+import { type Comment } from "@/types/comment"
+import { type Exam } from "@/types/exam"
+
+import CommentModal from "./CommentModal"
 
 interface CommentsTableProps {
-  comments: Comment[];
-  user: User;
-  examId: string;
-  exam: Exam;
+  comments: Comment[]
+  user: User
+  examId: string
+  exam: Exam
 }
 
 function formatDate(date: Date) {
-  return new Date(date).toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Zurich' });
+  return new Date(date).toLocaleString("fr-CH", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Europe/Zurich",
+  })
 }
 
-export default function CommentsTable({ comments, user, examId, exam }: CommentsTableProps) {
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [editingComment, setEditingComment] = useState<Comment | null>(null);
+export default function CommentsTable({
+  comments,
+  user,
+  examId,
+  exam,
+}: CommentsTableProps) {
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editingComment, setEditingComment] = useState<Comment | null>(null)
 
-  const router = useRouter();
-  const confirm = useConfirm();
+  const router = useRouter()
+  const confirm = useConfirm()
 
-  async function handleDeleteComment(comment:Comment) {
-    if(await confirm("Are you sure you want to delete this comment ?")) {
-      await deleteComment(comment);
-      router.refresh();
+  async function handleDeleteComment(comment: Comment) {
+    if (await confirm("Are you sure you want to delete this comment ?")) {
+      await deleteComment(comment)
+      router.refresh()
     }
   }
 
   return (
     <div className="overflow-x-auto rounded-lg">
-      <h1 className="font-bold text-3xl mb-8">Comments for exam {exam.code} - {exam.name} <i>(exam date : {exam.exam_date ? new Date(exam.exam_date).toLocaleDateString('fr-CH') : 'Not set'})</i></h1>
-      <button className="btn btn-primary mb-3" onClick={() => setAddModalOpen(true)}>Add a comment</button>
+      <h1 className="font-bold text-3xl mb-8">
+        Comments for exam {exam.code} - {exam.name}{" "}
+        <i>
+          (exam date :{" "}
+          {exam.exam_date
+            ? new Date(exam.exam_date).toLocaleDateString("fr-CH")
+            : "Not set"}
+          )
+        </i>
+      </h1>
+      <button
+        className="btn btn-primary mb-3"
+        onClick={() => setAddModalOpen(true)}
+      >
+        Add a comment
+      </button>
       {comments.length > 0 && (
         <table className="w-5xl divide-y divide-gray-200 text-left text-sm">
           <thead className="bg-gray-200 text-xs font-semibold uppercase tracking-normal text-gray-500">
             <tr>
-              <th scope="col" className="px-4 py-3 whitespace-nowrap">Date</th>
-              <th scope="col" className="px-4 py-3 whitespace-nowrap">Author</th>
-              <th scope="col" className="px-4 py-3">Comment</th>
-              <th scope="col" className="px-4 py-3">Actions</th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                Date
+              </th>
+              <th scope="col" className="px-4 py-3 whitespace-nowrap">
+                Author
+              </th>
+              <th scope="col" className="px-4 py-3">
+                Comment
+              </th>
+              <th scope="col" className="px-4 py-3">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {comments.map((comment) => (
               <tr key={comment.id} className="align-top">
-                <td className="px-4 py-3 whitespace-nowrap text-gray-950">{formatDate(comment.created_at)}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-gray-950">{comment.registered_by.name}</td>
-                <td className="px-4 py-3 whitespace-pre-wrap text-gray-950">{comment.content}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-gray-950">
+                  {formatDate(comment.created_at)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-gray-950">
+                  {comment.registered_by.name}
+                </td>
+                <td className="px-4 py-3 whitespace-pre-wrap text-gray-950">
+                  {comment.content}
+                </td>
                 <td className="flex gap-2 px-4 py-3">
-                  <button className="btn btn-primary" onClick={() => handleDeleteComment(comment)}><TrashIcon className="size-5" strokeWidth="1.50" /></button>
-                  <button className="btn btn-secondary" onClick={() => setEditingComment(comment)}><PencilIcon className="size-5" strokeWidth="1.50" /></button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleDeleteComment(comment)}
+                  >
+                    <TrashIcon className="size-5" strokeWidth="1.50" />
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setEditingComment(comment)}
+                  >
+                    <PencilIcon className="size-5" strokeWidth="1.50" />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -67,19 +118,16 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
         <CommentModal
           onClose={() => setAddModalOpen(false)}
           onSubmit={async (content) => {
-            await insertComment(
-              {
-                content,
-                exam_id: parseInt(examId),
-                registered_by:
-                {
-                  name: user.name || '',
-                  email: user.email || '',
-                  sciper: user.sciper
-                }
-              }
-            )
-            router.refresh();
+            await insertComment({
+              content,
+              exam_id: parseInt(examId),
+              registered_by: {
+                name: user.name || "",
+                email: user.email || "",
+                sciper: user.sciper,
+              },
+            })
+            router.refresh()
           }}
         />
       )}
@@ -88,8 +136,8 @@ export default function CommentsTable({ comments, user, examId, exam }: Comments
           initialContent={editingComment.content}
           onClose={() => setEditingComment(null)}
           onSubmit={async (content) => {
-            await updateComment({ id: editingComment.id, content });
-            router.refresh();
+            await updateComment({ id: editingComment.id, content })
+            router.refresh()
           }}
         />
       )}

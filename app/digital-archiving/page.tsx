@@ -1,16 +1,17 @@
-import { auth } from "@/auth";
-import DigitalForm from "../components/forms/digitalForm";
+import { auth } from "@/auth"
+
+import DigitalForm from "../components/forms/DigitalForm"
 
 export const metadata = {
-    title: "Register your exam",
+  title: "Register your exam",
 }
 
 export default async function Page() {
-    const session = await auth();
-    if (!session?.user) return;
-    return (
-        <main>
-            <DigitalForm user={session.user}/>
-        </main>
-    )
+  const session = await auth()
+  if (!session?.user) return
+  return (
+    <main>
+      <DigitalForm user={session.user} />
+    </main>
+  )
 }

@@ -1,28 +1,29 @@
-import {describe, expect, it} from "vitest";
-import {canAccessRoute} from "@/app/lib/auth/route-access";
+import { describe, expect, it } from "vitest"
 
-describe('canAccessRoute', () => {
-    it('denies the admin route to a user without any role', () => {
-        const userWithoutRole = { isAdmin: false };
+import { canAccessRoute } from "@/app/lib/auth/route-access"
 
-        expect(canAccessRoute(userWithoutRole, '/admin')).toBe(false);
-    });
+describe("canAccessRoute", () => {
+  it("denies the admin route to a user without any role", () => {
+    const userWithoutRole = { isAdmin: false }
 
-    it('allows the CREP route to a user with CREP access', () => {
-        const crepUser = { hasCrepAccess: true };
+    expect(canAccessRoute(userWithoutRole, "/admin")).toBe(false)
+  })
 
-        expect(canAccessRoute(crepUser, '/crep')).toBe(true);
-    });
+  it("allows the CREP route to a user with CREP access", () => {
+    const crepUser = { hasCrepAccess: true }
 
-    it('allows the SAC route to a user with SAC access', () => {
-        const sacUser = { hasSACAccess: true };
+    expect(canAccessRoute(crepUser, "/crep")).toBe(true)
+  })
 
-        expect(canAccessRoute(sacUser, '/sac-absences')).toBe(true);
-    });
+  it("allows the SAC route to a user with SAC access", () => {
+    const sacUser = { hasSACAccess: true }
 
-    it('allows a route that is not protected to a user without any role', () => {
-        const userWithoutRole = {};
+    expect(canAccessRoute(sacUser, "/sac-absences")).toBe(true)
+  })
 
-        expect(canAccessRoute(userWithoutRole, '/')).toBe(true);
-    });
-});
+  it("allows a route that is not protected to a user without any role", () => {
+    const userWithoutRole = {}
+
+    expect(canAccessRoute(userWithoutRole, "/")).toBe(true)
+  })
+})
