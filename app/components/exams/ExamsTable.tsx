@@ -25,6 +25,7 @@ import {
 } from "@tanstack/react-table"
 
 import { useConfirm } from "@/app/components/ConfirmProvider"
+import RemarkTextarea from "@/app/components/exams/exams-table/RemarkTextarea"
 import {
   deleteExam,
   getAcademicYearsFromExams,
@@ -35,7 +36,6 @@ import {
   getExamsByAcademicYear,
   updateExamDate,
   updateExamPagesNumber,
-  updateExamRemark,
   updateExamResponsible,
   updateExamService,
   updateExamServiceLevel,
@@ -47,6 +47,11 @@ import {
   fetchCeproAdminsIT,
   fetchTeachersByCourseCode,
 } from "@/app/lib/epfl/epfl-api"
+import {
+  formatContact,
+  getContactSearchText,
+} from "@/app/lib/exams/exam-contact"
+import { exportExamsToCsv } from "@/app/lib/exams/export-exams-csv"
 import { type Exam } from "@/types/exam"
 import { type ExamStatus } from "@/types/examStatus"
 import { type ExamType } from "@/types/examType"
@@ -59,15 +64,6 @@ interface ExamsTableProps {
   academicYear: string
 }
 
-type ExamContact = {
-  firstname?: string | null
-  lastname?: string | null
-  email?: string | null
-  sciper?: string | null
-}
-
-type ExamContactValue = string | ExamContact | null | undefined
-
 const COLUMNS_STORAGE_KEY = "cereal.examsTable.columns"
 
 // Other column settings (size, ...) can be added here later
@@ -75,40 +71,6 @@ type ColumnPreference = {
   id: string
   visible: boolean
 }
-
-type RemarkTextareaProps = {
-  id: string
-  initialValue?: string
-  onUpdateState: (id: string, updates: Partial<Exam>) => void
-}
-
-const RemarkTextarea = React.memo(function RemarkTextarea({
-  id,
-  initialValue,
-  onUpdateState,
-}: RemarkTextareaProps) {
-  const debounceRef = React.useRef<NodeJS.Timeout | null>(null)
-
-  return (
-    <textarea
-      className="min-h-[4.5rem] w-[13rem] rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
-      defaultValue={initialValue || ""}
-      rows={2}
-      onChange={(e) => {
-        const value = e.target.value
-
-        if (debounceRef.current) {
-          clearTimeout(debounceRef.current)
-        }
-
-        debounceRef.current = setTimeout(async () => {
-          await updateExamRemark(id, value)
-          onUpdateState(id, { remark: value })
-        }, 700)
-      }}
-    />
-  )
-})
 
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
@@ -146,61 +108,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     "h-9 max-w-[9rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
   const compactInputClassName =
     "h-9 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
-
-  const parseContact = React.useCallback(
-    (contact: ExamContactValue): ExamContact | null => {
-      if (!contact) return null
-      if (typeof contact === "object") return contact
-
-      try {
-        const parsed = JSON.parse(contact) as ExamContact
-        return parsed && typeof parsed === "object" ? parsed : null
-      } catch {
-        return { sciper: contact }
-      }
-    },
-    [],
-  )
-
-  const formatContact = React.useCallback(
-    (contact: ExamContactValue) => {
-      const parsedContact = parseContact(contact)
-      if (!parsedContact) return "Not set"
-
-      const fullName = [parsedContact.firstname, parsedContact.lastname]
-        .filter(Boolean)
-        .join(" ")
-        .trim()
-      const email = parsedContact.email?.trim()
-      const sciper = parsedContact.sciper?.trim()
-
-      if (fullName && email) return `${fullName} (${email})`
-      if (fullName) return fullName
-      if (email) return email
-      if (sciper) return sciper
-
-      return "Not set"
-    },
-    [parseContact],
-  )
-
-  const getContactSearchText = React.useCallback(
-    (contact: ExamContactValue) => {
-      const parsedContact = parseContact(contact)
-      if (!parsedContact) return ""
-
-      return [
-        parsedContact.firstname,
-        parsedContact.lastname,
-        parsedContact.email,
-        parsedContact.sciper,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-    },
-    [parseContact],
-  )
 
   const updateExamInState = React.useCallback(
     (examId: string, updates: Partial<Exam>) => {
@@ -917,8 +824,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       updateExamInState,
       handleOpenExamDetails,
       confirm,
-      formatContact,
-      getContactSearchText,
       compactSelectClassName,
       compactInputClassName,
     ],
@@ -1082,81 +987,6 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         .split("T")[0]
     : "Not set"
 
-  function exportToCSV(exams: Exam[]) {
-    // Avoiding weird things in the cell (commas, lists, ...) (mainly for the remark)
-    const csvCell = (value: unknown) => {
-      const text =
-        value === null || value === undefined || value === ""
-          ? "None"
-          : String(value)
-      return `"${text.replaceAll('"', '""')}"`
-    }
-
-    const headers = [
-      "ID",
-      "Code",
-      "Nom",
-      "Enseignants",
-      "Contact",
-      "Date examen",
-      "Type",
-      "Niveau service",
-      "Service",
-      "Status",
-      "Semestre",
-      "Nombre étudiants",
-      "Nombre pages",
-      "Remarque",
-      "Responsable",
-    ]
-
-    const rows = exams.map((exam) => [
-      exam.id,
-      exam.code,
-      exam.name,
-      teachersByCourse[exam.code]
-        ? teachersByCourse[exam.code]
-            .map((teacher) => `${teacher.firstname} ${teacher.name}`)
-            .join(" | ")
-        : "No teacher",
-      parseContact(exam.contact)?.email,
-      exam.exam_date
-        ? new Date(exam.exam_date).toLocaleDateString("fr-FR")
-        : "None",
-      allExamTypes.find((element: ExamType) => element.id === exam.exam_type_id)
-        ?.code,
-      allServiceLevels.find(
-        (element: ServiceLevel) => element.id === exam.service_level_id,
-      )?.name,
-      allServices.find((element: Service) => element.id === exam.service_id)
-        ?.code,
-      allExamStatus.find(
-        (element: ExamStatus) => element.id === exam.exam_status_id,
-      )?.code,
-      exam.exam_semester,
-      exam.nb_students,
-      exam.nb_pages,
-      exam.remark,
-      exam.responsible_id,
-    ])
-
-    const checkedExamsCSV = [headers, ...rows]
-      .map((row) => row.map(csvCell).join(","))
-      .join("\r\n")
-
-    const blob = new Blob([checkedExamsCSV], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `exported_exams_${new Date().toISOString().split("T")[0]}.csv`
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
-
-  function exportExams(exams: Exam[]) {
-    exportToCSV(exams)
-  }
-
   return (
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-10 lg:px-14">
       <div className="mx-auto">
@@ -1275,10 +1105,17 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               <button
                 className="btn btn-primary text-nowrap"
                 onClick={() =>
-                  exportExams(
+                  exportExamsToCsv(
                     table
                       .getPrePaginationRowModel()
                       .rows.map((row) => row.original),
+                    {
+                      teachersByCourse,
+                      examTypes: allExamTypes,
+                      serviceLevels: allServiceLevels,
+                      services: allServices,
+                      examStatus: allExamStatus,
+                    },
                   )
                 }
               >
