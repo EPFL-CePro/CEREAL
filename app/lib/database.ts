@@ -146,7 +146,11 @@ export async function getExamCountsByAcademicYearAndService(): Promise<
   >(
     'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
   )
-  return rows.map((row) => ({ ...row, count: Number(row.count) }))
+  return rows.map((row) => ({
+    academicYearId: row.academic_year_id,
+    serviceId: row.service_id,
+    count: Number(row.count),
+  }))
 }
 
 export async function getCopyAndPageCountsByAcademicYear(): Promise<
@@ -163,7 +167,7 @@ export async function getCopyAndPageCountsByAcademicYear(): Promise<
     'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies, COALESCE(SUM(nb_students * nb_pages), 0) AS pages FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
   )
   return rows.map((row) => ({
-    ...row,
+    academicYearId: row.academic_year_id,
     copies: Number(row.copies),
     pages: Number(row.pages),
   }))
