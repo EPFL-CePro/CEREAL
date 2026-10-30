@@ -53,13 +53,10 @@ export async function uploadXLSXFile(
   file: File,
   folderName: string,
 ): Promise<string> {
-  console.log("start uploading XLSX file")
   const xlsxDirectory = safeJoinPath(getDeferredExamsDir(), folderName)
-  console.log("XLSX directory :", xlsxDirectory.toString())
 
   //create folder
   await mkdir(xlsxDirectory, { recursive: true })
-  console.log("XLSX folder already exists or has been created")
 
   const existingXLSXFile = await checkExistingXLSXFile(folderName)
 
@@ -68,14 +65,12 @@ export async function uploadXLSXFile(
     const backupXLSXFolderPath = safeJoinPath(xlsxDirectory, "old")
 
     await mkdir(backupXLSXFolderPath, { recursive: true })
-    console.log("backup XLSX folder already exists or has been created")
 
     const backupExistingFilePath = safeJoinPath(
       backupXLSXFolderPath,
       existingXLSXFile,
     )
     await rename(existingXLSXPath, backupExistingFilePath)
-    console.log(`${existingXLSXFile} has been backed up`)
   }
 
   const arrayBuffer = await file.arrayBuffer()
@@ -84,8 +79,6 @@ export async function uploadXLSXFile(
   const filePath = safeJoinPath(xlsxDirectory, file.name)
 
   await writeFile(filePath, buffer)
-
-  console.log(`${filePath} created`)
 
   return filePath
 }
@@ -261,13 +254,10 @@ export async function getBOFileRowsForSciper(
 
 export async function uploadAbsenceFile(file: File): Promise<string> {
   // TODO - Maybe check the file type
-  console.log("start upload absence file")
   const absencesDir = safeJoinPath(getDeferredExamsDir(), "certificates")
-  console.log("Absences Dir :", absencesDir.toString())
 
   //create folder
   await mkdir(absencesDir, { recursive: true })
-  console.log("folder created!")
 
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
@@ -277,7 +267,6 @@ export async function uploadAbsenceFile(file: File): Promise<string> {
 
   const filePath = safeJoinPath(absencesDir, fileName)
   await writeFile(filePath, buffer)
-  console.log("saved path:", filePath.toString())
 
   return fileName
 }
