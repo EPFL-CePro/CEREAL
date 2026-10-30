@@ -1,27 +1,30 @@
-'use server';
+"use server"
 
-import { getEmailTemplate } from '@/app/lib/database';
+import { getEmailTemplate } from "@/app/lib/database"
 import {
-    EMAIL_TEMPLATES,
-    EmailTemplateKey,
-    TemplateContext,
-    renderString,
-} from '@/app/lib/mail/email-templates';
-import {sendMail} from "@/app/lib/mail/send-mail";
+  EMAIL_TEMPLATES,
+  type EmailTemplateKey,
+  type TemplateContext,
+  renderString,
+} from "@/app/lib/mail/email-templates"
+import { sendMail } from "@/app/lib/mail/send-mail"
 
 /* Send one of the admin-customizable emails. The template (subject, body,
 recipients) is loaded from the DB and falls back to the defaults defined in
 the registry if the row is missing. All {{token}} placeholders are resolved
 from the provided context. */
-export async function sendTemplatedMail(key: EmailTemplateKey, context: TemplateContext) {
-    const defaults = EMAIL_TEMPLATES[key].defaults;
-    const template = await getEmailTemplate(key);
+export async function sendTemplatedMail(
+  key: EmailTemplateKey,
+  context: TemplateContext,
+) {
+  const defaults = EMAIL_TEMPLATES[key].defaults
+  const template = await getEmailTemplate(key)
 
-    const subject = renderString(template?.subject ?? defaults.subject, context);
-    const body = renderString(template?.body ?? defaults.body, context);
-    const to = renderString(template?.recipients_to ?? defaults.to, context);
-    const cc = renderString(template?.recipients_cc ?? defaults.cc, context);
-    const replyTo = renderString(template?.reply_to ?? defaults.replyTo, context);
+  const subject = renderString(template?.subject ?? defaults.subject, context)
+  const body = renderString(template?.body ?? defaults.body, context)
+  const to = renderString(template?.recipients_to ?? defaults.to, context)
+  const cc = renderString(template?.recipients_cc ?? defaults.cc, context)
+  const replyTo = renderString(template?.reply_to ?? defaults.replyTo, context)
 
-    return sendMail(to, subject, body, cc, replyTo || undefined);
+  return sendMail(to, subject, body, cc, replyTo || undefined)
 }

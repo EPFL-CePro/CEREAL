@@ -1,29 +1,30 @@
 // app/api/cereal/diff-exams/get-bo-user/route.ts
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { getBOFileRowsForSciper } from "@/app/lib/files/deferred-exams-files";
+import { NextResponse } from "next/server"
+
+import { getBOFileRowsForSciper } from "@/app/lib/files/deferred-exams-files"
+import { auth } from "@/auth"
 
 // ensure Node.js runtime (needed for fs / NAS)
-export const runtime = "nodejs";
+export const runtime = "nodejs"
 
 export async function GET() {
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const boFile = await getBOFileRowsForSciper(session.user.sciper);
+    const boFile = await getBOFileRowsForSciper(session.user.sciper)
 
     return NextResponse.json({
-      boFile
-    });
+      boFile,
+    })
   } catch (err) {
-    console.error(err);
+    console.error(err)
     return NextResponse.json(
       { error: "Failed to get BO file" },
-      { status: 500 }
-    );
+      { status: 500 },
+    )
   }
 }

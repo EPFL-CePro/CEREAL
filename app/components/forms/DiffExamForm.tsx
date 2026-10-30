@@ -141,7 +141,7 @@ export default function App({ user }: DiffExamFormProps) {
       return
     }
 
-    if (data.absenceFile.length == 0) {
+    if (data.absenceFile.length === 0) {
       openModal("File Error", "Please upload a valid absence file.")
       setIsSubmitting(false)
       return

@@ -1,25 +1,33 @@
-"use client";
+"use client"
 
-import { BarChart } from "@mui/x-charts/BarChart";
+import { BarChart } from "@mui/x-charts/BarChart"
 
 export type ExamsByServiceSeries = {
-  serviceId: number;
-  label: string;
-  counts: number[];
-};
+  serviceId: number
+  label: string
+  counts: number[]
+}
 
 type ExamsByServiceChartProps = {
-  academicYears: string[];
-  series: ExamsByServiceSeries[];
-};
+  academicYears: string[]
+  series: ExamsByServiceSeries[]
+}
 
-const chartColors = ["#36a2eb", "#ff6384", "#ff9f40", "#ffcd56", "#4bc0c0", "#9966ff", "#c9cbcf"];
+const chartColors = [
+  "#36a2eb",
+  "#ff6384",
+  "#ff9f40",
+  "#ffcd56",
+  "#4bc0c0",
+  "#9966ff",
+  "#c9cbcf",
+]
 
 function formatEvolution(current: number, previous: number | undefined) {
-  if (!previous) return "";
+  if (!previous) return ""
 
-  const evolution = ((current - previous) / previous) * 100;
-  return `(${evolution >= 0 ? "+" : ""}${evolution.toFixed(2)} %)`;
+  const evolution = ((current - previous) / previous) * 100
+  return `(${evolution >= 0 ? "+" : ""}${evolution.toFixed(2)} %)`
 }
 
 export default function ExamsByServiceChart({
@@ -27,14 +35,18 @@ export default function ExamsByServiceChart({
   series,
 }: ExamsByServiceChartProps) {
   const totals = academicYears.map((_, index) =>
-    series.reduce((sum, { counts }) => sum + counts[index], 0)
-  );
+    series.reduce((sum, { counts }) => sum + counts[index], 0),
+  )
   const tickLabels = new Map(
     academicYears.map((academicYear, index) => {
-      const evolution = index === 0 ? "" : formatEvolution(totals[index], totals[index - 1]);
-      return [academicYear, evolution ? `${academicYear}\n${evolution}` : academicYear];
-    })
-  );
+      const evolution =
+        index === 0 ? "" : formatEvolution(totals[index], totals[index - 1])
+      return [
+        academicYear,
+        evolution ? `${academicYear}\n${evolution}` : academicYear,
+      ]
+    }),
+  )
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -43,8 +55,8 @@ export default function ExamsByServiceChart({
           Annual statistics
         </h2>
         <p className="mt-3 text-sm leading-6 text-gray-600">
-          Number of exams per academic year, grouped by service. The percentage is the
-          evolution of the total compared to the previous academic year.
+          Number of exams per academic year, grouped by service. The percentage
+          is the evolution of the total compared to the previous academic year.
         </p>
       </div>
 
@@ -58,7 +70,7 @@ export default function ExamsByServiceChart({
                 height: 44,
                 valueFormatter: (academicYear: string, context) =>
                   context.location === "tick"
-                    ? tickLabels.get(academicYear) ?? academicYear
+                    ? (tickLabels.get(academicYear) ?? academicYear)
                     : `${academicYear} (total: ${totals[academicYears.indexOf(academicYear)]})`,
               },
             ]}
@@ -95,5 +107,5 @@ export default function ExamsByServiceChart({
         )}
       </div>
     </section>
-  );
+  )
 }

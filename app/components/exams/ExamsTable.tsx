@@ -1,31 +1,59 @@
-'use client'
+"use client"
 
-import * as React from 'react'
+import * as React from "react"
+
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+
 import {
-  ColumnDef,
-  ColumnFiltersState,
+  ChevronDownIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  ViewColumnsIcon,
+} from "@heroicons/react/24/outline"
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  SortingState,
+  type SortingState,
   useReactTable,
-  VisibilityState,
-} from '@tanstack/react-table'
-import { deleteExam, getAcademicYearsFromExams, getAllExamStatus, getAllExamTypes, getAllServiceLevels, getAllServices, getExamsByAcademicYear, updateExamDate, updateExamPagesNumber, updateExamRemark, updateExamResponsible, updateExamService, updateExamServiceLevel, updateExamStatus, updateExamStudentsNumber, updateExamType } from '@/app/lib/database'
-import { Exam } from '@/types/exam'
-import { useRouter } from 'next/navigation'
-import { ServiceLevel } from '@/types/serviceLevel'
-import { Service } from '@/types/service'
-import { ExamType } from '@/types/examType'
-import { ExamStatus } from '@/types/examStatus'
-import { fetchCeproAdminsIT, fetchTeachersByCourseCode } from '@/app/lib/epfl/epfl-api'
-import { GroupUser } from '@/types/groupUser'
-import { Teacher } from '@/types/teacher'
-import { ChevronDownIcon, FunnelIcon, MagnifyingGlassIcon, ViewColumnsIcon } from "@heroicons/react/24/outline";
-import Link from 'next/link'
-import { useConfirm } from '@/app/components/ConfirmProvider'
+  type VisibilityState,
+} from "@tanstack/react-table"
+
+import { useConfirm } from "@/app/components/ConfirmProvider"
+import {
+  deleteExam,
+  getAcademicYearsFromExams,
+  getAllExamStatus,
+  getAllExamTypes,
+  getAllServiceLevels,
+  getAllServices,
+  getExamsByAcademicYear,
+  updateExamDate,
+  updateExamPagesNumber,
+  updateExamRemark,
+  updateExamResponsible,
+  updateExamService,
+  updateExamServiceLevel,
+  updateExamStatus,
+  updateExamStudentsNumber,
+  updateExamType,
+} from "@/app/lib/database"
+import {
+  fetchCeproAdminsIT,
+  fetchTeachersByCourseCode,
+} from "@/app/lib/epfl/epfl-api"
+import { type Exam } from "@/types/exam"
+import { type ExamStatus } from "@/types/examStatus"
+import { type ExamType } from "@/types/examType"
+import { type GroupUser } from "@/types/groupUser"
+import { type Service } from "@/types/service"
+import { type ServiceLevel } from "@/types/serviceLevel"
+import { type Teacher } from "@/types/teacher"
 
 interface ExamsTableProps {
   academicYear: string
@@ -40,7 +68,7 @@ type ExamContact = {
 
 type ExamContactValue = string | ExamContact | null | undefined
 
-const COLUMNS_STORAGE_KEY = 'cereal.examsTable.columns'
+const COLUMNS_STORAGE_KEY = "cereal.examsTable.columns"
 
 // Other column settings (size, ...) can be added here later
 type ColumnPreference = {
@@ -49,122 +77,145 @@ type ColumnPreference = {
 }
 
 type RemarkTextareaProps = {
-  id: string;
-  initialValue?: string;
-  onUpdateState: (id: string, updates: Partial<Exam>) => void;
-};
+  id: string
+  initialValue?: string
+  onUpdateState: (id: string, updates: Partial<Exam>) => void
+}
 
-const RemarkTextarea = React.memo(
-  function RemarkTextarea({ id, initialValue, onUpdateState }: RemarkTextareaProps) {
-    const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
+const RemarkTextarea = React.memo(function RemarkTextarea({
+  id,
+  initialValue,
+  onUpdateState,
+}: RemarkTextareaProps) {
+  const debounceRef = React.useRef<NodeJS.Timeout | null>(null)
 
-    return (
-      <textarea
-        className="min-h-[4.5rem] w-[13rem] rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
-        defaultValue={initialValue || ''}
-        rows={2}
-        onChange={(e) => {
-          const value = e.target.value;
+  return (
+    <textarea
+      className="min-h-[4.5rem] w-[13rem] rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+      defaultValue={initialValue || ""}
+      rows={2}
+      onChange={(e) => {
+        const value = e.target.value
 
-          if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-          }
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current)
+        }
 
-          debounceRef.current = setTimeout(async () => {
-            await updateExamRemark(id, value);
-            onUpdateState(id, {remark: value});
-          }, 700);
-        }}
-      />
-    );
-  }
-);
+        debounceRef.current = setTimeout(async () => {
+          await updateExamRemark(id, value)
+          onUpdateState(id, { remark: value })
+        }, 700)
+      }}
+    />
+  )
+})
 
 export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const router = useRouter()
   const confirm = useConfirm()
-  const [globalFilter, setGlobalFilter] = React.useState('') // Plain text searching, searching in the whole table
+  const [globalFilter, setGlobalFilter] = React.useState("") // Plain text searching, searching in the whole table
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [exams, setExams] = React.useState<Exam[]>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [isColumnVisibilityLoaded, setIsColumnVisibilityLoaded] = React.useState(false)
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  )
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
+  const [isColumnVisibilityLoaded, setIsColumnVisibilityLoaded] =
+    React.useState(false)
   const [academicYears, setAcademicYears] = React.useState<string[]>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   })
-  const [allServiceLevels, setAllServiceLevels] = React.useState<ServiceLevel[]>([])
+  const [allServiceLevels, setAllServiceLevels] = React.useState<
+    ServiceLevel[]
+  >([])
   const [allServices, setAllServices] = React.useState<Service[]>([])
   const [allExamTypes, setAllExamTypes] = React.useState<ExamType[]>([])
   const [allExamStatus, setAllExamStatus] = React.useState<ExamStatus[]>([])
   const [selectedExam, setSelectedExam] = React.useState<Exam | null>(null)
   const [isLoadingTable, setIsLoadingTable] = React.useState(true)
-  const [allCeproAdminsIT, setAllCeproAdminsIT] = React.useState<GroupUser[]>([])
-  const [teachersByCourse, setTeachersByCourse] = React.useState<Record<string, Teacher[]>>({})
+  const [allCeproAdminsIT, setAllCeproAdminsIT] = React.useState<GroupUser[]>(
+    [],
+  )
+  const [teachersByCourse, setTeachersByCourse] = React.useState<
+    Record<string, Teacher[]>
+  >({})
   const compactSelectClassName =
-    'h-9 max-w-[9rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600'
+    "h-9 max-w-[9rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
   const compactInputClassName =
-    'h-9 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600'
+    "h-9 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
 
-  const parseContact = React.useCallback((contact: ExamContactValue): ExamContact | null => {
-    if (!contact) return null
-    if (typeof contact === 'object') return contact
+  const parseContact = React.useCallback(
+    (contact: ExamContactValue): ExamContact | null => {
+      if (!contact) return null
+      if (typeof contact === "object") return contact
 
-    try {
-      const parsed = JSON.parse(contact) as ExamContact
-      return parsed && typeof parsed === 'object' ? parsed : null
-    } catch {
-      return { sciper: contact }
-    }
-  }, [])
+      try {
+        const parsed = JSON.parse(contact) as ExamContact
+        return parsed && typeof parsed === "object" ? parsed : null
+      } catch {
+        return { sciper: contact }
+      }
+    },
+    [],
+  )
 
-  const formatContact = React.useCallback((contact: ExamContactValue) => {
-    const parsedContact = parseContact(contact)
-    if (!parsedContact) return 'Not set'
+  const formatContact = React.useCallback(
+    (contact: ExamContactValue) => {
+      const parsedContact = parseContact(contact)
+      if (!parsedContact) return "Not set"
 
-    const fullName = [parsedContact.firstname, parsedContact.lastname]
-      .filter(Boolean)
-      .join(' ')
-      .trim()
-    const email = parsedContact.email?.trim()
-    const sciper = parsedContact.sciper?.trim()
+      const fullName = [parsedContact.firstname, parsedContact.lastname]
+        .filter(Boolean)
+        .join(" ")
+        .trim()
+      const email = parsedContact.email?.trim()
+      const sciper = parsedContact.sciper?.trim()
 
-    if (fullName && email) return `${fullName} (${email})`
-    if (fullName) return fullName
-    if (email) return email
-    if (sciper) return sciper
+      if (fullName && email) return `${fullName} (${email})`
+      if (fullName) return fullName
+      if (email) return email
+      if (sciper) return sciper
 
-    return 'Not set'
-  }, [parseContact])
+      return "Not set"
+    },
+    [parseContact],
+  )
 
-  const getContactSearchText = React.useCallback((contact: ExamContactValue) => {
-    const parsedContact = parseContact(contact)
-    if (!parsedContact) return ''
+  const getContactSearchText = React.useCallback(
+    (contact: ExamContactValue) => {
+      const parsedContact = parseContact(contact)
+      if (!parsedContact) return ""
 
-    return [
-      parsedContact.firstname,
-      parsedContact.lastname,
-      parsedContact.email,
-      parsedContact.sciper,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-  }, [parseContact])
+      return [
+        parsedContact.firstname,
+        parsedContact.lastname,
+        parsedContact.email,
+        parsedContact.sciper,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+    },
+    [parseContact],
+  )
 
   const updateExamInState = React.useCallback(
     (examId: string, updates: Partial<Exam>) => {
       setExams((currentExams) =>
         currentExams.map((exam) =>
-          exam.id === examId ? { ...exam, ...updates } : exam
-        )
+          exam.id === examId ? { ...exam, ...updates } : exam,
+        ),
       )
       setSelectedExam((currentExam) =>
-        currentExam?.id === examId ? { ...currentExam, ...updates } : currentExam
+        currentExam?.id === examId
+          ? { ...currentExam, ...updates }
+          : currentExam,
       )
     },
-    []
+    [],
   )
 
   // Restoring the column props chosen by the user
@@ -175,14 +226,16 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         const parsed: unknown = JSON.parse(saved)
         if (Array.isArray(parsed)) {
           const validPreferences = (parsed as ColumnPreference[]).filter(
-              (column) => typeof column?.id === 'string' && typeof column.visible === 'boolean'
-          );
+            (column) =>
+              typeof column?.id === "string" &&
+              typeof column.visible === "boolean",
+          )
 
           const columnVisibility = Object.fromEntries(
-              validPreferences.map((column) => [column.id, column.visible])
-          );
+            validPreferences.map((column) => [column.id, column.visible]),
+          )
 
-          setColumnVisibility(columnVisibility);
+          setColumnVisibility(columnVisibility)
         }
       }
     } catch {
@@ -216,7 +269,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           fetchCeproAdminsIT() as Promise<GroupUser[]>,
           // The table can still render even if Oasis is down
           fetchTeachersByCourseCode(academicYear).catch((error) => {
-            console.error('Failed to fetch teachers from Oasis', error)
+            console.error("Failed to fetch teachers from Oasis", error)
             return {} as Record<string, Teacher[]>
           }),
         ])
@@ -247,79 +300,94 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     setSelectedExam(exam)
   }, [])
 
-
-
   // UseMemo to prevent render to destroy and recreate all the cells (and make the focus of the remark textarea lost).
-  const columns = React.useMemo<ColumnDef<Exam>[]>(() => [
-    {
-      accessorKey: 'code',
-      header: 'Code',
-      cell: ({ row }) => (
-        <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-mono font-semibold tracking-[0.14em] text-red-700">
-          {row.original.code}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'name',
-      header: 'Course',
-      cell: ({ row }) => (
-        <div className="min-w-0 max-w-[18rem]">
-          <div className="flex items-center text-sm font-semibold text-slate-950 md:text-base">
-            <span
-              className="mr-2 h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: allExamStatus.find((element:ExamStatus) => element.id == row.original.exam_status_id)?.color}}
-            />
-            <span className="truncate">{row.original.name}</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: 'teachers',
-      header: 'Teachers',
-      // Joined string so that the default text filtering and sorting apply
-      accessorFn: (row) =>
-        (teachersByCourse[row.code] ?? [])
-          .map((t) => `${t.firstname} ${t.name}`)
-          .join(`,`),
-      cell: ({ row }) => {
-        const teachers = teachersByCourse[row.original.code] ?? []
-        if (!teachers.length) {
-          return <div className="min-w-0 max-w-[14rem] text-sm text-slate-700">—</div>
-        }
-        return (
-          <div className="min-w-0 max-w-[14rem] text-sm text-slate-700">
-            {teachers.map((t) => (
-              <div key={`${t.sciper ?? `${t.firstname} ${t.name}`}`}>
-                {t.firstname} {t.name}
-              </div>
-            ))}
-          </div>
-        )
-      },
-    },
-    {
-      id: 'contact',
-      header: 'Contact',
-      accessorFn: (row) => getContactSearchText(row.contact),
-      cell: ({ row }) => (
-        <div className="min-w-0 max-w-[16rem] text-sm text-slate-700">
-          <span className="line-clamp-2">{formatContact(row.original.contact)}</span>
-        </div>
-      ),
-      sortingFn: (firstRow, secondRow) =>
-        getContactSearchText(firstRow.original.contact).localeCompare(
-          getContactSearchText(secondRow.original.contact)
+  const columns = React.useMemo<ColumnDef<Exam>[]>(
+    () => [
+      {
+        accessorKey: "code",
+        header: "Code",
+        cell: ({ row }) => (
+          <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-mono font-semibold tracking-[0.14em] text-red-700">
+            {row.original.code}
+          </span>
         ),
-    },
-    {
-      accessorKey: 'service_level_id',
-      header: 'Service level',
-      cell: ({ row }) => (
-        <div>
-          <select
-              defaultValue={allServiceLevels.find((element:ServiceLevel) => element.id == row.original.service_level_id)?.id}
+      },
+      {
+        accessorKey: "name",
+        header: "Course",
+        cell: ({ row }) => (
+          <div className="min-w-0 max-w-[18rem]">
+            <div className="flex items-center text-sm font-semibold text-slate-950 md:text-base">
+              <span
+                className="mr-2 h-2 w-2 shrink-0 rounded-full"
+                style={{
+                  backgroundColor: allExamStatus.find(
+                    (element: ExamStatus) =>
+                      element.id === row.original.exam_status_id,
+                  )?.color,
+                }}
+              />
+              <span className="truncate">{row.original.name}</span>
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: "teachers",
+        header: "Teachers",
+        // Joined string so that the default text filtering and sorting apply
+        accessorFn: (row) =>
+          (teachersByCourse[row.code] ?? [])
+            .map((t) => `${t.firstname} ${t.name}`)
+            .join(`,`),
+        cell: ({ row }) => {
+          const teachers = teachersByCourse[row.original.code] ?? []
+          if (!teachers.length) {
+            return (
+              <div className="min-w-0 max-w-[14rem] text-sm text-slate-700">
+                —
+              </div>
+            )
+          }
+          return (
+            <div className="min-w-0 max-w-[14rem] text-sm text-slate-700">
+              {teachers.map((t) => (
+                <div key={`${t.sciper ?? `${t.firstname} ${t.name}`}`}>
+                  {t.firstname} {t.name}
+                </div>
+              ))}
+            </div>
+          )
+        },
+      },
+      {
+        id: "contact",
+        header: "Contact",
+        accessorFn: (row) => getContactSearchText(row.contact),
+        cell: ({ row }) => (
+          <div className="min-w-0 max-w-[16rem] text-sm text-slate-700">
+            <span className="line-clamp-2">
+              {formatContact(row.original.contact)}
+            </span>
+          </div>
+        ),
+        sortingFn: (firstRow, secondRow) =>
+          getContactSearchText(firstRow.original.contact).localeCompare(
+            getContactSearchText(secondRow.original.contact),
+          ),
+      },
+      {
+        accessorKey: "service_level_id",
+        header: "Service level",
+        cell: ({ row }) => (
+          <div>
+            <select
+              defaultValue={
+                allServiceLevels.find(
+                  (element: ServiceLevel) =>
+                    element.id === row.original.service_level_id,
+                )?.id
+              }
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamServiceLevel(row.original.id, e.target.value)
@@ -334,46 +402,55 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </option>
               ))}
             </select>
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim().toLowerCase()
-        if (!search) return true
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "")
+            .trim()
+            .toLowerCase()
+          if (!search) return true
 
-        const serviceLevelName =
-          allServiceLevels
-            .find(
-              (element: ServiceLevel) => element.id == row.getValue(columnId)
-            )
-            ?.name.toLowerCase() ?? ''
+          const serviceLevelName =
+            allServiceLevels
+              .find(
+                (element: ServiceLevel) =>
+                  element.id === row.getValue(columnId),
+              )
+              ?.name.toLowerCase() ?? ""
 
-        return serviceLevelName.includes(search)
+          return serviceLevelName.includes(search)
+        },
+        sortingFn: (firstRow, secondRow, columnId) => {
+          const serviceLevelNameA =
+            allServiceLevels
+              .find(
+                (element: ServiceLevel) =>
+                  element.id === firstRow.getValue(columnId),
+              )
+              ?.name.toLowerCase() ?? ""
+
+          const serviceLevelNameB =
+            allServiceLevels
+              .find(
+                (element: ServiceLevel) =>
+                  element.id === secondRow.getValue(columnId),
+              )
+              ?.name.toLowerCase() ?? ""
+
+          return serviceLevelNameA.localeCompare(serviceLevelNameB)
+        },
       },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const serviceLevelNameA =
-          allServiceLevels
-            .find(
-              (element: ServiceLevel) => element.id == firstRow.getValue(columnId)
-            )
-            ?.name.toLowerCase() ?? ''
-
-        const serviceLevelNameB =
-          allServiceLevels
-            .find(
-              (element: ServiceLevel) => element.id == secondRow.getValue(columnId)
-            )
-            ?.name.toLowerCase() ?? ''
-
-        return serviceLevelNameA.localeCompare(serviceLevelNameB)
-      },
-    },
-    {
-      accessorKey: 'service_id',
-      header: 'Service',
-      cell: ({ row }) => (
-        <div>
-          <select
-              defaultValue={allServices.find((element:Service) => element.id == row.original.service_id)?.id}
+      {
+        accessorKey: "service_id",
+        header: "Service",
+        cell: ({ row }) => (
+          <div>
+            <select
+              defaultValue={
+                allServices.find(
+                  (element: Service) => element.id === row.original.service_id,
+                )?.id
+              }
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamService(row.original.id, e.target.value)
@@ -388,46 +465,53 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </option>
               ))}
             </select>
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim().toLowerCase()
-        if (!search) return true
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "")
+            .trim()
+            .toLowerCase()
+          if (!search) return true
 
-        const serviceCode =
-          allServices
-            .find(
-              (element: Service) => element.id == row.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
+          const serviceCode =
+            allServices
+              .find((element: Service) => element.id === row.getValue(columnId))
+              ?.code.toLowerCase() ?? ""
 
-        return serviceCode.includes(search)
+          return serviceCode.includes(search)
+        },
+        sortingFn: (firstRow, secondRow, columnId) => {
+          const serviceCodeA =
+            allServices
+              .find(
+                (element: Service) =>
+                  element.id === firstRow.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
+
+          const serviceCodeB =
+            allServices
+              .find(
+                (element: Service) =>
+                  element.id === secondRow.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
+
+          return serviceCodeA.localeCompare(serviceCodeB)
+        },
       },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const serviceCodeA =
-          allServices
-            .find(
-              (element: Service) => element.id == firstRow.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
-
-        const serviceCodeB =
-          allServices
-            .find(
-              (element: Service) => element.id == secondRow.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
-
-        return serviceCodeA.localeCompare(serviceCodeB)
-      },
-    },
-    {
-      accessorKey: 'exam_type_id',
-      header: 'Exam type',
-      cell: ({ row }) => (
-        <div>
-          <select
-              defaultValue={allExamTypes.find((element:ExamType) => element.id == row.original.exam_type_id)?.id}
+      {
+        accessorKey: "exam_type_id",
+        header: "Exam type",
+        cell: ({ row }) => (
+          <div>
+            <select
+              defaultValue={
+                allExamTypes.find(
+                  (element: ExamType) =>
+                    element.id === row.original.exam_type_id,
+                )?.id
+              }
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamType(row.original.id, e.target.value)
@@ -442,46 +526,55 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </option>
               ))}
             </select>
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim().toLowerCase()
-        if (!search) return true
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "")
+            .trim()
+            .toLowerCase()
+          if (!search) return true
 
-        const examTypeCode =
-          allExamTypes
-            .find(
-              (element: ExamType) => element.id == row.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
+          const examTypeCode =
+            allExamTypes
+              .find(
+                (element: ExamType) => element.id === row.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
 
-        return examTypeCode.includes(search)
+          return examTypeCode.includes(search)
+        },
+        sortingFn: (firstRow, secondRow, columnId) => {
+          const examTypeCodeA =
+            allExamTypes
+              .find(
+                (element: ExamType) =>
+                  element.id === firstRow.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
+
+          const examTypeCodeB =
+            allExamTypes
+              .find(
+                (element: ExamType) =>
+                  element.id === secondRow.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
+
+          return examTypeCodeA.localeCompare(examTypeCodeB)
+        },
       },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const examTypeCodeA =
-          allExamTypes
-            .find(
-              (element: ExamType) => element.id == firstRow.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
-
-        const examTypeCodeB =
-          allExamTypes
-            .find(
-              (element: ExamType) => element.id == secondRow.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
-
-        return examTypeCodeA.localeCompare(examTypeCodeB)
-      },
-    },
-    {
-      accessorKey: 'exam_status_id',
-      header: 'Exam status',
-      cell: ({ row }) => (
-        <div>
-          <select
-              defaultValue={allExamStatus.find((element:ExamStatus) => element.id == row.original.exam_status_id)?.id}
+      {
+        accessorKey: "exam_status_id",
+        header: "Exam status",
+        cell: ({ row }) => (
+          <div>
+            <select
+              defaultValue={
+                allExamStatus.find(
+                  (element: ExamStatus) =>
+                    element.id === row.original.exam_status_id,
+                )?.id
+              }
               className={compactSelectClassName}
               onChange={async (e) => {
                 await updateExamStatus(row.original.id, e.target.value)
@@ -496,161 +589,182 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </option>
               ))}
             </select>
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim().toLowerCase()
-        if (!search) return true
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "")
+            .trim()
+            .toLowerCase()
+          if (!search) return true
 
-        const examStatusCode =
-          allExamStatus
-            .find(
-              (element: ExamStatus) => element.id == row.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
+          const examStatusCode =
+            allExamStatus
+              .find(
+                (element: ExamStatus) => element.id === row.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
 
-        return examStatusCode.includes(search)
+          return examStatusCode.includes(search)
+        },
+        sortingFn: (firstRow, secondRow, columnId) => {
+          const examStatusCodeA =
+            allExamStatus
+              .find(
+                (element: ExamStatus) =>
+                  element.id === firstRow.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
+
+          const examStatusCodeB =
+            allExamStatus
+              .find(
+                (element: ExamStatus) =>
+                  element.id === secondRow.getValue(columnId),
+              )
+              ?.code.toLowerCase() ?? ""
+
+          return examStatusCodeA.localeCompare(examStatusCodeB)
+        },
       },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const examStatusCodeA =
-          allExamStatus
-            .find(
-              (element: ExamStatus) => element.id == firstRow.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
+      {
+        accessorKey: "exam_date",
+        header: "Exam date",
+        cell: ({ row }) => (
+          <div>
+            <input
+              type="date"
+              defaultValue={
+                row.original.exam_date
+                  ? new Date(row.original.exam_date as string | Date)
+                      .toISOString()
+                      .split("T")[0]
+                  : ""
+              }
+              className={`${compactInputClassName} w-[8.5rem]`}
+              onChange={async (e) => {
+                await updateExamDate(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  exam_date: e.target.value || null,
+                })
+              }}
+            />
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "").trim()
+          if (!search) return true
 
-        const examStatusCodeB =
-          allExamStatus
-            .find(
-              (element: ExamStatus) => element.id == secondRow.getValue(columnId)
-            )
-            ?.code.toLowerCase() ?? ''
+          const examDate = row.getValue(columnId)
 
-        return examStatusCodeA.localeCompare(examStatusCodeB)
+          if (!examDate) return false
+
+          const formattedDate = new Date(examDate as string | Date)
+            .toISOString()
+            .split("T")[0]
+
+          return formattedDate.includes(search)
+        },
+        sortingFn: (firstRow, secondRow, columnId) => {
+          const examDateA = firstRow.getValue(columnId)
+          const examDateB = secondRow.getValue(columnId)
+
+          if (!examDateA && !examDateB) return 0
+          if (!examDateA) return 1
+          if (!examDateB) return -1
+
+          return (
+            new Date(examDateA as string | Date).getTime() -
+            new Date(examDateB as string | Date).getTime()
+          )
+        },
       },
-    },
-    {
-      accessorKey: 'exam_date',
-      header: 'Exam date',
-      cell: ({ row }) => (
-        <div>
-          <input
-            type="date"
-            defaultValue={row.original.exam_date ? new Date(row.original.exam_date as string | Date).toISOString().split('T')[0] : ''}
-            className={`${compactInputClassName} w-[8.5rem]`}
-            onChange={async (e) => {
-              await updateExamDate(row.original.id, e.target.value)
-              updateExamInState(row.original.id, {
-                exam_date: e.target.value || null,
-              })
-            }}
+      {
+        accessorKey: "exam_semester",
+        header: "Semester",
+        cell: ({ row }) => (
+          <div className="min-w-0">{row.original.exam_semester}</div>
+        ),
+      },
+      {
+        accessorKey: "nb_students",
+        header: "NB Students",
+        cell: ({ row }) => (
+          <div>
+            <input
+              type="number"
+              defaultValue={
+                row.original.nb_students ? row.original.nb_students : ""
+              }
+              className={`${compactInputClassName} w-[5.5rem]`}
+              onChange={async (e) => {
+                await updateExamStudentsNumber(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  nb_students: e.target.value ? Number(e.target.value) : null,
+                })
+              }}
+            />
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "").trim()
+          if (!search) return true
+
+          return (
+            !isNaN(Number(search)) &&
+            row.original.nb_students === Number(search)
+          )
+        },
+      },
+      {
+        accessorKey: "nb_pages",
+        header: "NB Pages",
+        cell: ({ row }) => (
+          <div>
+            <input
+              type="number"
+              defaultValue={row.original.nb_pages ? row.original.nb_pages : ""}
+              className={`${compactInputClassName} w-[5.5rem]`}
+              onChange={async (e) => {
+                await updateExamPagesNumber(row.original.id, e.target.value)
+                updateExamInState(row.original.id, {
+                  nb_pages: e.target.value ? Number(e.target.value) : null,
+                })
+              }}
+            />
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "").trim()
+          if (!search) return true
+
+          return (
+            !isNaN(Number(search)) && row.original.nb_pages === Number(search)
+          )
+        },
+      },
+      {
+        accessorKey: "remark",
+        header: "Remark",
+        cell: ({ row }) => (
+          <RemarkTextarea
+            id={row.original.id}
+            initialValue={row.original.remark ? row.original.remark : ""}
+            onUpdateState={updateExamInState}
           />
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim()
-        if (!search) return true
-
-        const examDate = row.getValue(columnId)
-
-        if (!examDate) return false
-
-        const formattedDate = new Date(examDate as string | Date)
-          .toISOString()
-          .split('T')[0]
-
-        return formattedDate.includes(search)
+        ),
       },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const examDateA = firstRow.getValue(columnId)
-        const examDateB = secondRow.getValue(columnId)
-
-        if (!examDateA && !examDateB) return 0
-        if (!examDateA) return 1
-        if (!examDateB) return -1
-
-        return (
-          new Date(examDateA as string | Date).getTime() -
-          new Date(examDateB as string | Date).getTime()
-        )
-      },
-    },
-    {
-      accessorKey: 'exam_semester',
-      header: 'Semester',
-      cell: ({ row }) => (
-        <div className="min-w-0">
-          {row.original.exam_semester}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'nb_students',
-      header: 'NB Students',
-      cell: ({ row }) => (
-        <div>
-          <input
-            type="number"
-            defaultValue={row.original.nb_students ? row.original.nb_students : ''}
-            className={`${compactInputClassName} w-[5.5rem]`}
-            onChange={async (e) => {
-              await updateExamStudentsNumber(row.original.id, e.target.value)
-              updateExamInState(row.original.id, {
-                nb_students: e.target.value ? Number(e.target.value) : null,
-              })
-            }}
-          />
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim()
-        if (!search) return true
-
-        return !isNaN(Number(search)) && row.original.nb_students == Number(search)
-      }
-    },
-    {
-      accessorKey: 'nb_pages',
-      header: 'NB Pages',
-      cell: ({ row }) => (
-        <div>
-          <input
-            type="number"
-            defaultValue={row.original.nb_pages ? row.original.nb_pages : ''}
-            className={`${compactInputClassName} w-[5.5rem]`}
-            onChange={async (e) => {
-              await updateExamPagesNumber(row.original.id, e.target.value)
-              updateExamInState(row.original.id, {
-                nb_pages: e.target.value ? Number(e.target.value) : null,
-              })
-            }}
-          />
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim()
-        if (!search) return true
-
-        return !isNaN(Number(search)) && row.original.nb_pages == Number(search)
-      }
-    },
-    {
-      accessorKey: 'remark',
-      header: 'Remark',
-      cell: ({ row }) => (
-        <RemarkTextarea id={row.original.id} initialValue={row.original.remark ? row.original.remark : ''} onUpdateState={updateExamInState} />
-      ),
-    },
-    {
-      accessorKey: 'responsible_id',
-      header: 'Responsible',
-      cell: ({ row }) => (
-        <div>
-          <select
-              defaultValue={row.original.responsible_id?.toString() ?? 'None'}
+      {
+        accessorKey: "responsible_id",
+        header: "Responsible",
+        cell: ({ row }) => (
+          <div>
+            <select
+              defaultValue={row.original.responsible_id?.toString() ?? "None"}
               className="h-9 max-w-[11rem] rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-600"
               onChange={async (e) => {
-                const responsibleId = e.target.value ? Number(e.target.value) : null
+                const responsibleId = e.target.value
+                  ? Number(e.target.value)
+                  : null
 
                 await updateExamResponsible(row.original.id, responsibleId)
                 updateExamInState(row.original.id, {
@@ -665,46 +779,53 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 </option>
               ))}
             </select>
-        </div>
-      ),
-      filterFn: (row, columnId, filterValue) => {
-        const search = String(filterValue ?? '').trim().toLowerCase()
-        if (!search) return true
+          </div>
+        ),
+        filterFn: (row, columnId, filterValue) => {
+          const search = String(filterValue ?? "")
+            .trim()
+            .toLowerCase()
+          if (!search) return true
 
-        const adminITDisplay =
-          allCeproAdminsIT
-            .find(
-              (element: GroupUser) => element.id == row.getValue(columnId)
-            )
-            ?.display.toLowerCase() ?? ''
+          const adminITDisplay =
+            allCeproAdminsIT
+              .find(
+                (element: GroupUser) => element.id === row.getValue(columnId),
+              )
+              ?.display.toLowerCase() ?? ""
 
-        return adminITDisplay.includes(search) || (!adminITDisplay && 'none'.includes(search))
+          return (
+            adminITDisplay.includes(search) ||
+            (!adminITDisplay && "none".includes(search))
+          )
+        },
+        sortingFn: (firstRow, secondRow, columnId) => {
+          const adminITDisplayA =
+            allCeproAdminsIT
+              .find(
+                (element: GroupUser) =>
+                  element.id === firstRow.getValue(columnId),
+              )
+              ?.display.toLowerCase() ?? ""
+
+          const adminITDisplayB =
+            allCeproAdminsIT
+              .find(
+                (element: GroupUser) =>
+                  element.id === secondRow.getValue(columnId),
+              )
+              ?.display.toLowerCase() ?? ""
+
+          return adminITDisplayA.localeCompare(adminITDisplayB)
+        },
       },
-      sortingFn: (firstRow, secondRow, columnId) => {
-        const adminITDisplayA =
-          allCeproAdminsIT
-            .find(
-              (element: GroupUser) => element.id == firstRow.getValue(columnId)
-            )
-            ?.display.toLowerCase() ?? ''
-
-        const adminITDisplayB =
-          allCeproAdminsIT
-            .find(
-              (element: GroupUser) => element.id == secondRow.getValue(columnId)
-            )
-            ?.display.toLowerCase() ?? ''
-
-        return adminITDisplayA.localeCompare(adminITDisplayB)
-      },
-    },
-    {
-      accessorKey: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <button
-            className="
+      {
+        accessorKey: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+          <div className="flex gap-2">
+            <button
+              className="
               border-2
               border-blue-500
               rounded-lg
@@ -719,14 +840,14 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               transition
               ease-in-out
             "
-            onClick={() => {
-              handleOpenExamDetails(row.original)
-            }}
-          >
-            More
-          </button>
-          <button
-            className="
+              onClick={() => {
+                handleOpenExamDetails(row.original)
+              }}
+            >
+              More
+            </button>
+            <button
+              className="
               border-2
               border-red-500
               rounded-lg
@@ -741,24 +862,28 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               transition
               ease-in-out
             "
-            onClick={async () => {
-              if(await confirm("Are you sure that you want to delete this exam ? This action is irreversible.")) {
-                await deleteExam(row.original.id);
-                setExams((currentExams) =>
-                  currentExams.filter((exam) => exam.id !== row.original.id)
-                )
-                setSelectedExam((currentExam) =>
-                  currentExam?.id === row.original.id ? null : currentExam
-                )
-              }
-            }}
-          >
-            Delete
-          </button>
-          <Link
-            href={`/exams/comments/${row.original.id}`}
-            target="_blank"
-            className="
+              onClick={async () => {
+                if (
+                  await confirm(
+                    "Are you sure that you want to delete this exam ? This action is irreversible.",
+                  )
+                ) {
+                  await deleteExam(row.original.id)
+                  setExams((currentExams) =>
+                    currentExams.filter((exam) => exam.id !== row.original.id),
+                  )
+                  setSelectedExam((currentExam) =>
+                    currentExam?.id === row.original.id ? null : currentExam,
+                  )
+                }
+              }}
+            >
+              Delete
+            </button>
+            <Link
+              href={`/exams/comments/${row.original.id}`}
+              target="_blank"
+              className="
               px-3
               py-2
               border-2
@@ -771,37 +896,49 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               transition
               ease-in-out
             "
-          >
-            Comments
-          </Link>
-        </div>
-      ),
-      enableSorting: false,
-      enableColumnFilter: false,
-      enableHiding: false
-    },
-  ], [
-    allServiceLevels,
-    allServices,
-    allExamTypes,
-    allExamStatus,
-    allCeproAdminsIT,
-    teachersByCourse,
-    updateExamInState,
-    handleOpenExamDetails,
-    confirm,
-    formatContact,
-    getContactSearchText,
-    compactSelectClassName,
-    compactInputClassName,
-  ])
+            >
+              Comments
+            </Link>
+          </div>
+        ),
+        enableSorting: false,
+        enableColumnFilter: false,
+        enableHiding: false,
+      },
+    ],
+    [
+      allServiceLevels,
+      allServices,
+      allExamTypes,
+      allExamStatus,
+      allCeproAdminsIT,
+      teachersByCourse,
+      updateExamInState,
+      handleOpenExamDetails,
+      confirm,
+      formatContact,
+      getContactSearchText,
+      compactSelectClassName,
+      compactInputClassName,
+    ],
+  )
 
   const columnLabels: Record<string, string> = {
-    code: 'Code', name : 'Courses', teachers: 'Teachers', contact: 'Contact',
-    service_level_id: 'Service Level', service_id: 'Service', exam_type_id: 'Exam Type',
-    exam_status_id: 'Exam status', exam_date: 'Exam date', exam_semester: 'Semester',
-    nb_students: 'NB Students', nb_pages: 'NB Pages', remark: 'Remark',
-    responsible_id: 'Responsible', actions: 'Actions',
+    code: "Code",
+    name: "Courses",
+    teachers: "Teachers",
+    contact: "Contact",
+    service_level_id: "Service Level",
+    service_id: "Service",
+    exam_type_id: "Exam Type",
+    exam_status_id: "Exam status",
+    exam_date: "Exam date",
+    exam_semester: "Semester",
+    nb_students: "NB Students",
+    nb_pages: "NB Pages",
+    remark: "Remark",
+    responsible_id: "Responsible",
+    actions: "Actions",
   }
 
   const table = useReactTable({
@@ -814,7 +951,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       sorting,
       columnFilters,
       pagination,
-      columnVisibility
+      columnVisibility,
     },
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
@@ -822,26 +959,29 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const search = String(filterValue ?? '').trim().toLowerCase()
+      const search = String(filterValue ?? "")
+        .trim()
+        .toLowerCase()
 
       const examDate = row.original.exam_date
       const formattedExamDate = examDate
-        ? new Date(examDate as string | Date).toISOString().split('T')[0]
-        : ''
+        ? new Date(examDate as string | Date).toISOString().split("T")[0]
+        : ""
 
       const responsibleDisplay =
         allCeproAdminsIT
           .find(
-            (element: GroupUser) => Number(element.id) == Number(row.original.responsible_id)
+            (element: GroupUser) =>
+              Number(element.id) === Number(row.original.responsible_id),
           )
-          ?.display.toLowerCase() ?? ''
-      const hasNoResponsible = row.original.responsible_id == null
+          ?.display.toLowerCase() ?? ""
+      const hasNoResponsible = row.original.responsible_id === null
 
-      const remark = row.original.remark?.toLowerCase() ?? ''
+      const remark = row.original.remark?.toLowerCase() ?? ""
 
       const teachersDisplay = (teachersByCourse[row.original.code] ?? [])
         .map((t) => `${t.firstname} ${t.name}`)
-        .join(', ')
+        .join(", ")
         .toLowerCase()
       const contactDisplay = getContactSearchText(row.original.contact)
 
@@ -850,17 +990,40 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         row.original.code.toLowerCase().includes(search) ||
         teachersDisplay.includes(search) ||
         contactDisplay.includes(search) ||
-        (allServiceLevels.find((element:ServiceLevel) => element.id == row.original.service_level_id)?.name.toLowerCase().includes(search) || false) ||
-        (allServices.find((element:Service) => element.id == row.original.service_id)?.code.toLowerCase().includes(search) || false) ||
-        (allExamTypes.find((element:ExamType) => element.id == row.original.exam_type_id)?.code.toLowerCase().includes(search) || false) ||
-        (allExamStatus.find((element:ExamStatus) => element.id == row.original.exam_status_id)?.code.toLowerCase().includes(search) || false) ||
+        allServiceLevels
+          .find(
+            (element: ServiceLevel) =>
+              element.id === row.original.service_level_id,
+          )
+          ?.name.toLowerCase()
+          .includes(search) ||
+        false ||
+        allServices
+          .find((element: Service) => element.id === row.original.service_id)
+          ?.code.toLowerCase()
+          .includes(search) ||
+        false ||
+        allExamTypes
+          .find((element: ExamType) => element.id === row.original.exam_type_id)
+          ?.code.toLowerCase()
+          .includes(search) ||
+        false ||
+        allExamStatus
+          .find(
+            (element: ExamStatus) => element.id === row.original.exam_status_id,
+          )
+          ?.code.toLowerCase()
+          .includes(search) ||
+        false ||
         formattedExamDate.includes(search) ||
-        !isNaN(Number(search)) && row.original.exam_semester == Number(search) ||
-        !isNaN(Number(search)) && row.original.nb_students == Number(search) ||
-        !isNaN(Number(search)) && row.original.nb_pages == Number(search) ||
+        (!isNaN(Number(search)) &&
+          row.original.exam_semester === Number(search)) ||
+        (!isNaN(Number(search)) &&
+          row.original.nb_students === Number(search)) ||
+        (!isNaN(Number(search)) && row.original.nb_pages === Number(search)) ||
         remark.includes(search) ||
         responsibleDisplay.includes(search) ||
-        (hasNoResponsible && 'none'.includes(search))
+        (hasNoResponsible && "none".includes(search))
       )
     },
     getCoreRowModel: getCoreRowModel(),
@@ -894,39 +1057,53 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   const endRow = rowCount === 0 ? 0 : startRow + rowCount - 1
   const selectedServiceLevel = selectedExam
     ? allServiceLevels.find(
-        (element: ServiceLevel) => element.id == selectedExam.service_level_id
+        (element: ServiceLevel) => element.id === selectedExam.service_level_id,
       )?.name
-    : ''
+    : ""
   const selectedService = selectedExam
-    ? allServices.find((element: Service) => element.id == selectedExam.service_id)
-        ?.code
-    : ''
+    ? allServices.find(
+        (element: Service) => element.id === selectedExam.service_id,
+      )?.code
+    : ""
   const selectedExamType = selectedExam
     ? allExamTypes.find(
-        (element: ExamType) => element.id == selectedExam.exam_type_id
+        (element: ExamType) => element.id === selectedExam.exam_type_id,
       )?.code
-    : ''
+    : ""
   const selectedExamStatus = selectedExam
     ? allExamStatus.find(
-        (element: ExamStatus) => element.id == selectedExam.exam_status_id
+        (element: ExamStatus) => element.id === selectedExam.exam_status_id,
       )?.code
-    : ''
-  const formattedSelectedExamDate =
-    selectedExam?.exam_date
-      ? new Date(selectedExam.exam_date as string | Date).toISOString().split('T')[0]
-      : 'Not set'
+    : ""
+  const formattedSelectedExamDate = selectedExam?.exam_date
+    ? new Date(selectedExam.exam_date as string | Date)
+        .toISOString()
+        .split("T")[0]
+    : "Not set"
 
   function exportToCSV(exams: Exam[]) {
     // Avoiding weird things in the cell (commas, lists, ...) (mainly for the remark)
     const csvCell = (value: unknown) => {
-      const text = value == null || value === '' ? 'None' : String(value)
+      const text = value === null || value === "" ? "None" : String(value)
       return `"${text.replaceAll('"', '""')}"`
     }
 
     const headers = [
-      'ID', 'Code', 'Nom', 'Enseignants', 'Contact', 'Date examen', 'Type',
-      'Niveau service', 'Service', 'Status', 'Semestre', 'Nombre étudiants',
-      'Nombre pages', 'Remarque', 'Responsable',
+      "ID",
+      "Code",
+      "Nom",
+      "Enseignants",
+      "Contact",
+      "Date examen",
+      "Type",
+      "Niveau service",
+      "Service",
+      "Status",
+      "Semestre",
+      "Nombre étudiants",
+      "Nombre pages",
+      "Remarque",
+      "Responsable",
     ]
 
     const rows = exams.map((exam) => [
@@ -936,14 +1113,22 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
       teachersByCourse[exam.code]
         ? teachersByCourse[exam.code]
             .map((teacher) => `${teacher.firstname} ${teacher.name}`)
-            .join(' | ')
-        : 'No teacher',
+            .join(" | ")
+        : "No teacher",
       parseContact(exam.contact)?.email,
-      exam.exam_date ? new Date(exam.exam_date).toLocaleDateString('fr-FR') : 'None',
-      allExamTypes.find((element: ExamType) => element.id == exam.exam_type_id)?.code,
-      allServiceLevels.find((element: ServiceLevel) => element.id == exam.service_level_id)?.name,
-      allServices.find((element: Service) => element.id == exam.service_id)?.code,
-      allExamStatus.find((element: ExamStatus) => element.id == exam.exam_status_id)?.code,
+      exam.exam_date
+        ? new Date(exam.exam_date).toLocaleDateString("fr-FR")
+        : "None",
+      allExamTypes.find((element: ExamType) => element.id === exam.exam_type_id)
+        ?.code,
+      allServiceLevels.find(
+        (element: ServiceLevel) => element.id === exam.service_level_id,
+      )?.name,
+      allServices.find((element: Service) => element.id === exam.service_id)
+        ?.code,
+      allExamStatus.find(
+        (element: ExamStatus) => element.id === exam.exam_status_id,
+      )?.code,
       exam.exam_semester,
       exam.nb_students,
       exam.nb_pages,
@@ -952,19 +1137,19 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
     ])
 
     const checkedExamsCSV = [headers, ...rows]
-      .map((row) => row.map(csvCell).join(','))
-      .join('\r\n')
+      .map((row) => row.map(csvCell).join(","))
+      .join("\r\n")
 
-    const blob = new Blob([checkedExamsCSV], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob([checkedExamsCSV], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
+    const link = document.createElement("a")
     link.href = url
-    link.download = `exported_exams_${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `exported_exams_${new Date().toISOString().split("T")[0]}.csv`
     link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
-  function exportExams(exams:Exam[]) {
+  function exportExams(exams: Exam[]) {
     exportToCSV(exams)
   }
 
@@ -977,7 +1162,11 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               <div className="flex w-full flex-col gap-4 lg:flex-row">
                 <label className="group flex h-14 w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100 lg:max-w-xl">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-red-600 transition group-focus-within:bg-red-100">
-                    <MagnifyingGlassIcon className="size-5" strokeWidth={2} aria-hidden="true" />
+                    <MagnifyingGlassIcon
+                      className="size-5"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -995,7 +1184,11 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
 
                 <label className="flex h-14 min-w-[16rem] items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm xl:ml-auto">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                    <FunnelIcon className="size-5" strokeWidth={1.8} aria-hidden="true" />
+                    <FunnelIcon
+                      className="size-5"
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -1038,35 +1231,52 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                   title="Show or hide columns"
                   aria-label="Show or hide columns"
                 >
-                  <ViewColumnsIcon className="size-5 shrink-0" aria-hidden="true" />
+                  <ViewColumnsIcon
+                    className="size-5 shrink-0"
+                    aria-hidden="true"
+                  />
                   Columns
-                  <ChevronDownIcon className="size-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+                  <ChevronDownIcon
+                    className="size-4 shrink-0 transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
                 </summary>
                 <div className="absolute right-0 z-9999 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
                   <button
                     type="button"
                     className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-default disabled:text-slate-400 disabled:hover:bg-transparent"
-                    disabled={ table.getIsAllColumnsVisible() }
-                    onClick={ () => table.toggleAllColumnsVisible(true) }
+                    disabled={table.getIsAllColumnsVisible()}
+                    onClick={() => table.toggleAllColumnsVisible(true)}
                   >
                     Show all columns
                   </button>
-                  {
-                    table.getAllColumns().filter(x => x.getCanHide()).map((column) => (
-                      <label key={ column.id } className="flex items-center gap-2 py-1 text-sm">
-                        <input type="checkbox"
-                               checked={ column.getIsVisible() }
-                               onChange={ column.getToggleVisibilityHandler() }
+                  {table
+                    .getAllColumns()
+                    .filter((x) => x.getCanHide())
+                    .map((column) => (
+                      <label
+                        key={column.id}
+                        className="flex items-center gap-2 py-1 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={column.getIsVisible()}
+                          onChange={column.getToggleVisibilityHandler()}
                         />
-                        { columnLabels[column.id] ?? column.id  }
+                        {columnLabels[column.id] ?? column.id}
                       </label>
-                    ))
-                  }
+                    ))}
                 </div>
               </details>
               <button
                 className="btn btn-primary text-nowrap"
-                onClick={() => exportExams(table.getPrePaginationRowModel().rows.map((row) => row.original))}
+                onClick={() =>
+                  exportExams(
+                    table
+                      .getPrePaginationRowModel()
+                      .rows.map((row) => row.original),
+                  )
+                }
               >
                 Export (with table filters)
               </button>
@@ -1091,80 +1301,83 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               <thead className="bg-slate-50/80">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id} className="align-top">
-                  {headerGroup.headers.map((header) => {
-                    const isSorted = header.column.getIsSorted()
-                    const canSort = header.column.getCanSort()
-                    const canFilter = header.column.getCanFilter()
+                    {headerGroup.headers.map((header) => {
+                      const isSorted = header.column.getIsSorted()
+                      const canSort = header.column.getCanSort()
+                      const canFilter = header.column.getCanFilter()
 
-                    return (
-                      <th
-                        key={header.id}
-                        className={`border-b border-slate-200 px-4 py-4 text-left align-top first:pl-5 last:pr-5 ${
-                          header.column.id === 'actions'
-                            ? 'sticky right-0 z-20 bg-slate-50/95 min-[3150px]:static min-[3150px]:bg-transparent'
-                            : ''
-                        }`}
-                      >
-                        {header.isPlaceholder ? null : canSort ? (
-                          <div className="flex flex-col gap-2.5">
-                            <button
-                              type="button"
-                              onClick={header.column.getToggleSortingHandler()}
-                              className="inline-flex items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:text-slate-900"
-                            >
+                      return (
+                        <th
+                          key={header.id}
+                          className={`border-b border-slate-200 px-4 py-4 text-left align-top first:pl-5 last:pr-5 ${
+                            header.column.id === "actions"
+                              ? "sticky right-0 z-20 bg-slate-50/95 min-[3150px]:static min-[3150px]:bg-transparent"
+                              : ""
+                          }`}
+                        >
+                          {header.isPlaceholder ? null : canSort ? (
+                            <div className="flex flex-col gap-2.5">
+                              <button
+                                type="button"
+                                onClick={header.column.getToggleSortingHandler()}
+                                className="inline-flex items-center gap-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:text-slate-900"
+                              >
+                                {flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[0.65rem] ${
+                                    isSorted
+                                      ? "border-red-200 bg-red-50 text-red-600"
+                                      : "border-slate-200 bg-white text-slate-400"
+                                  }`}
+                                >
+                                  {isSorted === "asc" && "▼"}
+                                  {isSorted === "desc" && "▲"}
+                                  {!isSorted && "•"}
+                                </span>
+                              </button>
+
+                              {canFilter && (
+                                <label className="group flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100">
+                                  <MagnifyingGlassIcon
+                                    className="size-4 shrink-0 text-slate-400 transition group-focus-within:text-red-500"
+                                    strokeWidth={2}
+                                    aria-hidden="true"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={
+                                      (header.column.getFilterValue() ??
+                                        "") as string
+                                    }
+                                    onChange={(e) =>
+                                      header.column.setFilterValue(
+                                        e.target.value,
+                                      )
+                                    }
+                                    placeholder={`Filter ${String(
+                                      header.column.columnDef.header,
+                                    ).toLowerCase()}...`}
+                                    className="w-full min-w-20 border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                               {flexRender(
                                 header.column.columnDef.header,
-                                header.getContext()
+                                header.getContext(),
                               )}
-
-                              <span
-                                aria-hidden="true"
-                                className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[0.65rem] ${
-                                  isSorted
-                                    ? 'border-red-200 bg-red-50 text-red-600'
-                                    : 'border-slate-200 bg-white text-slate-400'
-                                }`}
-                              >
-                                {isSorted === 'asc' && '▼'}
-                                {isSorted === 'desc' && '▲'}
-                                {!isSorted && '•'}
-                              </span>
-                            </button>
-
-                            {canFilter && (
-                              <label className="group flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 shadow-sm transition focus-within:border-red-300 focus-within:ring-4 focus-within:ring-red-100">
-                                <MagnifyingGlassIcon
-                                  className="size-4 shrink-0 text-slate-400 transition group-focus-within:text-red-500"
-                                  strokeWidth={2}
-                                  aria-hidden="true"
-                                />
-                                <input
-                                  type="text"
-                                  value={
-                                    (header.column.getFilterValue() ?? '') as string
-                                  }
-                                  onChange={(e) =>
-                                    header.column.setFilterValue(e.target.value)
-                                  }
-                                  placeholder={`Filter ${String(
-                                    header.column.columnDef.header
-                                  ).toLowerCase()}...`}
-                                  className="w-full min-w-20 border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                                />
-                              </label>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                          </div>
-                        )}
-                      </th>
-                    )
-                  })}
+                            </div>
+                          )}
+                        </th>
+                      )
+                    })}
                   </tr>
                 ))}
               </thead>
@@ -1175,7 +1388,11 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                     <td colSpan={columns.length} className="px-8 py-16">
                       <div className="flex flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-12 text-center">
                         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
-                          <MagnifyingGlassIcon className="size-8 text-slate-300" strokeWidth={1.8} aria-hidden="true" />
+                          <MagnifyingGlassIcon
+                            className="size-8 text-slate-300"
+                            strokeWidth={1.8}
+                            aria-hidden="true"
+                          />
                         </div>
                         <h3 className="mt-5 text-xl font-semibold text-slate-900">
                           No exams match these filters
@@ -1198,17 +1415,17 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                           key={cell.id}
                           className={`border-b border-slate-100 px-4 py-3.5 align-middle text-slate-900 first:pl-5 last:pr-5 ${
                             index === table.getRowModel().rows.length - 1
-                              ? 'border-b-0'
-                              : ''
+                              ? "border-b-0"
+                              : ""
                           } ${
-                            cell.column.id === 'actions'
-                              ? 'sticky right-0 z-10 bg-white min-[3150px]:static min-[3150px]:bg-transparent'
-                              : ''
+                            cell.column.id === "actions"
+                              ? "sticky right-0 z-10 bg-white min-[3150px]:static min-[3150px]:bg-transparent"
+                              : ""
                           }`}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </td>
                       ))}
@@ -1222,10 +1439,12 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
         <div className="max-w-4xl ml-auto mr-auto mt-5 flex flex-col gap-4 rounded-[1.75rem] border border-slate-200/80 bg-white px-5 py-4 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.35)] md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="text-sm text-slate-500">
-              Showing <span className="font-semibold text-slate-800">{startRow}</span>
-              {' '}- <span className="font-semibold text-slate-800">{endRow}</span>
-              {' '}from <span className="font-semibold text-slate-800">{totalRows}</span>
-              {' '}exams
+              Showing{" "}
+              <span className="font-semibold text-slate-800">{startRow}</span> -{" "}
+              <span className="font-semibold text-slate-800">{endRow}</span>{" "}
+              from{" "}
+              <span className="font-semibold text-slate-800">{totalRows}</span>{" "}
+              exams
             </div>
             <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
               <span className="font-medium text-slate-500">Rows</span>
@@ -1247,7 +1466,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
 
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600">
-              Page <span className="text-slate-900">{currentPage}</span> of{' '}
+              Page <span className="text-slate-900">{currentPage}</span> of{" "}
               <span className="text-slate-900">{Math.max(totalPages, 1)}</span>
             </div>
 
@@ -1256,8 +1475,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 type="button"
                 className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-lg font-semibold transition ${
                   !table.getCanPreviousPage()
-                    ? 'cursor-not-allowed text-slate-300'
-                    : 'text-slate-700 hover:bg-slate-100 cursor-pointer'
+                    ? "cursor-not-allowed text-slate-300"
+                    : "text-slate-700 hover:bg-slate-100 cursor-pointer"
                 }`}
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
@@ -1269,8 +1488,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                 type="button"
                 className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-lg font-semibold transition ${
                   !table.getCanNextPage()
-                    ? 'cursor-not-allowed text-slate-300'
-                    : 'bg-red-500 text-white hover:bg-red-600 cursor-pointer'
+                    ? "cursor-not-allowed text-slate-300"
+                    : "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
                 }`}
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
@@ -1292,20 +1511,24 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
               }}
             >
               <div className="rounded-xl bg-white p-8 text-slate-900">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Exam details
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold">{selectedExam.name}</h2>
-                  <p className="mt-1 font-mono text-sm text-slate-500">{selectedExam.code}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedExam(null)
-                  }}
-                  className="
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Exam details
+                    </p>
+                    <h2 className="mt-2 text-2xl font-semibold">
+                      {selectedExam.name}
+                    </h2>
+                    <p className="mt-1 font-mono text-sm text-slate-500">
+                      {selectedExam.code}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedExam(null)
+                    }}
+                    className="
                     rounded-full
                     border
                     border-red-400
@@ -1319,52 +1542,86 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
                     transition
                     ease-in-out
                   "
-                >
-                  Close
-                </button>
-              </div>
+                  >
+                    Close
+                  </button>
+                </div>
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Service level</p>
-                  <p className="mt-1 text-sm font-medium">{selectedServiceLevel || 'Unknown'}</p>
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Service level
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedServiceLevel || "Unknown"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Service
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedService || "Unknown"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Exam type
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedExamType || "Unknown"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Status
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedExamStatus || "Unknown"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Exam date
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {formattedSelectedExamDate}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Semester
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedExam.exam_semester}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Students
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedExam.nb_students ?? "Not set"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      Pages
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {selectedExam.nb_pages ?? "Not set"}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Service</p>
-                  <p className="mt-1 text-sm font-medium">{selectedService || 'Unknown'}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Exam type</p>
-                  <p className="mt-1 text-sm font-medium">{selectedExamType || 'Unknown'}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Status</p>
-                  <p className="mt-1 text-sm font-medium">{selectedExamStatus || 'Unknown'}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Exam date</p>
-                  <p className="mt-1 text-sm font-medium">{formattedSelectedExamDate}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Semester</p>
-                  <p className="mt-1 text-sm font-medium">{selectedExam.exam_semester}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Students</p>
-                  <p className="mt-1 text-sm font-medium">{selectedExam.nb_students ?? 'Not set'}</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Pages</p>
-                  <p className="mt-1 text-sm font-medium">{selectedExam.nb_pages ?? 'Not set'}</p>
-                </div>
-              </div>
 
-              <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Remark</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm font-medium">
-                  {selectedExam.remark || 'No remark'}
-                </p>
-              </div>
+                <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Remark
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm font-medium">
+                    {selectedExam.remark || "No remark"}
+                  </p>
+                </div>
               </div>
             </dialog>
           </div>

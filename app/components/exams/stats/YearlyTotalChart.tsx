@@ -1,20 +1,20 @@
-"use client";
+"use client"
 
-import { BarChart } from "@mui/x-charts/BarChart";
+import { BarChart } from "@mui/x-charts/BarChart"
 
 export type YearlyTotal = {
-  academicYear: string;
-  total: number;
-};
+  academicYear: string
+  total: number
+}
 
 type YearlyTotalChartProps = {
-  title: string;
-  description: string;
-  seriesLabel: string;
-  totals: YearlyTotal[];
-};
+  title: string
+  description: string
+  seriesLabel: string
+  totals: YearlyTotal[]
+}
 
-const numberFormatter = new Intl.NumberFormat("en-US");
+const numberFormatter = new Intl.NumberFormat("en-US")
 
 export default function YearlyTotalChart({
   title,
@@ -28,9 +28,7 @@ export default function YearlyTotalChart({
         <h2 className="text-2xl font-bold tracking-normal text-gray-950">
           {title}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-gray-600">
-          {description}
-        </p>
+        <p className="mt-3 text-sm leading-6 text-gray-600">{description}</p>
       </div>
 
       <div className="mt-8 min-h-[20rem]">
@@ -46,7 +44,8 @@ export default function YearlyTotalChart({
             yAxis={[
               {
                 width: 72,
-                valueFormatter: (value: number) => numberFormatter.format(value),
+                valueFormatter: (value: number) =>
+                  numberFormatter.format(value),
               },
             ]}
             series={[
@@ -73,5 +72,5 @@ export default function YearlyTotalChart({
         )}
       </div>
     </section>
-  );
+  )
 }

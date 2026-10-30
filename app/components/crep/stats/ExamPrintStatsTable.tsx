@@ -1,15 +1,15 @@
 type ExamPrintStatsTableProps = {
-  averageExamsPerPrintDay: number;
-  totalExams: number;
-};
+  averageExamsPerPrintDay: number
+  totalExams: number
+}
 
 function formatAverage(value: number) {
-  return Math.round(value).toLocaleString("fr-CH");
+  return Math.round(value).toLocaleString("fr-CH")
 }
 
 export default function ExamPrintStatsTable({
   averageExamsPerPrintDay,
-  totalExams
+  totalExams,
 }: ExamPrintStatsTableProps) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -52,5 +52,5 @@ export default function ExamPrintStatsTable({
         </table>
       </div>
     </section>
-  );
+  )
 }
