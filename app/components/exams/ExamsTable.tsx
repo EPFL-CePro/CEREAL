@@ -790,7 +790,8 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
           const adminITDisplay =
             allCeproAdminsIT
               .find(
-                (element: GroupUser) => element.id === row.getValue(columnId),
+                (element: GroupUser) =>
+                  Number(element.id) === Number(row.getValue(columnId)),
               )
               ?.display.toLowerCase() ?? ""
 
@@ -804,7 +805,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             allCeproAdminsIT
               .find(
                 (element: GroupUser) =>
-                  element.id === firstRow.getValue(columnId),
+                  Number(element.id) === Number(firstRow.getValue(columnId)),
               )
               ?.display.toLowerCase() ?? ""
 
@@ -812,7 +813,7 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
             allCeproAdminsIT
               .find(
                 (element: GroupUser) =>
-                  element.id === secondRow.getValue(columnId),
+                  Number(element.id) === Number(secondRow.getValue(columnId)),
               )
               ?.display.toLowerCase() ?? ""
 
@@ -1084,7 +1085,10 @@ export default function ExamsTable({ academicYear }: ExamsTableProps) {
   function exportToCSV(exams: Exam[]) {
     // Avoiding weird things in the cell (commas, lists, ...) (mainly for the remark)
     const csvCell = (value: unknown) => {
-      const text = value === null || value === "" ? "None" : String(value)
+      const text =
+        value === null || value === undefined || value === ""
+          ? "None"
+          : String(value)
       return `"${text.replaceAll('"', '""')}"`
     }
 
