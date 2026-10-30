@@ -102,7 +102,8 @@ export default function Calendar({ user }: CalendarProps) {
           ),
           description: e.exam_name,
           durationEditable: false,
-          id: e.id,
+          // FullCalendar gives back the id of an event as a string
+          id: String(e.id),
           status: e.status,
           backgroundColor: eventColor,
           borderColor: eventColor,
