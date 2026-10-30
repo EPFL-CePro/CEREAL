@@ -48,13 +48,13 @@ function formatBytes(size: number) {
 }
 
 function formatPapersManagement(papersManagement: string) {
-  if (papersManagement == "repro_collect") {
+  if (papersManagement === "repro_collect") {
     return "The exam papers are at the printing centre and I will come and collect them shortly."
   }
-  if (papersManagement == "repro_destroy") {
+  if (papersManagement === "repro_destroy") {
     return "The exam papers are at the printing centre and may be destroyed by CePro."
   }
-  if (papersManagement == "papers_user") {
+  if (papersManagement === "papers_user") {
     return "The exam papers are in my possession and I will take care of them."
   }
 }

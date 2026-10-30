@@ -1,32 +1,40 @@
-import { describe, expect, it } from 'vitest'
-import path from 'path'
-import { safeJoinPath } from '@/app/lib/files/safe-path'
+import path from "path"
 
-const base = path.resolve('/srv/uploads')
+import { describe, expect, it } from "vitest"
 
-describe('safeJoinPath', () => {
-    it('joins segments inside the base directory', () => {
-        expect(safeJoinPath(base, 'exam', 'file.pdf')).toBe(path.join(base, 'exam', 'file.pdf'))
-    })
+import { safeJoinPath } from "@/app/lib/files/safe-path"
 
-    it('returns the base directory itself when there are no segments', () => {
-        expect(safeJoinPath(base)).toBe(base)
-    })
+const base = path.resolve("/srv/uploads")
 
-    it('accepts ".." as long as the result stays inside the base', () => {
-        expect(safeJoinPath(base, 'a', '..', 'b')).toBe(path.join(base, 'b'))
-    })
+describe("safeJoinPath", () => {
+  it("joins segments inside the base directory", () => {
+    expect(safeJoinPath(base, "exam", "file.pdf")).toBe(
+      path.join(base, "exam", "file.pdf"),
+    )
+  })
 
-    it('rejects a path that escapes the base with ".."', () => {
-        expect(() => safeJoinPath(base, '..', 'etc', 'passwd')).toThrow('Invalid path')
-        expect(() => safeJoinPath(base, 'a', '..', '..')).toThrow('Invalid path')
-    })
+  it("returns the base directory itself when there are no segments", () => {
+    expect(safeJoinPath(base)).toBe(base)
+  })
 
-    it('rejects an absolute segment outside the base', () => {
-        expect(() => safeJoinPath(base, '/etc/passwd')).toThrow('Invalid path')
-    })
+  it('accepts ".." as long as the result stays inside the base', () => {
+    expect(safeJoinPath(base, "a", "..", "b")).toBe(path.join(base, "b"))
+  })
 
-    it('rejects a sibling folder that only shares the same prefix', () => {
-        expect(() => safeJoinPath(base, '..', 'uploads-evil', 'file')).toThrow('Invalid path')
-    })
+  it('rejects a path that escapes the base with ".."', () => {
+    expect(() => safeJoinPath(base, "..", "etc", "passwd")).toThrow(
+      "Invalid path",
+    )
+    expect(() => safeJoinPath(base, "a", "..", "..")).toThrow("Invalid path")
+  })
+
+  it("rejects an absolute segment outside the base", () => {
+    expect(() => safeJoinPath(base, "/etc/passwd")).toThrow("Invalid path")
+  })
+
+  it("rejects a sibling folder that only shares the same prefix", () => {
+    expect(() => safeJoinPath(base, "..", "uploads-evil", "file")).toThrow(
+      "Invalid path",
+    )
+  })
 })

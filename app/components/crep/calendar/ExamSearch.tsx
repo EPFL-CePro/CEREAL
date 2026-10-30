@@ -1,71 +1,67 @@
-"use client";
+"use client"
 
-import { EventInput } from "@fullcalendar/core/index.js";
-import {
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { fromDatabaseDateTime } from "@/app/lib/dates/date-time";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
+
+import { type EventInput } from "@fullcalendar/core/index.js"
+
+import { fromDatabaseDateTime } from "@/app/lib/dates/date-time"
 
 type ExamSearchProps = {
-  exams: EventInput[];
-  onSelect: (exam: EventInput) => void;
-};
+  exams: EventInput[]
+  onSelect: (exam: EventInput) => void
+}
 
 type Contact = {
-  firstname?: string;
-  lastname?: string;
-};
+  firstname?: string
+  lastname?: string
+}
 
 type SearchableExam = {
-  exam: EventInput;
-  label: string;
-  printDate: string;
-  searchText: string;
-};
+  exam: EventInput
+  label: string
+  printDate: string
+  searchText: string
+}
 
-const MAX_RESULTS = 8;
+const MAX_RESULTS = 8
 
 function parseContact(value: unknown): Contact {
-  if (typeof value !== "string") return {};
+  if (typeof value !== "string") return {}
   try {
-    const parsed = JSON.parse(value) as Contact;
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed = JSON.parse(value) as Contact
+    return parsed && typeof parsed === "object" ? parsed : {}
   } catch {
-    return {};
+    return {}
   }
 }
 
 function normalize(value: unknown): string {
-  return String(value ?? "").toLowerCase();
+  return String(value ?? "").toLowerCase()
 }
 
 function formatPrintDate(start: unknown): string {
-  if (!start) return "";
-  const date = fromDatabaseDateTime(new Date(start as string));
-  if (Number.isNaN(date.getTime())) return "";
+  if (!start) return ""
+  const date = fromDatabaseDateTime(new Date(start as string))
+  if (Number.isNaN(date.getTime())) return ""
   return date.toLocaleString("fr-CH", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  })
 }
 
 export function ExamSearch({ exams, onSelect }: ExamSearchProps) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const deferredQuery = useDeferredValue(query);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [query, setQuery] = useState("")
+  const [open, setOpen] = useState(false)
+  const deferredQuery = useDeferredValue(query)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   const searchableExams = useMemo<SearchableExam[]>(
     () =>
       exams.map((exam) => {
-        const contact = parseContact(exam.contact);
+        const contact = parseContact(exam.contact)
         const searchText = [
           exam.code,
           exam.description,
@@ -73,26 +69,26 @@ export function ExamSearch({ exams, onSelect }: ExamSearchProps) {
           contact.lastname,
         ]
           .map(normalize)
-          .join(" ");
+          .join(" ")
 
         return {
           exam,
           label: `${exam.code} - ${exam.description ?? ""}`,
           printDate: formatPrintDate(exam.start),
           searchText,
-        };
+        }
       }),
-    [exams]
-  );
+    [exams],
+  )
 
   const results = useMemo(() => {
-    const search = deferredQuery.trim().toLowerCase();
-    if (!search) return [];
+    const search = deferredQuery.trim().toLowerCase()
+    if (!search) return []
 
     return searchableExams
       .filter(({ searchText }) => searchText.includes(search))
-      .slice(0, MAX_RESULTS);
-  }, [deferredQuery, searchableExams]);
+      .slice(0, MAX_RESULTS)
+  }, [deferredQuery, searchableExams])
 
   // Close the dropdown when clicking outside.
   useEffect(() => {
@@ -101,17 +97,17 @@ export function ExamSearch({ exams, onSelect }: ExamSearchProps) {
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        setOpen(false);
+        setOpen(false)
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   function handleSelect(exam: EventInput) {
-    onSelect(exam);
-    setOpen(false);
-    setQuery("");
+    onSelect(exam)
+    setOpen(false)
+    setQuery("")
   }
 
   return (
@@ -122,8 +118,8 @@ export function ExamSearch({ exams, onSelect }: ExamSearchProps) {
           type="search"
           value={query}
           onChange={(event) => {
-            setQuery(event.target.value);
-            setOpen(true);
+            setQuery(event.target.value)
+            setOpen(true)
           }}
           onFocus={() => setOpen(true)}
           placeholder="Search an exam..."
@@ -156,5 +152,5 @@ export function ExamSearch({ exams, onSelect }: ExamSearchProps) {
         </ul>
       )}
     </div>
-  );
+  )
 }

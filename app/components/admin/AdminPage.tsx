@@ -1,6 +1,12 @@
-"use client";
+"use client"
 
-import React from "react";
+import React from "react"
+
+import { toast } from "sonner"
+import * as XLSX from "xlsx"
+
+import { useConfirm } from "@/app/components/ConfirmProvider"
+import { startImpersonation } from "@/app/lib/auth/impersonation"
 import {
   deleteExamStatus,
   deleteService,
@@ -14,27 +20,30 @@ import {
   insertServiceLevel,
   syncEmailTemplates,
   updateEmailTemplate,
-} from "@/app/lib/database";
-import { startImpersonation } from "@/app/lib/auth/impersonation";
-import { EMAIL_TEMPLATES, EmailTemplateKey } from "@/app/lib/mail/email-templates";
-import { EmailTemplate } from "@/types/emailTemplate";
-import { ExamStatus } from "@/types/examStatus";
-import { Service } from "@/types/service";
-import { ServiceLevel } from "@/types/serviceLevel";
-import * as XLSX from 'xlsx';
-import { XLSXFile } from "@/types/boFile";
-import { toast } from "sonner";
-import { useConfirm } from "@/app/components/ConfirmProvider";
+} from "@/app/lib/database"
+import {
+  EMAIL_TEMPLATES,
+  type EmailTemplateKey,
+} from "@/app/lib/mail/email-templates"
+import { type XLSXFile } from "@/types/boFile"
+import { type EmailTemplate } from "@/types/emailTemplate"
+import { type ExamStatus } from "@/types/examStatus"
+import { type Service } from "@/types/service"
+import { type ServiceLevel } from "@/types/serviceLevel"
 
-type Tab = "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams";
-type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">;
+type Tab =
+  "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams"
+type AddModalType = Exclude<Tab, "emailTemplate" | "defferedExams">
 
-const addModalConfig: Record<AddModalType, {
-  title: string;
-  helpText: string;
-  nameLabel: string;
-  submitLabel: string;
-}> = {
+const addModalConfig: Record<
+  AddModalType,
+  {
+    title: string
+    helpText: string
+    nameLabel: string
+    submitLabel: string
+  }
+> = {
   service: {
     title: "Add service",
     helpText: "Create a new service.",
@@ -53,16 +62,16 @@ const addModalConfig: Record<AddModalType, {
     nameLabel: "Name",
     submitLabel: "Add exam status",
   },
-};
+}
 
 type TemplateFormFields = {
-  name: string;
-  subject: string;
-  body: string;
-  recipients_to: string;
-  recipients_cc: string;
-  reply_to: string;
-};
+  name: string
+  subject: string
+  body: string
+  recipients_to: string
+  recipients_cc: string
+  reply_to: string
+}
 
 const emptyTemplateForm: TemplateFormFields = {
   name: "",
@@ -71,228 +80,272 @@ const emptyTemplateForm: TemplateFormFields = {
   recipients_to: "",
   recipients_cc: "",
   reply_to: "",
-};
+}
 
-const templateFieldLabels: { key: keyof TemplateFormFields; label: string; multiline?: boolean }[] = [
+const templateFieldLabels: {
+  key: keyof TemplateFormFields
+  label: string
+  multiline?: boolean
+}[] = [
   { key: "name", label: "Name" },
   { key: "subject", label: "Subject" },
   { key: "body", label: "Body", multiline: true },
   { key: "recipients_to", label: "To" },
   { key: "recipients_cc", label: "Cc" },
   { key: "reply_to", label: "Reply-To" },
-];
+]
 
 export default function AdminPage() {
-  const confirm = useConfirm();
-  const [activeTab, setActiveTab] = React.useState<Tab>("service");
-  const [services, setServices] = React.useState<Service[]>([]);
-  const [serviceLevels, setServiceLevels] = React.useState<ServiceLevel[]>([]);
-  const [examStatuses, setExamStatuses] = React.useState<ExamStatus[]>([]);
-  const [addModalType, setAddModalType] = React.useState<AddModalType | null>(null);
-  const [newCode, setNewCode] = React.useState("");
-  const [newName, setNewName] = React.useState("");
-  const [newColor, setNewColor] = React.useState("#9a9a9a");
-  const [isAdding, setIsAdding] = React.useState(false);
-  const [addError, setAddError] = React.useState("");
-  const [emailTemplates, setEmailTemplates] = React.useState<EmailTemplate[]>([]);
-  const [editingTemplate, setEditingTemplate] = React.useState<EmailTemplate | null>(null);
-  const [templateForm, setTemplateForm] = React.useState<TemplateFormFields>(emptyTemplateForm);
-  const [savingTemplate, setSavingTemplate] = React.useState(false);
-  const [templateError, setTemplateError] = React.useState("");
-  const fieldRefs = React.useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
-  const activeFieldKey = React.useRef<keyof TemplateFormFields>("body");
-  const [collapsedSections, setCollapsedSections] = React.useState<Record<string, boolean>>({});
-  const [selectedBoFile, setSelectedBoFile] = React.useState<File>();
-  const [selectedDiffExamsFile, setSelectedDiffExamsFile] = React.useState<File>();
-  const [alreadyExistingBo, setAlreadyExistingBo] = React.useState<XLSXFile | null>(null);
-  const [alreadyExistingDiffExams, setAlreadyExistingDiffExams] = React.useState<XLSXFile | null>(null);
+  const confirm = useConfirm()
+  const [activeTab, setActiveTab] = React.useState<Tab>("service")
+  const [services, setServices] = React.useState<Service[]>([])
+  const [serviceLevels, setServiceLevels] = React.useState<ServiceLevel[]>([])
+  const [examStatuses, setExamStatuses] = React.useState<ExamStatus[]>([])
+  const [addModalType, setAddModalType] = React.useState<AddModalType | null>(
+    null,
+  )
+  const [newCode, setNewCode] = React.useState("")
+  const [newName, setNewName] = React.useState("")
+  const [newColor, setNewColor] = React.useState("#9a9a9a")
+  const [isAdding, setIsAdding] = React.useState(false)
+  const [addError, setAddError] = React.useState("")
+  const [emailTemplates, setEmailTemplates] = React.useState<EmailTemplate[]>(
+    [],
+  )
+  const [editingTemplate, setEditingTemplate] =
+    React.useState<EmailTemplate | null>(null)
+  const [templateForm, setTemplateForm] =
+    React.useState<TemplateFormFields>(emptyTemplateForm)
+  const [savingTemplate, setSavingTemplate] = React.useState(false)
+  const [templateError, setTemplateError] = React.useState("")
+  const fieldRefs = React.useRef<
+    Record<string, HTMLInputElement | HTMLTextAreaElement | null>
+  >({})
+  const activeFieldKey = React.useRef<keyof TemplateFormFields>("body")
+  const [collapsedSections, setCollapsedSections] = React.useState<
+    Record<string, boolean>
+  >({})
+  const [selectedBoFile, setSelectedBoFile] = React.useState<File>()
+  const [selectedDiffExamsFile, setSelectedDiffExamsFile] =
+    React.useState<File>()
+  const [alreadyExistingBo, setAlreadyExistingBo] =
+    React.useState<XLSXFile | null>(null)
+  const [alreadyExistingDiffExams, setAlreadyExistingDiffExams] =
+    React.useState<XLSXFile | null>(null)
 
   function toggleSection(section: string) {
-    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }))
   }
 
   async function handleDeleteService(service: Service) {
-    if(await confirm("This will delete this service from the database. Are you sure you want to continue ?")) {
-      await deleteService(service);
+    if (
+      await confirm(
+        "This will delete this service from the database. Are you sure you want to continue ?",
+      )
+    ) {
+      await deleteService(service)
 
       setServices((currentServices) =>
-        currentServices.filter((currentService) => currentService.id !== service.id)
-      );
+        currentServices.filter(
+          (currentService) => currentService.id !== service.id,
+        ),
+      )
     }
   }
 
   async function handleDeleteServiceLevel(serviceLevel: ServiceLevel) {
-    if(await confirm("This will delete this service level from the database. Are you sure you want to continue ?")) {
-      await deleteServiceLevel(serviceLevel);
+    if (
+      await confirm(
+        "This will delete this service level from the database. Are you sure you want to continue ?",
+      )
+    ) {
+      await deleteServiceLevel(serviceLevel)
 
       setServiceLevels((currentServiceLevels) =>
-        currentServiceLevels.filter((currentServiceLevel) => currentServiceLevel.id !== serviceLevel.id)
-      );
+        currentServiceLevels.filter(
+          (currentServiceLevel) => currentServiceLevel.id !== serviceLevel.id,
+        ),
+      )
     }
   }
 
   async function handleDeleteExamStatus(examStatus: ExamStatus) {
-    if(await confirm("This will delete this exam status from the database. Are you sure you want to continue ?")) {
-      await deleteExamStatus(examStatus);
+    if (
+      await confirm(
+        "This will delete this exam status from the database. Are you sure you want to continue ?",
+      )
+    ) {
+      await deleteExamStatus(examStatus)
 
       setExamStatuses((currentExamStatuses) =>
-        currentExamStatuses.filter((currentExamStatus) => currentExamStatus.id !== examStatus.id)
-      );
+        currentExamStatuses.filter(
+          (currentExamStatus) => currentExamStatus.id !== examStatus.id,
+        ),
+      )
     }
   }
 
   async function handleBoUpload() {
-    if(!selectedBoFile) return;
+    if (!selectedBoFile) return
 
     const isXlsxFile =
       selectedBoFile.name.toLowerCase().endsWith(".xlsx") ||
-      selectedBoFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      selectedBoFile.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     if (!isXlsxFile) {
-      toast.error('Please upload an XLSX file');
-      return;
+      toast.error("Please upload an XLSX file")
+      return
     }
 
-    const formData = new FormData();
+    const formData = new FormData()
     formData.append("file", selectedBoFile)
     formData.append("folder_name", "BO")
 
-    const workbook = XLSX.read(await selectedBoFile.arrayBuffer(), { type: "array", sheetRows: 1 });
-    const firstSheetName = workbook.SheetNames[0];
-    const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : undefined;
-    const firstColumnHeader = String(firstSheet?.A1?.v ?? "").trim();
+    const workbook = XLSX.read(await selectedBoFile.arrayBuffer(), {
+      type: "array",
+      sheetRows: 1,
+    })
+    const firstSheetName = workbook.SheetNames[0]
+    const firstSheet = firstSheetName
+      ? workbook.Sheets[firstSheetName]
+      : undefined
+    const firstColumnHeader = String(firstSheet?.A1?.v ?? "").trim()
 
     if (firstColumnHeader !== "SCIPER") {
-      toast.error("Please upload a valid BO XLSX file.");
-      return;
+      toast.error("Please upload a valid BO XLSX file.")
+      return
     }
 
     const res = await fetch("/api/cereal/diff-exams/upload-xlsx", {
-        method: "POST",
-        body: formData,
-    });
+      method: "POST",
+      body: formData,
+    })
     if (!res.ok) {
-        console.error(await res.text());
-        return;
+      console.error(await res.text())
+      return
     }
 
-    await refreshExistingBoFile();
+    await refreshExistingBoFile()
   }
 
   async function handleDiffExamsUpload() {
-    if(!selectedDiffExamsFile) return;
+    if (!selectedDiffExamsFile) return
 
     const isXlsxFile =
       selectedDiffExamsFile.name.toLowerCase().endsWith(".xlsx") ||
-      selectedDiffExamsFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      selectedDiffExamsFile.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     if (!isXlsxFile) {
-      toast.error('Please upload an XLSX file');
-      return;
+      toast.error("Please upload an XLSX file")
+      return
     }
 
-    const formData = new FormData();
+    const formData = new FormData()
     formData.append("file", selectedDiffExamsFile)
     formData.append("folder_name", "diff-exams")
 
     const res = await fetch("/api/cereal/diff-exams/upload-xlsx", {
-        method: "POST",
-        body: formData,
-    });
+      method: "POST",
+      body: formData,
+    })
     if (!res.ok) {
-        console.error(await res.text());
-        return;
+      console.error(await res.text())
+      return
     }
 
-    await refreshExistingDiffExamsFile();
+    await refreshExistingDiffExamsFile()
   }
 
   const handleBoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+    if (!e.target.files) return
 
     const newFile = e.target.files[0]
 
     setSelectedBoFile(newFile)
-  };
+  }
 
-  const handleDiffExamsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+  const handleDiffExamsFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (!e.target.files) return
 
     const newFile = e.target.files[0]
 
     setSelectedDiffExamsFile(newFile)
-  };
+  }
 
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    event.preventDefault()
 
-    if (!addModalType) return;
+    if (!addModalType) return
 
-    const code = newCode.trim();
-    const name = newName.trim();
-    const color = newColor.trim();
+    const code = newCode.trim()
+    const name = newName.trim()
+    const color = newColor.trim()
 
     if (!code || !name || (addModalType === "examStatus" && !color)) {
-      setAddError("All fields are required.");
-      return;
+      setAddError("All fields are required.")
+      return
     }
 
     if (addModalType === "examStatus" && !isHexColor(color)) {
-      setAddError("Color must be a valid hex value.");
-      return;
+      setAddError("Color must be a valid hex value.")
+      return
     }
 
-    setIsAdding(true);
-    setAddError("");
+    setIsAdding(true)
+    setAddError("")
 
     try {
       if (addModalType === "service") {
-        const id = await insertService({ code, description: name });
+        const id = await insertService({ code, description: name })
         setServices((currentServices) => [
           ...currentServices,
           { id, code, description: name },
-        ]);
+        ])
       }
 
       if (addModalType === "serviceLevel") {
-        const id = await insertServiceLevel({ code, name });
+        const id = await insertServiceLevel({ code, name })
         setServiceLevels((currentServiceLevels) => [
           ...currentServiceLevels,
           { id, code, name },
-        ]);
+        ])
       }
 
       if (addModalType === "examStatus") {
-        const id = await insertExamStatus({ code, name, color });
+        const id = await insertExamStatus({ code, name, color })
         setExamStatuses((currentExamStatuses) => [
           ...currentExamStatuses,
           { id, code, name, color },
-        ]);
+        ])
       }
 
-      closeAddModal();
+      closeAddModal()
     } catch (error) {
-      console.error(error);
-      setAddError("Unable to add this item. Please try again.");
+      console.error(error)
+      setAddError("Unable to add this item. Please try again.")
     } finally {
-      setIsAdding(false);
+      setIsAdding(false)
     }
   }
 
   function openAddModal(type: AddModalType) {
-    setAddModalType(type);
+    setAddModalType(type)
   }
 
   function closeAddModal() {
-    setAddModalType(null);
-    setNewCode("");
-    setNewName("");
-    setNewColor("#9a9a9a");
-    setAddError("");
+    setAddModalType(null)
+    setNewCode("")
+    setNewName("")
+    setNewColor("#9a9a9a")
+    setAddError("")
   }
 
   function openEditTemplate(template: EmailTemplate) {
-    setEditingTemplate(template);
+    setEditingTemplate(template)
     setTemplateForm({
       name: template.name ?? "",
       subject: template.subject ?? "",
@@ -300,116 +353,149 @@ export default function AdminPage() {
       recipients_to: template.recipients_to ?? "",
       recipients_cc: template.recipients_cc ?? "",
       reply_to: template.reply_to ?? "",
-    });
-    activeFieldKey.current = "body";
-    setTemplateError("");
+    })
+    activeFieldKey.current = "body"
+    setTemplateError("")
   }
 
   function closeEditTemplate() {
-    setEditingTemplate(null);
-    setTemplateForm(emptyTemplateForm);
-    setTemplateError("");
+    setEditingTemplate(null)
+    setTemplateForm(emptyTemplateForm)
+    setTemplateError("")
   }
 
   function insertPlaceholder(token: string) {
-    const key = activeFieldKey.current;
-    const insert = `{{${token}}}`;
-    const el = fieldRefs.current[key];
+    const key = activeFieldKey.current
+    const insert = `{{${token}}}`
+    const el = fieldRefs.current[key]
 
     setTemplateForm((prev) => {
-      const current = prev[key] ?? "";
+      const current = prev[key] ?? ""
       if (el && typeof el.selectionStart === "number") {
-        const start = el.selectionStart;
-        const end = el.selectionEnd ?? start;
-        const next = current.slice(0, start) + insert + current.slice(end);
+        const start = el.selectionStart
+        const end = el.selectionEnd ?? start
+        const next = current.slice(0, start) + insert + current.slice(end)
         requestAnimationFrame(() => {
-          el.focus();
-          const pos = start + insert.length;
-          el.setSelectionRange(pos, pos);
-        });
-        return { ...prev, [key]: next };
+          el.focus()
+          const pos = start + insert.length
+          el.setSelectionRange(pos, pos)
+        })
+        return { ...prev, [key]: next }
       }
-      return { ...prev, [key]: current + insert };
-    });
+      return { ...prev, [key]: current + insert }
+    })
   }
 
   async function handleSaveTemplate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editingTemplate) return;
+    event.preventDefault()
+    if (!editingTemplate) return
 
-    setSavingTemplate(true);
-    setTemplateError("");
+    setSavingTemplate(true)
+    setTemplateError("")
 
-    const updated: EmailTemplate = { ...editingTemplate, ...templateForm };
+    const updated: EmailTemplate = { ...editingTemplate, ...templateForm }
 
     try {
-      await updateEmailTemplate(updated);
+      await updateEmailTemplate(updated)
       setEmailTemplates((current) =>
-        current.map((t) => (t.template_key === updated.template_key ? updated : t))
-      );
-      closeEditTemplate();
+        current.map((t) =>
+          t.template_key === updated.template_key ? updated : t,
+        ),
+      )
+      closeEditTemplate()
     } catch (error) {
-      console.error(error);
-      setTemplateError("Unable to save this template. Please try again.");
+      console.error(error)
+      setTemplateError("Unable to save this template. Please try again.")
     } finally {
-      setSavingTemplate(false);
+      setSavingTemplate(false)
     }
   }
 
   async function refreshExistingBoFile() {
-    const res = await fetch("/api/cereal/diff-exams/check-existing-xlsx?folder_name=BO", {
-      method: "GET",
-    });
+    const res = await fetch(
+      "/api/cereal/diff-exams/check-existing-xlsx?folder_name=BO",
+      {
+        method: "GET",
+      },
+    )
     if (!res.ok) {
-      console.error(await res.text());
-      return;
+      console.error(await res.text())
+      return
     }
-    const responseJson = await res.json();
+    const responseJson = await res.json()
 
-    setAlreadyExistingBo(responseJson.file);
+    setAlreadyExistingBo(responseJson.file)
   }
 
   async function refreshExistingDiffExamsFile() {
-    const res = await fetch("/api/cereal/diff-exams/check-existing-xlsx?folder_name=diff-exams", {
-      method: "GET",
-    });
+    const res = await fetch(
+      "/api/cereal/diff-exams/check-existing-xlsx?folder_name=diff-exams",
+      {
+        method: "GET",
+      },
+    )
     if (!res.ok) {
-      console.error(await res.text());
-      return;
+      console.error(await res.text())
+      return
     }
-    const responseJson = await res.json();
+    const responseJson = await res.json()
 
-    setAlreadyExistingDiffExams(responseJson.file);
+    setAlreadyExistingDiffExams(responseJson.file)
   }
 
   React.useEffect(() => {
-    (async () => {
-      await syncEmailTemplates();
+    ;(async () => {
+      await syncEmailTemplates()
 
-      const [allServices, allServiceLevels, allExamStatuses, allEmailTemplates] = await Promise.all([
+      const [
+        allServices,
+        allServiceLevels,
+        allExamStatuses,
+        allEmailTemplates,
+      ] = await Promise.all([
         getAllServices(),
         getAllServiceLevels(),
         getAllExamStatus(),
         getAllEmailTemplates(),
-      ]);
+      ])
 
-      setServices(allServices);
-      setServiceLevels(allServiceLevels);
-      setExamStatuses(allExamStatuses);
-      setEmailTemplates(allEmailTemplates);
+      setServices(allServices)
+      setServiceLevels(allServiceLevels)
+      setExamStatuses(allExamStatuses)
+      setEmailTemplates(allEmailTemplates)
 
-      await refreshExistingBoFile();
-      await refreshExistingDiffExamsFile();
-    })();
-  }, []);
+      await refreshExistingBoFile()
+      await refreshExistingDiffExamsFile()
+    })()
+  }, [])
 
   return (
     <main className="p-6 max-w-2xl">
       <div className="mb-6 flex items-center gap-2 rounded-lg border border-slate-200 p-3">
-        <span className="mr-auto text-sm font-medium text-slate-900">Impersonate a user type</span>
-        <button className="btn btn-primary" onClick={() => startImpersonation("sac")} type="button">SAC</button>
-        <button className="btn btn-primary" onClick={() => startImpersonation("crep")} type="button">CREP (Repro)</button>
-        <button className="btn btn-primary" onClick={() => startImpersonation("none")} type="button">No rights</button>
+        <span className="mr-auto text-sm font-medium text-slate-900">
+          Impersonate a user type
+        </span>
+        <button
+          className="btn btn-primary"
+          onClick={() => startImpersonation("sac")}
+          type="button"
+        >
+          SAC
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={() => startImpersonation("crep")}
+          type="button"
+        >
+          CREP (Repro)
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={() => startImpersonation("none")}
+          type="button"
+        >
+          No rights
+        </button>
       </div>
       <div className="mb-6 flex gap-2 border-b border-slate-200">
         <TabButton
@@ -447,8 +533,13 @@ export default function AdminPage() {
       {activeTab === "service" && (
         <div className="grid gap-2">
           {services.map((service) => (
-            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={service.id}>
-              <span><strong>{service.code}</strong> - {service.description}</span>
+            <div
+              className="flex justify-between items-center rounded-lg border border-slate-200 p-3"
+              key={service.id}
+            >
+              <span>
+                <strong>{service.code}</strong> - {service.description}
+              </span>
               <button
                 className="bg-red-500 p-2 rounded-xl text-white ml-0 hover:cursor-pointer hover:bg-red-600 transition ease-in-out text-xs"
                 onClick={() => handleDeleteService(service)}
@@ -480,7 +571,10 @@ export default function AdminPage() {
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-950" id="add-item-title">
+                <h2
+                  className="text-lg font-semibold text-slate-950"
+                  id="add-item-title"
+                >
                   {addModalConfig[addModalType].title}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -555,7 +649,9 @@ export default function AdminPage() {
                 disabled={isAdding}
                 type="submit"
               >
-                {isAdding ? "Adding..." : addModalConfig[addModalType].submitLabel}
+                {isAdding
+                  ? "Adding..."
+                  : addModalConfig[addModalType].submitLabel}
               </button>
             </div>
           </form>
@@ -565,8 +661,13 @@ export default function AdminPage() {
       {activeTab === "serviceLevel" && (
         <div className="grid gap-2">
           {serviceLevels.map((serviceLevel) => (
-            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={serviceLevel.id}>
-              <span><strong>{serviceLevel.code}</strong> - {serviceLevel.name}</span>
+            <div
+              className="flex justify-between items-center rounded-lg border border-slate-200 p-3"
+              key={serviceLevel.id}
+            >
+              <span>
+                <strong>{serviceLevel.code}</strong> - {serviceLevel.name}
+              </span>
               <button
                 className="bg-red-500 p-2 rounded-xl text-white ml-0 hover:cursor-pointer hover:bg-red-600 transition ease-in-out text-xs"
                 onClick={() => handleDeleteServiceLevel(serviceLevel)}
@@ -588,7 +689,10 @@ export default function AdminPage() {
       {activeTab === "examStatus" && (
         <div className="grid gap-2">
           {examStatuses.map((status) => (
-            <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={status.id}>
+            <div
+              className="flex justify-between items-center rounded-lg border border-slate-200 p-3"
+              key={status.id}
+            >
               <div className="flex items-center gap-2">
                 <span
                   className="flex h-3 w-3 rounded-full border border-slate-200"
@@ -618,38 +722,54 @@ export default function AdminPage() {
 
       {activeTab === "emailTemplate" && (
         <div className="grid gap-6">
-          {groupTemplatesBySection(emailTemplates).map(([section, templates]) => {
-            const collapsed = collapsedSections[section];
-            return (
-              <div className="grid gap-2" key={section}>
-                <button
-                  aria-expanded={!collapsed}
-                  className="flex items-center gap-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:cursor-pointer hover:text-slate-900"
-                  onClick={() => toggleSection(section)}
-                  type="button"
-                >
-                  <span className={`inline-block transition-transform ${collapsed ? "" : "rotate-90"}`}>›</span>
-                  {section}
-                  <span className="font-normal normal-case text-slate-400">({templates.length})</span>
-                </button>
-                {!collapsed && templates.map((template) => (
-                  <div className="flex justify-between items-center rounded-lg border border-slate-200 p-3" key={template.template_key}>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-slate-900">{template.name}</span>
-                      <span className="text-xs text-slate-500">To: {template.recipients_to || "—"}</span>
-                    </div>
-                    <button
-                      className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-red-700 transition ease-in-out"
-                      onClick={() => openEditTemplate(template)}
-                      type="button"
+          {groupTemplatesBySection(emailTemplates).map(
+            ([section, templates]) => {
+              const collapsed = collapsedSections[section]
+              return (
+                <div className="grid gap-2" key={section}>
+                  <button
+                    aria-expanded={!collapsed}
+                    className="flex items-center gap-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:cursor-pointer hover:text-slate-900"
+                    onClick={() => toggleSection(section)}
+                    type="button"
+                  >
+                    <span
+                      className={`inline-block transition-transform ${collapsed ? "" : "rotate-90"}`}
                     >
-                      Edit
-                    </button>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
+                      ›
+                    </span>
+                    {section}
+                    <span className="font-normal normal-case text-slate-400">
+                      ({templates.length})
+                    </span>
+                  </button>
+                  {!collapsed &&
+                    templates.map((template) => (
+                      <div
+                        className="flex justify-between items-center rounded-lg border border-slate-200 p-3"
+                        key={template.template_key}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-slate-900">
+                            {template.name}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            To: {template.recipients_to || "—"}
+                          </span>
+                        </div>
+                        <button
+                          className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-red-700 transition ease-in-out"
+                          onClick={() => openEditTemplate(template)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )
+            },
+          )}
           {emailTemplates.length === 0 && (
             <p className="text-sm text-slate-500">No email templates found.</p>
           )}
@@ -669,7 +789,10 @@ export default function AdminPage() {
           >
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-950" id="edit-template-title">
+                <h2
+                  className="text-lg font-semibold text-slate-950"
+                  id="edit-template-title"
+                >
                   {editingTemplate.name}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -688,22 +811,43 @@ export default function AdminPage() {
 
             <div className="grid gap-4 overflow-y-auto p-6">
               {templateFieldLabels.map((field) => (
-                <label className="grid gap-1 text-sm font-medium text-slate-700" key={field.key}>
+                <label
+                  className="grid gap-1 text-sm font-medium text-slate-700"
+                  key={field.key}
+                >
                   {field.label}
                   {field.multiline ? (
                     <textarea
                       className="min-h-64 rounded-md border border-slate-300 px-3 py-2 font-mono text-xs font-normal text-slate-950 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100"
-                      onChange={(event) => setTemplateForm((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                      onFocus={() => { activeFieldKey.current = field.key; }}
-                      ref={(el) => { fieldRefs.current[field.key] = el; }}
+                      onChange={(event) =>
+                        setTemplateForm((prev) => ({
+                          ...prev,
+                          [field.key]: event.target.value,
+                        }))
+                      }
+                      onFocus={() => {
+                        activeFieldKey.current = field.key
+                      }}
+                      ref={(el) => {
+                        fieldRefs.current[field.key] = el
+                      }}
                       value={templateForm[field.key]}
                     />
                   ) : (
                     <input
                       className="rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-950 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100"
-                      onChange={(event) => setTemplateForm((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                      onFocus={() => { activeFieldKey.current = field.key; }}
-                      ref={(el) => { fieldRefs.current[field.key] = el; }}
+                      onChange={(event) =>
+                        setTemplateForm((prev) => ({
+                          ...prev,
+                          [field.key]: event.target.value,
+                        }))
+                      }
+                      onFocus={() => {
+                        activeFieldKey.current = field.key
+                      }}
+                      ref={(el) => {
+                        fieldRefs.current[field.key] = el
+                      }}
                       value={templateForm[field.key]}
                     />
                   )}
@@ -715,7 +859,9 @@ export default function AdminPage() {
                   Available placeholders (click to insert in the focused field)
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {EMAIL_TEMPLATES[editingTemplate.template_key as EmailTemplateKey]?.placeholders.map((placeholder) => (
+                  {EMAIL_TEMPLATES[
+                    editingTemplate.template_key as EmailTemplateKey
+                  ]?.placeholders.map((placeholder) => (
                     <button
                       className="rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-700 hover:cursor-pointer hover:border-red-500 hover:text-red-600"
                       key={placeholder.token}
@@ -760,14 +906,21 @@ export default function AdminPage() {
         <div className="flex flex-col gap-24">
           <div className="flex flex-col gap-4">
             <div className="flex">
-              <input type="file" onChange={handleBoFileChange} className="inset-0 cursor-pointer" />
+              <input
+                type="file"
+                onChange={handleBoFileChange}
+                className="inset-0 cursor-pointer"
+              />
               <button onClick={() => handleBoUpload()}>Upload BO file</button>
             </div>
-            {alreadyExistingBo &&
-              <>            
+            {alreadyExistingBo && (
+              <>
                 <div>
-                  A BO file already exists, named {alreadyExistingBo.name}.<br />
-                  <span className="underline">Uploading a new file will completely erase the old one.</span>
+                  A BO file already exists, named {alreadyExistingBo.name}.
+                  <br />
+                  <span className="underline">
+                    Uploading a new file will completely erase the old one.
+                  </span>
                 </div>
                 <div>
                   <h2 className="font-semibold">Stats of the actual file</h2>
@@ -783,18 +936,27 @@ export default function AdminPage() {
                   </dl>
                 </div>
               </>
-            }
+            )}
           </div>
           <div className="flex flex-col gap-4">
             <div className="flex">
-              <input type="file" onChange={handleDiffExamsFileChange} className="inset-0 cursor-pointer" />
-              <button onClick={() => handleDiffExamsUpload()}>Upload diff exams file</button>
+              <input
+                type="file"
+                onChange={handleDiffExamsFileChange}
+                className="inset-0 cursor-pointer"
+              />
+              <button onClick={() => handleDiffExamsUpload()}>
+                Upload diff exams file
+              </button>
             </div>
-            {alreadyExistingDiffExams &&
-              <>            
+            {alreadyExistingDiffExams && (
+              <>
                 <div>
-                  A diff exams file already exists, named {alreadyExistingDiffExams.name}.<br />
-                  <span className="underline">Uploading a new file will completely erase the old one.</span>
+                  A diff exams file already exists, named{" "}
+                  {alreadyExistingDiffExams.name}.<br />
+                  <span className="underline">
+                    Uploading a new file will completely erase the old one.
+                  </span>
                 </div>
                 <div>
                   <h2 className="font-semibold">Stats of the actual file</h2>
@@ -802,52 +964,60 @@ export default function AdminPage() {
                     <dt className="font-semibold">Size</dt>
                     <dd>{formatFileSize(alreadyExistingDiffExams.size)}</dd>
                     <dt className="font-semibold">Last edited</dt>
-                    <dd>{formatDateTime(alreadyExistingDiffExams.lastModified)}</dd>
+                    <dd>
+                      {formatDateTime(alreadyExistingDiffExams.lastModified)}
+                    </dd>
                     <dt className="font-semibold">First sheet</dt>
-                    <dd>{alreadyExistingDiffExams.firstSheetName || "Unknown"}</dd>
+                    <dd>
+                      {alreadyExistingDiffExams.firstSheetName || "Unknown"}
+                    </dd>
                     <dt className="font-semibold">Rows</dt>
-                    <dd>{alreadyExistingDiffExams.rowCount.toLocaleString()}</dd>
+                    <dd>
+                      {alreadyExistingDiffExams.rowCount.toLocaleString()}
+                    </dd>
                   </dl>
                 </div>
               </>
-            }
+            )}
           </div>
         </div>
       )}
     </main>
-  );
+  )
 }
 
 function isHexColor(value: string) {
-  return /^#[0-9a-fA-F]{6}$/.test(value);
+  return /^#[0-9a-fA-F]{6}$/.test(value)
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(new Date(value))
 }
 
 // Group templates by their section, preserving first-appearance order.
-function groupTemplatesBySection(templates: EmailTemplate[]): [string, EmailTemplate[]][] {
-  const groups = new Map<string, EmailTemplate[]>();
+function groupTemplatesBySection(
+  templates: EmailTemplate[],
+): [string, EmailTemplate[]][] {
+  const groups = new Map<string, EmailTemplate[]>()
   for (const template of templates) {
-    const section = template.section || "Other";
-    const existing = groups.get(section);
+    const section = template.section || "Other"
+    const existing = groups.get(section)
     if (existing) {
-      existing.push(template);
+      existing.push(template)
     } else {
-      groups.set(section, [template]);
+      groups.set(section, [template])
     }
   }
-  return Array.from(groups.entries());
+  return Array.from(groups.entries())
 }
 
 function TabButton({
@@ -855,9 +1025,9 @@ function TabButton({
   children,
   onClick,
 }: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
+  active: boolean
+  children: React.ReactNode
+  onClick: () => void
 }) {
   return (
     <button
@@ -871,5 +1041,5 @@ function TabButton({
     >
       {children}
     </button>
-  );
+  )
 }

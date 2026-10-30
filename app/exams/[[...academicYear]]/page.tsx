@@ -1,31 +1,35 @@
-import { auth } from "@/auth";
-import ExamsTable from "../../components/exams/ExamsTable";
-import { getAcademicYearsFromExams } from "@/app/lib/database";
-import { redirect } from "next/navigation";
+import { redirect } from "next/navigation"
+
+import { getAcademicYearsFromExams } from "@/app/lib/database"
+import { auth } from "@/auth"
+
+import ExamsTable from "../../components/exams/ExamsTable"
 
 export const metadata = {
-    title: "Exams table",
+  title: "Exams table",
 }
 
 export default async function Page({
-    params,
+  params,
 }: {
-    params: Promise<{ academicYear?: string[] }>
+  params: Promise<{ academicYear?: string[] }>
 }) {
-    const session = await auth();
-    if (!session?.user) return;
+  const session = await auth()
+  if (!session?.user) return
 
-    const { academicYear } = await params;
-    const selectedAcademicYear = academicYear?.[0];
-    const allAcademicYears = await getAcademicYearsFromExams();
-    const academicYearExists = allAcademicYears.some(item => item == selectedAcademicYear);
-    if(!selectedAcademicYear || !academicYearExists) {
-        redirect(`/exams/${allAcademicYears[allAcademicYears.length - 1]}`)
-    }
+  const { academicYear } = await params
+  const selectedAcademicYear = academicYear?.[0]
+  const allAcademicYears = await getAcademicYearsFromExams()
+  const academicYearExists = allAcademicYears.some(
+    (item) => item === selectedAcademicYear,
+  )
+  if (!selectedAcademicYear || !academicYearExists) {
+    redirect(`/exams/${allAcademicYears[allAcademicYears.length - 1]}`)
+  }
 
-    return (
-        <main>
-            <ExamsTable academicYear={selectedAcademicYear}/>
-        </main>
-    )
+  return (
+    <main>
+      <ExamsTable academicYear={selectedAcademicYear} />
+    </main>
+  )
 }

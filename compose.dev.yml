@@ -12,7 +12,7 @@ services:
       MYSQL_USER: "${MYSQL_USER}"
       MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 5s
       retries: 10
     volumes:
@@ -20,14 +20,16 @@ services:
     networks:
       - cereal-app-network
     ports:
-      - '3306:3306'
+      - "3306:3306"
   cereal-app:
     container_name: cereal-app
     image: node:24
     ports:
-      - '3000:3000'
+      - "3000:3000"
     volumes:
       - .:/app
+      - app-node-modules:/app/node_modules
+      - app-next:/app/.next
       - ${EXAM_FILES_UPLOAD_FOLDER}:${EXAM_FILES_UPLOAD_FOLDER}:rw
       - ${DEFFERED_EXAMS_DIR}:${DEFFERED_EXAMS_DIR}:rw
       - ${ARCHIVE_EXAMS_DIR}:${ARCHIVE_EXAMS_DIR}:rw
@@ -63,6 +65,8 @@ services:
 
 volumes:
   pnpm-store:
+  app-node-modules:
+  app-next:
 
 networks:
   cereal-app-network:
