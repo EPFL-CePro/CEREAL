@@ -1,0 +1,24 @@
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	handle /maint-test {
+		root * /var/www/html
+		rewrite * /index.html
+		file_server
+	}
+
+	handle {
+		reverse_proxy app:3000 {
+			transport http {
+				dial_timeout 1s
+			}
+		}
+	}
+
+	handle_errors {
+		root * /var/www/html
+		rewrite * /index.html
+		header Retry-After 120
+		file_server
+	}
+}
