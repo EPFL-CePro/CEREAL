@@ -1,69 +1,51 @@
+name: cereal-dev
 services:
-  cereal-app-db:
-    env_file:
-      - path: .env
-        required: true
-    image: mysql
-    container_name: cereal-app-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: "${MYSQL_DATABASE}"
-      MYSQL_USER: "${MYSQL_USER}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 5s
-      retries: 10
-    volumes:
-      - ./db:/docker-entrypoint-initdb.d
-    networks:
-      - cereal-app-network
-    ports:
-      - '3306:3306'
-  cereal-app:
-    container_name: cereal-app
+  mysql:
+    extends:
+      file: compose.base.yml
+      service: mysql
+    ports : ["127.0.0.1:${MYSQL_HOST_PORT:-3306}:3306"]
+
+  mysql-init:
+    extends:
+      file: compose.base.yml
+      service: mysql-init
+    # No seed mounted: the dev dump is created and imported manually for now.
+    # TODO(prisma): replace the manual dump with `prisma db seed`
+
+  app:
     image: node:24
-    ports:
-      - '3000:3000'
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    working_dir: /app
+    ports: ["127.0.0.1:3000:3000"]
+    user: "0:0"
+    extends:
+      file: compose.base.yml
+      service: app
     volumes:
       - .:/app
-      - ${EXAM_FILES_UPLOAD_FOLDER}:${EXAM_FILES_UPLOAD_FOLDER}:rw
-      - ${DEFFERED_EXAMS_DIR}:${DEFFERED_EXAMS_DIR}:rw
-      - ${ARCHIVE_EXAMS_DIR}:${ARCHIVE_EXAMS_DIR}:rw
-      - pnpm-store:/pnpm-store
-    stdin_open: true
-    tty: true
-    command: /bin/sh -c "cd /app && corepack enable && pnpm install --store-dir /pnpm-store && pnpm dev"
-    depends_on:
-      cereal-app-db:
-        condition: service_healthy
+      - app-node-modules:/app/node_modules
+      - app-next:/app/.next
     environment:
-      - NODE_ENV=development
-      - COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-      - EXAM_FILES_UPLOAD_FOLDER=${EXAM_FILES_UPLOAD_FOLDER}
-      - DEFFERED_EXAMS_DIR=${DEFFERED_EXAMS_DIR}
-    env_file:
-      - .env
-    networks:
-      - cereal-app-network
-  cereal-app-pma:
+      NODE_ENV: development
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    restart: "no"
+
+  phpmyadmin:
     image: phpmyadmin
-    container_name: cereal-app-pma
-    restart: unless-stopped
     environment:
-      - PMA_HOST=${MYSQL_HOST}
+      PMA_HOST: mysql
     depends_on:
-      cereal-app-db:
+      mysql:
         condition: service_healthy
-    ports:
-      - 8088:80
-    networks:
-      - cereal-app-network
+    ports: ["127.0.0.1:8080:80"]
 
 volumes:
-  pnpm-store:
+  mysql-data:
+  app-node-modules:
+  app-next:
 
-networks:
-  cereal-app-network:
-    name: cereal-app-network
+# TODO(secrets): enable once Ansible generates the files in SECRETS_DIR
+# secrets:
+#   mysql_root_password: { file: "${SECRETS_DIR:-./secrets}/mysql_root_password" }
+#   mysql_password:      { file: "${SECRETS_DIR:-./secrets}/mysql_password" }
