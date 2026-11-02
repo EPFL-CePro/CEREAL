@@ -1,0 +1,38 @@
+name: cereal-prod
+services:
+  caddy:
+    extends:
+      file: compose.base.yml
+      service: caddy
+    # Only Caddy should publish
+    ports: ["80:80", "443:443", "443:443/udp"] # ["3000:3000"] # DEV
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS is required}
+
+  mysql:
+    extends:
+      file: compose.base.yml
+      service: mysql
+
+  mysql-init:
+    extends:
+      file: compose.base.yml
+      service: mysql-init
+
+  app:
+    extends:
+      file: compose.base.yml
+      service: app
+    image: ghcr.io/epfl-cepro/cereal:${CEREAL_VERSION:?}
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:
+
+# TODO(secrets): enable once Ansible generates the files in SECRETS_DIR
+# secrets:
+#   mysql_root_password:
+#     file: ${SECRETS_DIR:?}/mysql_root_password
+#   mysql_password:
+#     file: ${SECRETS_DIR:?}/mysql_password

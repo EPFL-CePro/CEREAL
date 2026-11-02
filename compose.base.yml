@@ -1,0 +1,102 @@
+name: cereal
+services:
+  # ---------------------------------------------------------------------------
+  # Caddy (Docker Hardened Image): TLS, static files, reverse proxy
+  # Config: deploy/caddy/Caddyfile (+ tls/*.caddy); maintenance page in deploy/maintenance-page
+  # SITE_ADDRESS (required) is set in compose.dev.yml / compose.prod.yml.
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: dhi.io/caddy:2.11.7
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./deploy/caddy:/etc/caddy:ro
+      - ./deploy/maintenance-page:/var/www/html:ro,z
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # MySQL (Docker Hardened Image: runs as nonroot, no shell)
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: dhi.io/mysql:9.7
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      # Only used when initializing an empty data directory.
+      # Database and app user are created by mysql-init (DHI ignores MYSQL_DATABASE/MYSQL_USER).
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      # TODO(secrets): use the secret file once Ansible generates it, and remove MYSQL_ROOT_PASSWORD from .env
+      # MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    # secrets:
+    #   - mysql_root_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # mysqladmin ping exits 0 whenever the server is up, even without credentials
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # One-shot job replacing MYSQL_DATABASE / MYSQL_USER / docker-entrypoint-initdb.d.
+  # Idempotent: safe to run on every `up`. Loads /seed/dev-seed.sql.gz only if it is
+  # mounted (dev) and the database is still empty.
+  mysql-init:
+    image: dhi.io/mysql:9.7-dev   # dev variant: has a shell; runs once and exits
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_NAME: ${MYSQL_DATABASE:-cereal}
+      APP_USER: ${MYSQL_USER:-cereal}
+      # TODO(secrets): read both passwords from /run/secrets instead (see the commented lines below)
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      APP_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+    # secrets:
+    #   - mysql_root_password
+    #   - mysql_password
+    entrypoint: [ "sh", "-c" ]
+    command:
+      - |
+        set -e
+        export MYSQL_PWD="$$MYSQL_ROOT_PASSWORD"
+        # export MYSQL_PWD="$$(cat /run/secrets/mysql_root_password)"
+        # APP_PASSWORD="$$(cat /run/secrets/mysql_password)"
+        mysql -h mysql -uroot -e "
+          CREATE DATABASE IF NOT EXISTS \`$$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          CREATE USER IF NOT EXISTS '$$APP_USER'@'%' IDENTIFIED BY '$$APP_PASSWORD';
+          GRANT ALL PRIVILEGES ON \`$$DB_NAME\`.* TO '$$APP_USER'@'%';"
+        # TODO(prisma): remove this dump loading once schema and seed are handled by Prisma
+        if [ -f /seed/dev-seed.sql.gz ] && [ "$$(mysql -h mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$$DB_NAME'")" = "0" ]; then
+          echo "Loading dev seed..."
+          gunzip -c /seed/dev-seed.sql.gz | mysql -h mysql -uroot "$$DB_NAME"
+        fi
+        echo "mysql-init done"
+    restart: "no"
+
+  # TODO(prisma): add a one-shot `migrate` service here (same pattern as mysql-init):
+  #   image: the app image, command: `prisma migrate deploy`,
+  #   depends_on: mysql-init (service_completed_successfully).
+  #   Then make `app` depend on `migrate` instead of `mysql-init`.
+
+  app:
+    user: "${UID:-1000}:${GID:-1000}"
+    expose: ["3000"]
+    volumes:
+      - ${EXAM_FILES_UPLOAD_FOLDER}:${EXAM_FILES_UPLOAD_FOLDER}:rw
+      - ${DEFFERED_EXAMS_DIR}:${DEFFERED_EXAMS_DIR}:rw
+      - ${ARCHIVE_EXAMS_DIR}:${ARCHIVE_EXAMS_DIR}:rw
+    env_file:
+      - .env
+    depends_on:
+      mysql-init: # TODO(prisma): replace with `migrate` once migrations are handled by the app
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:
