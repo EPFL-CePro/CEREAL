@@ -133,8 +133,9 @@ export async function getAcademicYearsFromExams(): Promise<string[]> {
   return rows.map((row) => row.academic_year_id)
 }
 
-export async function getExamCountsByAcademicYearAndService(semester: number | null):
-  Promise<{ academicYearId: string; serviceId: number; count: number }[]> {
+export async function getExamCountsByAcademicYearAndService(
+  semester: number | null,
+): Promise<{ academicYearId: string; serviceId: number; count: number }[]> {
   await requirePermission(Permission.ADMIN)
   const [rows] = await db.query<
     (RowDataPacket & {
