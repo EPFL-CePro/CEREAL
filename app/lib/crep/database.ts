@@ -3,14 +3,13 @@
 import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { getAcademicYearDateRange } from "@/app/lib/dates/academic-year"
-import { db } from "@/app/lib/db"
 import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
 
 import { examBlockingPrintStatus, examNotAdminStatus } from "./exam-status"
 import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from "./file-specs"
 import { getPrintingDurationInMinutes } from "./print-duration"
 
-import { type Prisma } from "@/app/generated/prisma/client"
+import { type crep_log, type Prisma } from "@/app/generated/prisma/client"
 import { prisma } from "@/app/lib/prisma"
 
 type NewCrepFile = CrepFileSpecs & { file_name: string | null }
@@ -380,20 +379,28 @@ export async function getCrepExamById(id: string): Promise<CrepExam | null> {
   return exam ? toCrepExam(exam) : null
 }
 
+type LogRow = Omit<crep_log, "changes"> & {
+  changes: unknown
+  read_at: Date | null
+}
+
 export async function getLogs(sciper: string) {
   await requirePermission(Permission.CREP)
-  const [rows] = await db.query(
-    "SELECT l.*, un.read_at, (un.read_at IS NOT NULL) AS is_read FROM crep_log l LEFT JOIN user_notification un ON un.log_id = l.id AND un.sciper = ? ORDER BY l.date_time DESC, l.id DESC;",
-    [sciper],
-  )
-  return rows
+  const rows = await prisma.$queryRaw<LogRow[]>`
+    SELECT l.*, un.read_at
+    FROM crep_log l
+    LEFT JOIN user_notification un ON un.log_id = l.id AND un.sciper = ${sciper}
+    ORDER BY l.date_time DESC, l.id DESC
+  `
+  return rows.map((row) => ({ ...row, is_read: row.read_at !== null }))
 }
 
 export async function markAsRead(sciper: string) {
   await requirePermission(Permission.CREP)
-  await db.query(
-    "INSERT INTO user_notification (log_id, sciper, read_at) SELECT l.id, ?, CURRENT_TIMESTAMP(6) FROM crep_log l ON DUPLICATE KEY UPDATE read_at = IF(user_notification.read_at IS NULL, CURRENT_TIMESTAMP(6), user_notification.read_at);",
-    [sciper],
-  )
+  await prisma.$executeRaw`
+    INSERT INTO user_notification (log_id, sciper, read_at)
+    SELECT l.id, ${sciper}, CURRENT_TIMESTAMP(6) FROM crep_log l
+    ON DUPLICATE KEY UPDATE read_at = IF(user_notification.read_at IS NULL, CURRENT_TIMESTAMP(6), user_notification.read_at)
+  `
   return { ok: true }
 }

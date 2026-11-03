@@ -34,8 +34,8 @@ interface NotifProps {
 }
 
 async function fetchLogs(sciper: string): Promise<Log[]> {
-  const logs = (await getLogs(sciper)) as Log[]
-  const mapLogs = logs.map((log: Log) => ({
+  const logs = await getLogs(sciper)
+  const mapLogs = logs.map((log) => ({
     id: log.id,
     action: log.action,
     contact: log.contact,
