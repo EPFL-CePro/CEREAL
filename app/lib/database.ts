@@ -1,7 +1,6 @@
 "use server"
 import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
-import { db } from "@/app/lib/db"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
@@ -14,7 +13,6 @@ import { type ServiceLevel } from "@/types/serviceLevel"
 
 import type { Absence, NewAbsence } from "@/types/absence"
 import type { DiffExam, NewDiffExam } from "@/types/diffExam"
-import type { RowDataPacket } from "mysql2"
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise<Service[]> {
@@ -294,69 +292,62 @@ export async function syncEmailTemplates() {
   await requirePermission(Permission.ADMIN)
   const keys = Object.keys(EMAIL_TEMPLATES)
 
-  const [rows] = await db.query<(RowDataPacket & { template_key: string })[]>(
-    "SELECT template_key FROM email_template;",
-  )
+  const rows = await prisma.email_template.findMany({
+    select: { template_key: true },
+  })
 
   const existing = new Set(rows.map((row) => row.template_key))
   const toInsert = Object.entries(EMAIL_TEMPLATES)
     .filter(([key]) => !existing.has(key))
-    .map(([key, def]) => [
-      key,
-      def.section,
-      def.name,
-      def.defaults.subject,
-      def.defaults.body,
-      def.defaults.to,
-      def.defaults.cc,
-      def.defaults.replyTo,
-    ])
+    .map(([key, def]) => ({
+      template_key: key,
+      section: def.section,
+      name: def.name,
+      subject: def.defaults.subject,
+      body: def.defaults.body,
+      recipients_to: def.defaults.to,
+      recipients_cc: def.defaults.cc,
+      reply_to: def.defaults.replyTo,
+    }))
 
   if (toInsert.length > 0) {
-    await db.query(
-      "INSERT INTO email_template (template_key, section, name, subject, body, recipients_to, recipients_cc, reply_to) VALUES ?;",
-      [toInsert],
-    )
+    await prisma.email_template.createMany({ data: toInsert })
   }
 
-  await db.query("DELETE FROM email_template WHERE template_key NOT IN (?);", [
-    keys,
-  ])
+  await prisma.email_template.deleteMany({
+    where: { template_key: { notIn: keys } },
+  })
 }
 
 export async function getAllEmailTemplates(): Promise<EmailTemplate[]> {
   await requirePermission(Permission.ADMIN)
-  const [rows] = await db.query("SELECT * FROM email_template ORDER BY id;")
-  return rows as EmailTemplate[]
+  return (await prisma.email_template.findMany({
+    orderBy: { id: "asc" },
+  })) as EmailTemplate[]
 }
 
 // No permission check on purpose: used to send the emails of the actions of any logged-in user.
 export async function getEmailTemplate(
   templateKey: string,
 ): Promise<EmailTemplate | null> {
-  const [rows] = await db.query(
-    "SELECT * FROM email_template WHERE template_key = ?;",
-    [templateKey],
-  )
-  const templates = rows as EmailTemplate[]
-  return templates.length > 0 ? templates[0] : null
+  return (await prisma.email_template.findUnique({
+    where: { template_key: templateKey },
+  })) as EmailTemplate | null
 }
 
 export async function updateEmailTemplate(template: EmailTemplate) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE email_template SET name = ?, subject = ?, body = ?, recipients_to = ?, recipients_cc = ?, reply_to = ? WHERE template_key = ?;",
-    [
-      template.name,
-      template.subject,
-      template.body,
-      template.recipients_to,
-      template.recipients_cc,
-      template.reply_to,
-      template.template_key,
-    ],
-  )
-  return JSON.stringify(result)
+  await prisma.email_template.update({
+    where: { template_key: template.template_key },
+    data: {
+      name: template.name,
+      subject: template.subject,
+      body: template.body,
+      recipients_to: template.recipients_to,
+      recipients_cc: template.recipients_cc,
+      reply_to: template.reply_to,
+    },
+  })
 }
 
 // No permission check on purpose: used by the deferred exams form (every logged-in user).
