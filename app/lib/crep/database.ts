@@ -10,8 +10,6 @@ import { examBlockingPrintStatus, examNotAdminStatus } from "./exam-status"
 import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from "./file-specs"
 import { getPrintingDurationInMinutes } from "./print-duration"
 
-import type { ResultSetHeader, RowDataPacket } from "mysql2"
-import type { PoolConnection } from "mysql2/promise"
 import { type Prisma } from "@/app/generated/prisma/client"
 import { prisma } from "@/app/lib/prisma"
 
@@ -38,44 +36,33 @@ async function getCrepIdsByContactEmail(email: string): Promise<number[]> {
 }
 
 async function insertFiles(
-  connection: PoolConnection,
+  tx: Prisma.TransactionClient,
   crepId: number,
   files: NewCrepFile[],
 ) {
-  await connection.query(
-    "INSERT INTO crep_file (crep_id, file_name, exam_students, exam_pages, paper_format, paper_color, print, need_scan) VALUES ?;",
-    [
-      files.map((file) => {
-        const specs = pickFileSpecs(file)
-        return [
-          crepId,
-          file.file_name,
-          specs.exam_students,
-          specs.exam_pages,
-          specs.paper_format,
-          specs.paper_color,
-          specs.print,
-          specs.need_scan,
-        ]
-      }),
-    ],
-  )
+  await tx.crep_file.createMany({
+    data: files.map((file) => ({
+      crep_id: crepId,
+      file_name: file.file_name,
+      ...pickFileSpecs(file),
+    })),
+  })
 }
 
 // Recomputes `crep.print_duration` from the copies of all the files of the exam, returns the new duration
 async function refreshPrintDuration(
-  connection: PoolConnection,
+  tx: Prisma.TransactionClient,
   crepId: number,
 ): Promise<number> {
-  const [rows] = await connection.query<RowDataPacket[]>(
-    "SELECT COALESCE(SUM(exam_students), 0) AS copies FROM crep_file WHERE crep_id = ?;",
-    [crepId],
-  )
-  const printDuration = getPrintingDurationInMinutes(Number(rows[0].copies))
-  await connection.query("UPDATE crep SET print_duration = ? WHERE id = ?;", [
-    printDuration,
-    crepId,
-  ])
+  const { _sum } = await tx.crep_file.aggregate({
+    where: { crep_id: crepId },
+    _sum: { exam_students: true },
+  })
+  const printDuration = getPrintingDurationInMinutes(_sum.exam_students ?? 0)
+  await tx.crep.update({
+    where: { id: crepId },
+    data: { print_duration: printDuration },
+  })
   return printDuration
 }
 
@@ -191,17 +178,17 @@ export async function getAllExamsBetweenDates(
 export async function insertExamForPrint(
   exam: {
     exam_code: string
-    exam_date: string | Date
+    exam_date: string
     exam_name: string
-    print_date?: string | Date
-    contact?: string
-    authorized_persons?: string
+    print_date: string
+    contact: string
+    authorized_persons: string
     remark?: string | null
     repro_remark?: string | null
     status?: string
     registered_by: string
     financial_center: string
-    desired_date: string | Date
+    desired_date: string
   },
   files: NewCrepFile[],
 ): Promise<number> {
@@ -209,46 +196,37 @@ export async function insertExamForPrint(
   const filesError = validateFilesSpecs(files)
   if (filesError) throw new Error(filesError)
 
-  const connection = await db.getConnection()
-
-  try {
-    await connection.beginTransaction()
-
-    const [result] = await connection.query<ResultSetHeader>(
-      `INSERT INTO crep (exam_code, exam_date, exam_name, print_date, print_duration, contact, authorized_persons, remark, repro_remark, status, registered_by, financial_center, desired_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [
-        exam.exam_code,
-        exam.exam_date,
-        exam.exam_name,
-        exam.print_date,
-        getPrintingDurationInMinutes(getTotalCopies(files)),
-        exam.contact,
-        exam.authorized_persons,
-        exam.remark || null,
-        exam.repro_remark || null,
-        exam.status || "registered",
-        exam.registered_by,
-        exam.financial_center,
-        exam.desired_date,
-      ],
-    )
-    const crepId = result.insertId
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.crep.create({
+      data: {
+        exam_code: exam.exam_code,
+        exam_date: new Date(exam.exam_date),
+        exam_name: exam.exam_name,
+        // `print_date` is a wall-clock "YYYY-MM-DD HH:mm:ss", read as UTC like every DATETIME by Prisma
+        print_date: new Date(`${exam.print_date.replace(" ", "T")}Z`),
+        print_duration: getPrintingDurationInMinutes(getTotalCopies(files)),
+        contact: exam.contact,
+        authorized_persons: exam.authorized_persons,
+        remark: exam.remark || null,
+        repro_remark: exam.repro_remark || null,
+        status: exam.status || "registered",
+        registered_by: exam.registered_by,
+        financial_center: exam.financial_center,
+        desired_date: new Date(exam.desired_date),
+      },
+    })
 
     // The files inserted at registration are not logged one by one (see the `crep_file_after_insert` trigger)
-    await connection.query("SET @crep_registering = 1;")
-    await insertFiles(connection, crepId, files)
-    await connection.query("SET @crep_registering = NULL;")
+    await tx.$executeRaw`SET @crep_registering = 1`
+    try {
+      await insertFiles(tx, created.id, files)
+    } finally {
+      // A session variable stays on the connection given back to the pool: it must never be left set
+      await tx.$executeRaw`SET @crep_registering = NULL`
+    }
 
-    await connection.commit()
-    return crepId
-  } catch (err) {
-    await connection.rollback()
-    // A session variable stays on a connection of the pool: it must not be given back with the flag set
-    await connection.query("SET @crep_registering = NULL;").catch(() => {})
-    throw err
-  } finally {
-    connection.release()
-  }
+    return created.id
+  })
 }
 
 export async function addCrepFiles(
@@ -258,19 +236,10 @@ export async function addCrepFiles(
   const filesError = validateFilesSpecs(files)
   if (filesError) throw new Error(filesError)
 
-  const connection = await db.getConnection()
-
-  try {
-    await connection.beginTransaction()
-    await insertFiles(connection, crepId, files)
-    await refreshPrintDuration(connection, crepId)
-    await connection.commit()
-  } catch (err) {
-    await connection.rollback()
-    throw err
-  } finally {
-    connection.release()
-  }
+  await prisma.$transaction(async (tx) => {
+    await insertFiles(tx, crepId, files)
+    await refreshPrintDuration(tx, crepId)
+  })
 }
 
 // Only updates the print settings of the files, returns the printing duration of the exam
@@ -282,15 +251,11 @@ export async function updateCrepFileSpecs(
   const filesError = validateFilesSpecs(files)
   if (filesError) throw new Error(filesError)
 
-  const connection = await db.getConnection()
-
-  try {
-    await connection.beginTransaction()
-
-    const [currentFiles] = await connection.query<RowDataPacket[]>(
-      "SELECT id, exam_students FROM crep_file WHERE crep_id = ?;",
-      [crepId],
-    )
+  return prisma.$transaction(async (tx) => {
+    const currentFiles = await tx.crep_file.findMany({
+      where: { crep_id: crepId },
+      select: { id: true, exam_students: true },
+    })
     let copiesChanged = false
 
     for (const file of files) {
@@ -300,63 +265,28 @@ export async function updateCrepFileSpecs(
       if (currentFile.exam_students !== specs.exam_students)
         copiesChanged = true
 
-      await connection.query(
-        "UPDATE crep_file SET exam_students = ?, exam_pages = ?, paper_format = ?, paper_color = ?, print = ?, need_scan = ? WHERE id = ? AND crep_id = ?;",
-        [
-          specs.exam_students,
-          specs.exam_pages,
-          specs.paper_format,
-          specs.paper_color,
-          specs.print,
-          specs.need_scan,
-          file.id,
-          crepId,
-        ],
-      )
+      await tx.crep_file.update({ where: { id: file.id }, data: specs })
     }
 
     // The duration is only recomputed if the copies changed, so that the frozen duration of the migrated exams is kept
-    let printDuration: number
-    if (copiesChanged) {
-      printDuration = await refreshPrintDuration(connection, crepId)
-    } else {
-      const [rows] = await connection.query<RowDataPacket[]>(
-        "SELECT print_duration FROM crep WHERE id = ?;",
-        [crepId],
-      )
-      printDuration = Number(rows[0].print_duration)
-    }
+    if (copiesChanged) return refreshPrintDuration(tx, crepId)
 
-    await connection.commit()
-    return printDuration
-  } catch (err) {
-    await connection.rollback()
-    throw err
-  } finally {
-    connection.release()
-  }
+    const exam = await tx.crep.findUniqueOrThrow({
+      where: { id: crepId },
+      select: { print_duration: true },
+    })
+    return exam.print_duration
+  })
 }
 
 export async function deleteCrepFile(
   crepId: number,
   fileId: number,
 ): Promise<void> {
-  const connection = await db.getConnection()
-
-  try {
-    await connection.beginTransaction()
-    await connection.query(
-      "DELETE FROM crep_file WHERE id = ? AND crep_id = ?;",
-      [fileId, crepId],
-    )
-    await refreshPrintDuration(connection, crepId)
-    await connection.commit()
-  } catch (err) {
-    await connection.rollback()
-    throw err
-  } finally {
-    connection.release()
-  }
+  await prisma.$transaction(async (tx) => {
+    await tx.crep_file.deleteMany({ where: { id: fileId, crep_id: crepId } })
+    await refreshPrintDuration(tx, crepId)
+  })
 }
 
 export async function getBlockingExamsForDate(
