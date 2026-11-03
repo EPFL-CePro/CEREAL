@@ -4,39 +4,37 @@ import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { getAcademicYearDateRange } from "@/app/lib/dates/academic-year"
 import { db } from "@/app/lib/db"
-import {
-  type CrepExam,
-  type CrepFile,
-  type CrepFileSpecs,
-} from "@/types/crepExam"
+import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
 
 import { examBlockingPrintStatus, examNotAdminStatus } from "./exam-status"
 import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from "./file-specs"
 import { getPrintingDurationInMinutes } from "./print-duration"
-import { formatDateTimeForDatabase } from "../dates/date-time"
 
 import type { ResultSetHeader, RowDataPacket } from "mysql2"
 import type { PoolConnection } from "mysql2/promise"
+import { type Prisma } from "@/app/generated/prisma/client"
+import { prisma } from "@/app/lib/prisma"
 
 type NewCrepFile = CrepFileSpecs & { file_name: string | null }
 
 // Adds the files (table `crep_file`) of every exam to `exam.files`
-async function attachFiles(exams: CrepExam[]): Promise<CrepExam[]> {
-  if (exams.length === 0) return exams
+const withFiles = {
+  crep_file: { orderBy: { id: "asc" } },
+} satisfies Prisma.crepInclude
 
-  const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT * FROM crep_file WHERE crep_id IN (?) ORDER BY id;",
-    [exams.map((exam) => exam.id)],
-  )
-  const files = (rows as CrepFile[]).map((file) => ({
-    ...file,
-    need_scan: Boolean(file.need_scan),
-  }))
+type CrepWithFiles = Prisma.crepGetPayload<{ include: typeof withFiles }>
 
-  return exams.map((exam) => ({
-    ...exam,
-    files: files.filter((file) => file.crep_id === exam.id),
-  }))
+// Renames the `crep_file` relation to `files`, the name used by CrepExam
+function toCrepExam({ crep_file, ...exam }: CrepWithFiles): CrepExam {
+  return { ...exam, files: crep_file } as CrepExam
+}
+
+// `contact` is a JSON string stored in a MEDIUMTEXT column: Prisma cannot filter on it
+async function getCrepIdsByContactEmail(email: string): Promise<number[]> {
+  const rows = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT id FROM crep WHERE JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ${email}
+  `
+  return rows.map((row) => row.id)
 }
 
 async function insertFiles(
@@ -83,25 +81,24 @@ async function refreshPrintDuration(
 
 export async function getAllCrepExams() {
   await requirePermission(Permission.CREP)
-  const [rows] = await db.query("SELECT * from crep;")
-  return attachFiles(rows as CrepExam[])
+  const rows = await prisma.crep.findMany({ include: withFiles })
+  return rows.map(toCrepExam)
 }
 
 export async function getAllCrepExamsForRepro(email: string) {
   await requirePermission(Permission.CREP)
-  const [rows] = await db.query(
-    `SELECT * from crep WHERE status = 'toPrint' OR JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ?;`,
-    [email],
-  )
-  return attachFiles(rows as CrepExam[])
+  const ids = await getCrepIdsByContactEmail(email)
+  const rows = await prisma.crep.findMany({
+    where: { OR: [{ status: "toPrint" }, { id: { in: ids } }] },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 export async function getOldestCrepExamDate(): Promise<Date | null> {
   await requirePermission(Permission.CREP)
-  const [rows] = await db.query<RowDataPacket[]>(
-    "SELECT MIN(exam_date) AS oldest FROM crep;",
-  )
-  return rows[0]?.oldest ?? null
+  const result = await prisma.crep.aggregate({ _min: { exam_date: true } })
+  return result._min.exam_date
 }
 
 export async function getCrepExamsByAcademicYear(
@@ -111,14 +108,11 @@ export async function getCrepExamsByAcademicYear(
   const range = getAcademicYearDateRange(academicYear)
   if (!range) return []
 
-  const [rows] = await db.query(
-    "SELECT * FROM crep WHERE exam_date >= ? AND exam_date < ?;",
-    [
-      formatDateTimeForDatabase(range.start),
-      formatDateTimeForDatabase(range.end),
-    ],
-  )
-  return attachFiles(rows as CrepExam[])
+  const rows = await prisma.crep.findMany({
+    where: { exam_date: { gte: range.start, lt: range.end } },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 export async function getAllNonAdminExams() {
@@ -128,10 +122,11 @@ export async function getAllNonAdminExams() {
     "reserved",
   ]
 
-  const [rows] = await db.query("SELECT * from crep WHERE status IN (?);", [
-    allowedStatuses,
-  ])
-  return attachFiles(rows as CrepExam[])
+  const rows = await prisma.crep.findMany({
+    where: { status: { in: allowedStatuses } },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 export async function updateExamDateById(id: string, startDate: string) {
@@ -177,21 +172,22 @@ export async function getAllExamsByStatus(
   status: Array<string>,
 ): Promise<CrepExam[]> {
   await requirePermission(Permission.CREP)
-  const [rows] = await db.query("SELECT * from crep WHERE status IN (?);", [
-    status,
-  ])
-  return attachFiles(rows as CrepExam[])
+  const rows = await prisma.crep.findMany({
+    where: { status: { in: status } },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 export async function getAllExamsBetweenDates(
   beginDate: Date,
   endDate: Date,
 ): Promise<CrepExam[]> {
-  const [rows] = await db.query(
-    "SELECT * from crep WHERE print_date between ? and ?",
-    [formatDateTimeForDatabase(beginDate), formatDateTimeForDatabase(endDate)],
-  )
-  return attachFiles(rows as CrepExam[])
+  const rows = await prisma.crep.findMany({
+    where: { print_date: { gte: beginDate, lte: endDate } },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 // No permission check on purpose: used by the register form (every logged-in user).
@@ -369,11 +365,18 @@ export async function deleteCrepFile(
 export async function getBlockingExamsForDate(
   date: string,
 ): Promise<CrepExam[]> {
-  const [rows] = await db.query(
-    "SELECT * FROM crep WHERE DATE(print_date) = DATE(?) AND status IN (?);",
-    [date, examBlockingPrintStatus],
-  )
-  return attachFiles(rows as CrepExam[])
+  const dayStart = new Date(`${date}T00:00:00Z`)
+  const nextDay = new Date(dayStart)
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1)
+
+  const rows = await prisma.crep.findMany({
+    where: {
+      print_date: { gte: dayStart, lt: nextDay },
+      status: { in: examBlockingPrintStatus },
+    },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 export async function deleteCrepExam(examId: string) {
@@ -439,22 +442,23 @@ export async function updateCrepExamFields(
 export async function getCrepExamsByContactEmail(
   email: string,
 ): Promise<CrepExam[]> {
-  const [rows] = await db.query(
-    "SELECT * FROM crep WHERE JSON_UNQUOTE(JSON_EXTRACT(contact, '$.email')) = ? ORDER BY desired_date DESC;",
-    [email],
-  )
-  return attachFiles(rows as CrepExam[])
+  const ids = await getCrepIdsByContactEmail(email)
+  const rows = await prisma.crep.findMany({
+    where: { id: { in: ids } },
+    orderBy: { desired_date: "desc" },
+    include: withFiles,
+  })
+  return rows.map(toCrepExam)
 }
 
 export async function getCrepExamById(id: string): Promise<CrepExam | null> {
-  const [rows] = await db.query("SELECT * FROM crep WHERE id = ? LIMIT 1;", [
-    id,
-  ])
-  const exams = rows as CrepExam[]
-  if (exams.length === 0) return null
-
-  const [exam] = await attachFiles(exams)
-  return exam
+  const crepId = Number(id)
+  if (!Number.isInteger(crepId)) return null
+  const exam = await prisma.crep.findUnique({
+    where: { id: crepId },
+    include: withFiles,
+  })
+  return exam ? toCrepExam(exam) : null
 }
 
 export async function getLogs(sciper: string) {
