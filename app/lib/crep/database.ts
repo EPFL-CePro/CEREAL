@@ -131,29 +131,27 @@ export async function getAllNonAdminExams() {
 
 export async function updateExamDateById(id: string, startDate: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query(
-    "UPDATE crep SET print_date = ? WHERE id = ?;",
-    [startDate, id],
-  )
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(id) },
+    // `startDate` is a wall-clock "YYYY-MM-DD HH:mm:ss", read as UTC like every DATETIME by Prisma
+    data: { print_date: new Date(`${startDate.replace(" ", "T")}Z`) },
+  })
 }
 
 export async function updateExamStatusById(id: string, status: string) {
   await requirePermission(Permission.CREP)
-  const [result] = await db.query("UPDATE crep SET status = ? WHERE id = ?;", [
-    status,
-    id,
-  ])
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(id) },
+    data: { status },
+  })
 }
 
 export async function updateExamRemarkById(id: string, remark: string) {
   await requirePermission(Permission.CREP)
-  const [result] = await db.query("UPDATE crep SET remark = ? WHERE id = ?;", [
-    remark,
-    id,
-  ])
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(id) },
+    data: { remark },
+  })
 }
 
 export async function updateExamReproRemarkById(
@@ -161,11 +159,10 @@ export async function updateExamReproRemarkById(
   reproRemark: string,
 ) {
   await requirePermission(Permission.CREP)
-  const [result] = await db.query(
-    "UPDATE crep SET repro_remark = ? WHERE id = ?;",
-    [reproRemark, id],
-  )
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(id) },
+    data: { repro_remark: reproRemark },
+  })
 }
 
 export async function getAllExamsByStatus(
@@ -381,62 +378,54 @@ export async function getBlockingExamsForDate(
 
 export async function deleteCrepExam(examId: string) {
   await requirePermission(Permission.ADMIN)
-  const [result] = await db.query("DELETE FROM crep WHERE id = ?;", [examId])
-  return JSON.stringify(result)
+  await prisma.crep.delete({ where: { id: Number(examId) } })
 }
 
 export async function updateCrepBoxes(examId: string, boxes: string) {
   await requirePermission(Permission.CREP)
-  const [result] = await db.query("UPDATE crep SET boxes = ? WHERE id = ?;", [
-    boxes,
-    examId,
-  ])
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(examId) },
+    data: { boxes: Number(boxes) },
+  })
 }
 
 export async function updateCrepPriceUnit(examId: string, priceUnit: string) {
   await requirePermission(Permission.CREP)
-  const [result] = await db.query(
-    "UPDATE crep SET price_unit = ? WHERE id = ?;",
-    [priceUnit, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(examId) },
+    data: { price_unit: Number(priceUnit) },
+  })
 }
 
 export async function updateCrepPriceTotal(examId: string, priceTotal: string) {
   await requirePermission(Permission.CREP)
-  const [result] = await db.query(
-    "UPDATE crep SET price_total = ? WHERE id = ?;",
-    [priceTotal, examId],
-  )
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(examId) },
+    data: { price_total: Number(priceTotal) },
+  })
 }
 
 export async function updateCrepExamFields(
   examId: string,
-  fields: Record<string, string | number | boolean>,
+  fields: {
+    desired_date: string
+    exam_date: string
+    financial_center: string
+    authorized_persons: string
+    order_number: string
+  },
 ) {
   await requirePermission(Permission.CREP)
-  const allowedColumns = [
-    "desired_date",
-    "exam_date",
-    "financial_center",
-    "authorized_persons",
-    "order_number",
-  ]
-  const entries = Object.entries(fields).filter(([col]) =>
-    allowedColumns.includes(col),
-  )
-  if (entries.length === 0) return
-
-  const setClause = entries.map(([col]) => `${col} = ?`).join(", ")
-  const params = [...entries.map(([, value]) => value), examId]
-
-  const [result] = await db.query(
-    `UPDATE crep SET ${setClause} WHERE id = ?;`,
-    params,
-  )
-  return JSON.stringify(result)
+  await prisma.crep.update({
+    where: { id: Number(examId) },
+    data: {
+      desired_date: new Date(fields.desired_date),
+      exam_date: new Date(fields.exam_date),
+      financial_center: fields.financial_center,
+      authorized_persons: fields.authorized_persons,
+      order_number: fields.order_number,
+    },
+  })
 }
 
 export async function getCrepExamsByContactEmail(
