@@ -14,7 +14,6 @@ import {
   getOldestCrepExamDate,
 } from "@/app/lib/crep/database"
 import {
-  getAcademicYearOfDate,
   getAcademicYearOptions,
   getCurrentAcademicYear,
   isSelectableAcademicYear,
@@ -100,11 +99,11 @@ export default async function Page({
 
   const currentAcademicYear = getCurrentAcademicYear()
   const oldestExamDate = await getOldestCrepExamDate()
-  const minAcademicYear = oldestExamDate
-    ? getAcademicYearOfDate(oldestExamDate)
+  const oldestAcademicYear = oldestExamDate
+    ? getCurrentAcademicYear(oldestExamDate)
     : currentAcademicYear
   const academicYears = getAcademicYearOptions(
-    minAcademicYear,
+    oldestAcademicYear,
     currentAcademicYear,
   )
   const { academicYear } = await searchParams
@@ -113,7 +112,7 @@ export default async function Page({
   if (
     !isSelectableAcademicYear(
       selectedAcademicYear,
-      minAcademicYear,
+      oldestAcademicYear,
       currentAcademicYear,
     )
   ) {
