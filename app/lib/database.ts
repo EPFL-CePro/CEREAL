@@ -133,9 +133,8 @@ export async function getAcademicYearsFromExams(): Promise<string[]> {
   return rows.map((row) => row.academic_year_id)
 }
 
-export async function getExamCountsByAcademicYearAndService(): Promise<
-  { academicYearId: string; serviceId: number; count: number }[]
-> {
+export async function getExamCountsByAcademicYearAndService(semester: number | null):
+  Promise<{ academicYearId: string; serviceId: number; count: number }[]> {
   await requirePermission(Permission.ADMIN)
   const [rows] = await db.query<
     (RowDataPacket & {
@@ -144,7 +143,8 @@ export async function getExamCountsByAcademicYearAndService(): Promise<
       count: number
     })[]
   >(
-    'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
+    'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL AND (? IS NULL OR Exam_semester = ?) GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
+    [semester ?? null, semester ?? null],
   )
   return rows.map((row) => ({
     academicYearId: row.academic_year_id,
@@ -153,9 +153,9 @@ export async function getExamCountsByAcademicYearAndService(): Promise<
   }))
 }
 
-export async function getCopyAndPageCountsByAcademicYear(): Promise<
-  { academicYearId: string; copies: number; pages: number }[]
-> {
+export async function getCopyAndPageCountsByAcademicYear(
+  semester: number | null,
+): Promise<{ academicYearId: string; copies: number; pages: number }[]> {
   await requirePermission(Permission.ADMIN)
   const [rows] = await db.query<
     (RowDataPacket & {
@@ -164,7 +164,8 @@ export async function getCopyAndPageCountsByAcademicYear(): Promise<
       pages: number
     })[]
   >(
-    'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies, COALESCE(SUM(nb_students * nb_pages), 0) AS pages FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
+    'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies, COALESCE(SUM(nb_students * nb_pages), 0) AS pages FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND (? IS NULL OR Exam_semester = ?) GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
+    [semester ?? null, semester ?? null],
   )
   return rows.map((row) => ({
     academicYearId: row.academic_year_id,

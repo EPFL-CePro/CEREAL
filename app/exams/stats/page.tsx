@@ -13,6 +13,7 @@ import {
   getExamCountsByAcademicYearAndService,
 } from "@/app/lib/database"
 import { auth } from "@/auth"
+import SemesterSelect from "@/app/components/exams/stats/SemesterSelect"
 
 export const metadata: Metadata = {
   title: "Exams - Stats",
@@ -21,20 +22,20 @@ export const metadata: Metadata = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ academicYear?: string }>
+  searchParams: Promise<{ academicYear?: string; semester?: number }>
 }) {
   const session = await auth()
   if (!session?.user) return
 
+  const { academicYear, semester } = await searchParams
   const [allAcademicYears, services, examCounts, copyAndPageCounts] =
     await Promise.all([
       getAcademicYearsFromExams(),
       getAllServices(),
-      getExamCountsByAcademicYearAndService(),
-      getCopyAndPageCountsByAcademicYear(),
+      getExamCountsByAcademicYearAndService(semester ?? null),
+      getCopyAndPageCountsByAcademicYear(semester ?? null),
     ])
   const latestAcademicYear = allAcademicYears[allAcademicYears.length - 1]
-  const { academicYear } = await searchParams
   const selectedAcademicYear = academicYear ?? latestAcademicYear
 
   if (latestAcademicYear && !allAcademicYears.includes(selectedAcademicYear)) {
@@ -68,6 +69,9 @@ export default async function Page({
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+        <SemesterSelect selectedSemester={ semester } basePath="/exams/stats" />
+      </div>
       <ExamsByServiceChart
         academicYears={allAcademicYears}
         series={examsByServiceSeries}
