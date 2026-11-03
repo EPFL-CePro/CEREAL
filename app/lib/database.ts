@@ -12,7 +12,7 @@ import { type Service } from "@/types/service"
 import { type ServiceLevel } from "@/types/serviceLevel"
 
 import type { Absence, NewAbsence } from "@/types/absence"
-import type { DiffExam, NewDiffExam } from "@/types/diffExam"
+import type { NewDiffExam } from "@/types/diffExam"
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise<Service[]> {
@@ -389,10 +389,15 @@ export async function getAllAbsences(): Promise<Absence[]> {
   const rows = await prisma.exam_student_absence.findMany({
     include: { deferred_exam_registration: true },
   })
-  return rows.map(({ deferred_exam_registration, ...absence }) => ({
-    ...absence,
-    deferred_exam_registrations: deferred_exam_registration,
-  })) as unknown as Absence[]
+  return rows.map(
+    ({
+      deferred_exam_registration: deferredExamRegistrations,
+      ...absence
+    }) => ({
+      ...absence,
+      deferred_exam_registrations: deferredExamRegistrations,
+    }),
+  ) as unknown as Absence[]
 }
 
 export async function getAbsenceCertificateFileNameById(
