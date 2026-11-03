@@ -77,6 +77,7 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
+      "app/generated/**",
       "next-env.d.ts",
       "scans_monitor.js", // standalone Node CLI script (CommonJS) TODO - (Refactor) change his location and his Require instructions
     ],
