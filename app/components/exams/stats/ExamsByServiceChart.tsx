@@ -9,6 +9,7 @@ export type ExamsByServiceSeries = {
 }
 
 type ExamsByServiceChartProps = {
+  title: string
   academicYears: string[]
   series: ExamsByServiceSeries[]
 }
@@ -31,6 +32,7 @@ function formatEvolution(current: number, previous: number | undefined) {
 }
 
 export default function ExamsByServiceChart({
+  title,
   academicYears,
   series,
 }: ExamsByServiceChartProps) {
@@ -52,7 +54,7 @@ export default function ExamsByServiceChart({
     <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <div className="max-w-xl">
         <h2 className="text-2xl font-bold tracking-normal text-gray-950">
-          Annual statistics
+          {title}
         </h2>
         <p className="mt-3 text-sm leading-6 text-gray-600">
           Number of exams per academic year, grouped by service. The percentage
