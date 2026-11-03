@@ -1,11 +1,11 @@
+const ACADEMIC_YEAR_START_MONTH = 8 // September (0-indexed)
+
 export function getCurrentAcademicYear(date = new Date()) {
-  const month = date.getMonth()
-
-  if (month >= 0 && month <= 7) {
-    return `${date.getFullYear() - 1}-${date.getFullYear()}`
-  }
-
-  return `${date.getFullYear()}-${date.getFullYear() + 1}`
+  const startYear =
+    date.getMonth() >= ACADEMIC_YEAR_START_MONTH
+      ? date.getFullYear()
+      : date.getFullYear() - 1
+  return `${startYear}-${startYear + 1}`
 }
 
 export function parseAcademicYearStart(academicYear: string) {
@@ -27,15 +27,9 @@ export function getAcademicYearDateRange(academicYear: string) {
   if (!startYear) return null
 
   return {
-    start: new Date(startYear, 9, 1),
-    end: new Date(startYear + 1, 9, 1),
+    start: new Date(startYear, ACADEMIC_YEAR_START_MONTH, 1),
+    end: new Date(startYear + 1, ACADEMIC_YEAR_START_MONTH, 1),
   }
-}
-
-export function getAcademicYearOfDate(date: Date) {
-  const startYear =
-    date.getMonth() >= 9 ? date.getFullYear() : date.getFullYear() - 1
-  return `${startYear}-${startYear + 1}`
 }
 
 export function getAcademicYearOptions(
