@@ -366,15 +366,6 @@ export async function deleteCrepFile(
   }
 }
 
-export async function getAllExamsForDate(date: string): Promise<CrepExam[]> {
-  await requirePermission(Permission.CREP)
-  const [rows] = await db.query(
-    "SELECT * FROM crep WHERE DATE(print_date) = DATE(?);",
-    [date],
-  )
-  return attachFiles(rows as CrepExam[])
-}
-
 export async function getBlockingExamsForDate(
   date: string,
 ): Promise<CrepExam[]> {
