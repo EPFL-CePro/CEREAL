@@ -144,7 +144,7 @@ export async function getExamCountsByAcademicYearAndService(
       count: number
     })[]
   >(
-    'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL AND (? IS NULL OR Exam_semester = ?) GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
+    'SELECT academic_year_id, service_id, COUNT(*) AS count FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND service_id IS NOT NULL AND (? IS NULL OR exam_semester = ?) GROUP BY academic_year_id, service_id ORDER BY academic_year_id ASC;',
     [semester ?? null, semester ?? null],
   )
   return rows.map((row) => ({
@@ -165,7 +165,7 @@ export async function getCopyAndPageCountsByAcademicYear(
       pages: number
     })[]
   >(
-    'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies, COALESCE(SUM(nb_students * nb_pages), 0) AS pages FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND (? IS NULL OR Exam_semester = ?) GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
+    'SELECT academic_year_id, COALESCE(SUM(nb_students), 0) AS copies, COALESCE(SUM(nb_students * nb_pages), 0) AS pages FROM exam WHERE academic_year_id IS NOT NULL AND academic_year_id <> "" AND (? IS NULL OR exam_semester = ?) GROUP BY academic_year_id ORDER BY academic_year_id ASC;',
     [semester ?? null, semester ?? null],
   )
   return rows.map((row) => ({
