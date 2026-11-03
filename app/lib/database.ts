@@ -420,29 +420,26 @@ export async function getAbsenceCertificateFileNameById(
 // SAC functions
 export async function updateAbsenceComment(absenceId: string, value: string) {
   await requirePermission(Permission.SAC)
-  const [result] = await db.execute(
-    `UPDATE exam_student_absence SET comment = ? WHERE id = ?`,
-    [value, absenceId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam_student_absence.update({
+    where: { id: Number(absenceId) },
+    data: { comment: value },
+  })
 }
 
 export async function updateAbsenceAccepted(absenceId: string, value: boolean) {
   await requirePermission(Permission.SAC)
-  const [result] = await db.execute(
-    `UPDATE exam_student_absence SET sac_has_accepted = ? WHERE id = ?`,
-    [value, absenceId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam_student_absence.update({
+    where: { id: Number(absenceId) },
+    data: { sac_has_accepted: value },
+  })
 }
 
 export async function updateAbsenceSacRemark(absenceId: string, value: string) {
   await requirePermission(Permission.SAC)
-  const [result] = await db.execute(
-    `UPDATE exam_student_absence SET sac_remark = ? WHERE id = ?`,
-    [value, absenceId],
-  )
-  return JSON.stringify(result)
+  await prisma.exam_student_absence.update({
+    where: { id: Number(absenceId) },
+    data: { sac_remark: value },
+  })
 }
 
 export async function updateRegistrationAccepted(
@@ -450,11 +447,10 @@ export async function updateRegistrationAccepted(
   value: boolean,
 ) {
   await requirePermission(Permission.SAC)
-  const [result] = await db.execute(
-    `UPDATE deferred_exam_registration SET sac_has_accepted = ? WHERE id = ?`,
-    [value, absenceId],
-  )
-  return JSON.stringify(result)
+  await prisma.deferred_exam_registration.update({
+    where: { id: Number(absenceId) },
+    data: { sac_has_accepted: value },
+  })
 }
 
 export async function updateRegistrationSacRemark(
@@ -462,11 +458,10 @@ export async function updateRegistrationSacRemark(
   value: string,
 ) {
   await requirePermission(Permission.SAC)
-  const [result] = await db.execute(
-    `UPDATE deferred_exam_registration SET sac_remark = ? WHERE id = ?`,
-    [value, absenceId],
-  )
-  return JSON.stringify(result)
+  await prisma.deferred_exam_registration.update({
+    where: { id: Number(absenceId) },
+    data: { sac_remark: value },
+  })
 }
 
 export async function updateRegistrationIsaHasGrade(
@@ -474,11 +469,10 @@ export async function updateRegistrationIsaHasGrade(
   value: boolean,
 ) {
   await requirePermission(Permission.SAC)
-  const [result] = await db.execute(
-    `UPDATE deferred_exam_registration SET isa_has_grade = ? WHERE id = ?`,
-    [value, absenceId],
-  )
-  return JSON.stringify(result)
+  await prisma.deferred_exam_registration.update({
+    where: { id: Number(absenceId) },
+    data: { isa_has_grade: value },
+  })
 }
 
 // Comments

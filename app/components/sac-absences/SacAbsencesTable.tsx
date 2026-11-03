@@ -62,7 +62,7 @@ export function SacAbsencesTable() {
   }: {
     defaultValue: boolean
     absenceId: string
-    onUpdate: (absenceId: string, value: boolean) => Promise<string>
+    onUpdate: (absenceId: string, value: boolean) => Promise<void>
   }) {
     return (
       <input
@@ -81,7 +81,7 @@ export function SacAbsencesTable() {
   }: {
     defaultValue: string
     id: string
-    onChange: (id: string, value: string) => Promise<string>
+    onChange: (id: string, value: string) => Promise<void>
   }) {
     const logTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
