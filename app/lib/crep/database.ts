@@ -1,20 +1,18 @@
 "use server"
 
+import { type crep_log, type Prisma } from "@/app/generated/prisma/client"
 import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { getAcademicYearDateRange } from "@/app/lib/dates/academic-year"
+import { prisma } from "@/app/lib/prisma"
 import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
 
 import { examBlockingPrintStatus, examNotAdminStatus } from "./exam-status"
 import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from "./file-specs"
 import { getPrintingDurationInMinutes } from "./print-duration"
 
-import { type crep_log, type Prisma } from "@/app/generated/prisma/client"
-import { prisma } from "@/app/lib/prisma"
-
 type NewCrepFile = CrepFileSpecs & { file_name: string | null }
 
-// Adds the files (table `crep_file`) of every exam to `exam.files`
 const withFiles = {
   crep_file: { orderBy: { id: "asc" } },
 } satisfies Prisma.crepInclude
@@ -22,8 +20,8 @@ const withFiles = {
 type CrepWithFiles = Prisma.crepGetPayload<{ include: typeof withFiles }>
 
 // Renames the `crep_file` relation to `files`, the name used by CrepExam
-function toCrepExam({ crep_file, ...exam }: CrepWithFiles): CrepExam {
-  return { ...exam, files: crep_file } as CrepExam
+function toCrepExam({ crep_file: files, ...exam }: CrepWithFiles): CrepExam {
+  return { ...exam, files } as CrepExam
 }
 
 // `contact` is a JSON string stored in a MEDIUMTEXT column: Prisma cannot filter on it
