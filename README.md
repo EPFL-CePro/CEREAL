@@ -29,6 +29,7 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
   - [For the admins of the application](#for-the-admins-of-the-application)
 - [Technologies](#technologies)
 - [How to run ?](#how-to-run-)
+- [Prisma migrations](#prisma-migrations)
 - [How to deploy ?](#how-to-deploy-)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
@@ -79,6 +80,15 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 3. Insert your valid data in the `.env` file
 4. Run `make up`
 5. Go to http://localhost:3000/
+
+## Prisma migrations
+WARNING: Those commands use the running docker containers, so make sure that the containers are up and running before using them !
+
+After making changes in `prisma/schema.prisma`, run `make migration name=name_of_migration` to create the migration and regenerate the Prisma client.
+
+If your migration can not be generated entirely using Prisma (e.g for triggers), run `make migration-draft name=name_of_migration`, add the missing SQL queries manually in the generated SQL file, then `make migration name=name_of_migration` to apply.
+
+If you just pulled new features and that changes have been made to the Prisma schema, run `make db-sync` to synchronize with the current schema.
 
 ## How to deploy ?
 
