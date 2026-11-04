@@ -118,7 +118,7 @@ export async function getExamCountsByAcademicYearAndService(
         { academic_year_id: "" },
         { service_id: null },
       ],
-      ...(semester != null ? { exam_semester: String(semester) } : {}),
+      ...(semester !== null ? { exam_semester: String(semester) } : {}),
     },
     _count: { _all: true },
     orderBy: { academic_year_id: "asc" },
