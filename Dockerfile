@@ -27,6 +27,8 @@ COPY --from=builder /app/public ./public
 # Needed by `prisma migrate deploy`
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
+# Run by the host's crontab with `docker exec cereal-app node scans_monitor.js`
+COPY --from=builder /app/scans_monitor.js ./
 
 EXPOSE 3000
 CMD ["node_modules/.bin/next", "start"]

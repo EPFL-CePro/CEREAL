@@ -3,7 +3,7 @@
 
 const fs = require("fs")
 const path = require("path")
-const { execFileSync } = require("child_process")
+const mariadb = require("mariadb")
 const nodemailer = require("nodemailer")
 
 const SCRIPT_DIR = __dirname
@@ -37,7 +37,7 @@ loadEnv(path.join(SCRIPT_DIR, ".env"))
 
 /* ---------- Config ---------- */
 const SCANS_EXAMS_DIR = process.env.SCANS_EXAMS_DIR
-const CONTAINER = process.env.MYSQL_HOST || "cereal-app-db"
+const HOST = process.env.MYSQL_HOST || "cereal-app-db"
 const DB = process.env.MYSQL_DATABASE
 const USER = process.env.MYSQL_USER
 const PASSWORD = process.env.MYSQL_PASSWORD
@@ -58,55 +58,37 @@ if (!DB) fail("MYSQL_DATABASE missing in .env")
 if (!USER) fail("MYSQL_USER missing in .env")
 if (PASSWORD === undefined) fail("MYSQL_PASSWORD missing in .env")
 
-// MySQL helper
-function mysql(args, input) {
-  return execFileSync(
-    "docker",
-    ["exec", "-i", "-e", `MYSQL_PWD=${PASSWORD}`, CONTAINER, "mysql", ...args],
-    { input: input ?? "", encoding: "utf8" },
-  )
-}
+// MySQL connection, reached over the Docker network (the script runs inside the cereal-app container)
+const pool = mariadb.createPool({
+  host: HOST,
+  user: USER,
+  password: PASSWORD,
+  database: DB,
+  connectionLimit: 1,
+  connectTimeout: 5000,
+})
 
 // Reading already stored scans
-function readStoredScans() {
-  const out = mysql([
-    "-N",
-    "-B",
-    "--raw",
-    "-u",
-    USER,
-    DB,
-    "-e",
-    "SELECT scans FROM scans LIMIT 1;",
-  ])
-  const trimmed = out.replace(/\n$/, "")
-  if (trimmed === "") {
+async function readStoredScans() {
+  const rows = await pool.query("SELECT scans FROM scans LIMIT 1")
+  if (rows.length === 0) {
     // Aucune ligne dans la table.
     return { rowExists: false, list: [] }
   }
-  // Ligne présente mais valeur NULL → mysql -N affiche "NULL".
-  if (trimmed === "NULL") {
+  const value = rows[0].scans
+  if (value === null) {
     return { rowExists: true, list: [] }
   }
-  try {
-    const parsed = JSON.parse(trimmed)
-    return { rowExists: true, list: Array.isArray(parsed) ? parsed : [] }
-  } catch (e) {
-    fail(`Impossible de parser le JSON existant: ${e.message}`)
+  // Depending on the server, the driver returns a JSON column either already parsed or as a string.
+  let parsed = value
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value)
+    } catch (e) {
+      fail(`Impossible de parser le JSON existant: ${e.message}`)
+    }
   }
-}
-
-function mysqlSelect(sql) {
-  const out = mysql(["-N", "-B", "-u", USER, DB, "-e", sql])
-  return out
-    .replace(/\n$/, "")
-    .split("\n")
-    .filter((line) => line !== "")
-    .map((line) => line.split("\t").map((v) => (v === "NULL" ? null : v)))
-}
-
-function sqlEscape(value) {
-  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+  return { rowExists: true, list: Array.isArray(parsed) ? parsed : [] }
 }
 
 // Trying to guess the exam code by folder name
@@ -149,18 +131,21 @@ async function resolveResponsible(folderName) {
 
   // Match exact du code (insensible à la casse), priorité à l'année/mois du
   // dossier, puis à la date d'examen la plus récente.
-  const rows = mysqlSelect(
-    `SELECT responsible_id, exam_date FROM exam ` +
-      `WHERE UPPER(code) = UPPER('${sqlEscape(code)}') ` +
-      `ORDER BY (YEAR(exam_date) = ${year ?? "NULL"} AND MONTH(exam_date) = ${month ?? "NULL"}) DESC, ` +
-      `exam_date IS NULL, exam_date DESC LIMIT 1;`,
+  const rows = await pool.query(
+    `SELECT responsible_id FROM exam ` +
+      `WHERE UPPER(code) = UPPER(?) ` +
+      `ORDER BY (YEAR(exam_date) = ? AND MONTH(exam_date) = ?) DESC, ` +
+      `exam_date IS NULL, exam_date DESC LIMIT 1`,
+    [code, year, month],
   )
 
   if (rows.length === 0) {
     return { status: "no_exam", code, sciper: null, name: null }
   }
 
-  const sciper = rows[0][0]
+  // Kept as a string, like the scans already stored
+  const sciper =
+    rows[0].responsible_id === null ? null : String(rows[0].responsible_id)
   if (!sciper) {
     return { status: "no_responsible", code, sciper: null, name: null }
   }
@@ -259,13 +244,11 @@ async function sendNewScanMail(folderName, responsible) {
   return sendMail(ALERT_TO, subject, content, "")
 }
 
-function writeScans(list, rowExists) {
-  const json = JSON.stringify(list)
-  const escaped = json.replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+async function writeScans(list, rowExists) {
   const sql = rowExists
-    ? `UPDATE scans SET scans = '${escaped}';`
-    : `INSERT INTO scans (scans) VALUES ('${escaped}');`
-  mysql(["-u", USER, DB], sql)
+    ? "UPDATE scans SET scans = ?"
+    : "INSERT INTO scans (scans) VALUES (?)"
+  await pool.query(sql, [JSON.stringify(list)])
 }
 
 function listScanFolders(dir) {
@@ -284,7 +267,7 @@ function listScanFolders(dir) {
 
 async function main() {
   const folders = listScanFolders(SCANS_EXAMS_DIR)
-  const { rowExists, list: stored } = readStoredScans()
+  const { rowExists, list: stored } = await readStoredScans()
 
   const storedByName = new Map(stored.map((s) => [s.name, s]))
   const currentSet = new Set(folders)
@@ -340,7 +323,7 @@ async function main() {
   const changed = newCount > 0 || removed.length > 0 || !rowExists
 
   if (changed) {
-    writeScans(updatedList, rowExists)
+    await writeScans(updatedList, rowExists)
     console.log(
       `List updated : ${updatedList.length} active scans ` +
         `(+${newCount} new, -${removed.length} removed).`,
@@ -356,4 +339,6 @@ async function main() {
   }
 }
 
-main().catch((e) => fail(e.stack || e.message))
+main()
+  .catch((e) => fail(e.stack || e.message))
+  .finally(() => pool.end())

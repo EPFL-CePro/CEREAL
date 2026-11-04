@@ -262,6 +262,9 @@ importers:
       chroma-js:
         specifier: ^3.1.2
         version: 3.1.2
+      mariadb:
+        specifier: ^3.5.4
+        version: 3.5.4
       net:
         specifier: ^1.0.2
         version: 1.0.2
