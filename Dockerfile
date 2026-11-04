@@ -10,6 +10,9 @@ COPY . .
 RUN pnpm generate
 RUN pnpm build
 
+FROM builder AS migrate
+CMD ["pnpm", "migrate"]
+
 FROM node:24.22.1-alpine AS runner
 WORKDIR /app
 
