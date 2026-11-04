@@ -8,6 +8,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "generate": "prisma generate",
+    "migrate": "prisma migrate deploy",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "test": "vitest"
