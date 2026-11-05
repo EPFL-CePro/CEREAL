@@ -2,7 +2,7 @@
 
 # Prisma commands run inside the dev app container (MYSQL_HOST=cereal-app-db only resolves on the Docker network),
 # as MySQL root: `migrate dev` needs to create a shadow database, and the triggers need privileges the app user lacks.
-PRISMA = docker exec -it -e MYSQL_USER=root -e MYSQL_PASSWORD=secret cereal-app pnpm prisma
+PRISMA = docker exec -it -w /app -e MYSQL_USER=root -e MYSQL_PASSWORD=secret cereal-app pnpm prisma
 
 env:
 	cp /keybase/team/cepro_cereal/secrets-dev.env .env
