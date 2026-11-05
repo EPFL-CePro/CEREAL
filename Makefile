@@ -1,4 +1,4 @@
-.PHONY: env up prod all migration migration-draft db-sync
+.PHONY: env up all migration migration-draft db-sync
 
 # Prisma commands run inside the dev app container (MYSQL_HOST=cereal-app-db only resolves on the Docker network),
 # as MySQL root: `migrate dev` needs to create a shadow database, and the triggers need privileges the app user lacks.
@@ -9,9 +9,6 @@ env:
 
 up:
 	docker compose -f compose.dev.yml up
-
-prod:
-	docker compose -f docker-compose-prod.yml up --build
 
 all: env up
 

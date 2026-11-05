@@ -1,0 +1,113 @@
+# Test and production stack, started by the Ansible configuration
+#
+#   CEREAL_VERSION=<version of package.json> CEREAL_ENV=<prod|test> \
+#     docker compose -f compose.prod.yml up -d --wait --remove-orphans
+#
+# Expected on the host beforehand (done by Ansible):
+# - /data/cereal/.env
+# - the SMB shares mounted in /mnt/
+# - the Apache configuration in /data/apache/conf and the certificates in /data/apache/certs
+
+# Fixed so that the stack is the same whatever the folder it is started from
+name: cereal
+
+# Built and published to GHCR by the CI of CEREAL, tagged with the version of `package.json`
+x-cereal-image: &cereal-image "ghcr.io/epfl-cepro/cereal:${CEREAL_VERSION:?CEREAL_VERSION must be set to the version of package.json}"
+
+services:
+  cereal-app-db:
+    extends:
+      file: compose.base.yml
+      service: cereal-app-db
+    # Must match the MySQL version currently running: MySQL cannot downgrade a data directory.
+    image: mysql:9.6.0
+    command: --log-bin-trust-function-creators=1
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - cereal_mysql_volume:/var/lib/mysql
+    networks:
+      - cereal-network
+
+  # Runs once from the app image, which contains the Prisma CLI and the migrations.
+  # The app is not (re)started if a migration fails.
+  cereal-migrate:
+    container_name: cereal-migrate
+    image: *cereal-image
+    command: node_modules/.bin/prisma migrate deploy
+    restart: "no"
+    env_file:
+      - path: .env
+        required: true
+    depends_on:
+      cereal-app-db:
+        condition: service_healthy
+    networks:
+      - cereal-network
+
+  cereal-app:
+    extends:
+      file: compose.base.yml
+      service: cereal-app
+    image: *cereal-image
+    # Apache reaches it through cereal-network, only exposed locally for debugging
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      CEREAL_ENV: "${CEREAL_ENV:?CEREAL_ENV must be set to prod or test}"
+    volumes:
+      - /mnt/CREP_PRINTING:/mnt/CREP_PRINTING:rw
+      - /mnt/EXAM-DIFF/:/mnt/EXAM-DIFF:rw
+      - /mnt/NAS-EXAMS-ARCHIVES/:/mnt/NAS-EXAMS-ARCHIVES:rw
+      # Read by scans_monitor.js
+      - /mnt/SCAN_EXAMS/:/mnt/SCAN_EXAMS:ro
+    depends_on:
+      cereal-migrate:
+        condition: service_completed_successfully
+    networks:
+      cereal-network:
+        aliases:
+          # Name used by the Apache configuration (ProxyPass http://nextjs:3000/)
+          - nextjs
+
+  # Checks the Apache configuration before the running Apache is recreated
+  cereal-apache-configtest:
+    container_name: cereal-apache-configtest
+    image: httpd:2.4.69
+    command: httpd -t -f /usr/local/apache2/conf/cereal/httpd.conf
+    restart: "no"
+    # Like the container created by Ansible: Docker's default bridge network, not cereal-network
+    network_mode: bridge
+    volumes: &apache-volumes
+      - /data/apache/conf:/usr/local/apache2/conf/cereal:ro
+      - /data/apache/certs:/usr/local/apache2/conf/certs:ro
+
+  cereal-apache:
+    container_name: cereal-apache
+    image: httpd:2.4.69
+    command: httpd-foreground -f /usr/local/apache2/conf/cereal/httpd.conf
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes: *apache-volumes
+    depends_on:
+      cereal-apache-configtest:
+        condition: service_completed_successfully
+    networks:
+      - cereal-network
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+volumes:
+  # Fixed name: the volume already holds the data of the MySQL container created by Ansible
+  cereal_mysql_volume:
+    name: cereal_mysql_volume
+
+networks:
+  cereal-network:
+    name: cereal-network

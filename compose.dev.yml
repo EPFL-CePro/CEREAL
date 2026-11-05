@@ -1,20 +1,14 @@
 services:
   cereal-app-db:
-    env_file:
-      - path: .env
-        required: true
+    extends:
+      file: compose.base.yml
+      service: cereal-app-db
     image: mysql
-    container_name: cereal-app-db
-    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: "${MYSQL_DATABASE}"
       MYSQL_USER: "${MYSQL_USER}"
       MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 5s
-      retries: 10
     volumes:
       - ./db:/docker-entrypoint-initdb.d
     networks:
@@ -22,7 +16,9 @@ services:
     ports:
       - "3306:3306"
   cereal-app:
-    container_name: cereal-app
+    extends:
+      file: compose.base.yml
+      service: cereal-app
     image: node:24
     ports:
       - "3000:3000"
@@ -45,8 +41,6 @@ services:
       - COREPACK_ENABLE_DOWNLOAD_PROMPT=0
       - EXAM_FILES_UPLOAD_FOLDER=${EXAM_FILES_UPLOAD_FOLDER}
       - DEFFERED_EXAMS_DIR=${DEFFERED_EXAMS_DIR}
-    env_file:
-      - .env
     networks:
       - cereal-app-network
   cereal-app-pma:

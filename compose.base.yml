@@ -1,0 +1,24 @@
+# What dev and prod have in common. Not meant to be run on its own:
+# compose.dev.yml and compose.prod.yml pull these services in with `extends`.
+#
+# Ports, volumes and networks are not defined here: Compose appends them when merging,
+# so a value set here could not be replaced by dev or prod, only added to.
+
+services:
+  cereal-app-db:
+    container_name: cereal-app-db
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+
+  cereal-app:
+    # Fixed name: used by `docker exec cereal-app ...` (Makefile, scans monitor crontab)
+    container_name: cereal-app
+    env_file:
+      - path: .env
+        required: true
