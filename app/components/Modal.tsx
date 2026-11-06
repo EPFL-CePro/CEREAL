@@ -1035,9 +1035,6 @@ export function Modal({
               await save()
 
               setIsSubmitting(false)
-              ;(
-                document.getElementById("modal") as HTMLDialogElement | null
-              )?.close()
             }}
           >
             {isSubmitting && (
