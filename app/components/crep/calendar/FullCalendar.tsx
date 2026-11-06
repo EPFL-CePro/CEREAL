@@ -15,6 +15,7 @@ import listPlugin from "@fullcalendar/list"
 import FullCalendar from "@fullcalendar/react"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import { type User } from "next-auth"
+import { Toaster } from "sonner"
 
 import {
   getAllCrepExams,
@@ -562,13 +563,16 @@ export default function Calendar({ user }: CalendarProps) {
         }}
       >
         {modalOpen && (
-          <Modal
-            event={selectedEvent}
-            user={user}
-            exams={exams}
-            setExams={setExams}
-            examStatus={availableStatus}
-          />
+          <>
+            <Modal
+              event={selectedEvent}
+              user={user}
+              exams={exams}
+              setExams={setExams}
+              examStatus={availableStatus}
+            />
+            <Toaster position="top-center" richColors id="modal" />
+          </>
         )}
       </dialog>
     </div>

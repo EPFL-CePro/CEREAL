@@ -361,6 +361,7 @@ export function Modal({
 
         toast.error(
           "An error occurred while deleting the exam folder. Please try again.",
+          { toasterId: "modal" },
         )
         return
       }
@@ -929,7 +930,7 @@ export function Modal({
               // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
               const filesError = canEditModal ? validateFilesSpecs(files) : null
               if (filesError) {
-                toast.error(filesError)
+                toast.error(filesError, { toasterId: "modal" })
                 setSelectStatus(previousStatus)
                 setIsSubmitting(false)
                 return
@@ -973,6 +974,7 @@ export function Modal({
                 ) {
                   toast.warning(
                     "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
+                    { toasterId: "modal" },
                   )
                   setSelectStatus(previousStatus)
                   setIsSubmitting(false)
