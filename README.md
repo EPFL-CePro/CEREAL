@@ -82,6 +82,7 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 5. Go to http://localhost:3000/
 
 ## Prisma migrations
+
 WARNING: Those commands use the running docker containers, so make sure that the containers are up and running before using them !
 
 After making changes in `prisma/schema.prisma`, run `make migration name=name_of_migration` to create the migration and regenerate the Prisma client.
