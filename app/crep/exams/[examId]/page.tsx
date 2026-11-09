@@ -1,15 +1,15 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { auth } from "../../../../auth"
-import { ExamFilesManager } from "../../../components/crep/exams/ExamFilesManager"
-import { Footer } from "../../../components/Footer"
+import { ExamFilesManager } from "@/app/components/crep/exams/ExamFilesManager"
+import { Footer } from "@/app/components/Footer"
 import {
   getAllCrepExamsForRepro,
   getCrepExamById,
-} from "../../../lib/crep/database"
-import { examPrePrintStatus } from "../../../lib/crep/exam-status"
-import { formatDateOnlyValue } from "../../../lib/dates/date-time"
+} from "@/app/lib/crep/database"
+import { examPrePrintStatus } from "@/app/lib/crep/exam-status"
+import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
+import { auth } from "@/auth"
 
 import type { CrepExam } from "@/types/crepExam"
 
