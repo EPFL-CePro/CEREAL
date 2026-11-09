@@ -9,7 +9,6 @@ import Callout from "@/app/components/Callout"
 import Checkbox from "@/app/components/crep/register/Checkbox"
 import DateInput from "@/app/components/crep/register/DateInput"
 import FilesAndPrintSettings from "@/app/components/crep/register/FilesAndPrintSettings"
-import { FileSpecsFields } from "@/app/components/crep/register/FileSpecsFields"
 import {
   getAllExamsBetweenDates,
   getBlockingExamsForDate,
