@@ -20,7 +20,7 @@ import { type AuthorizedPersons } from "@/types/user"
 
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor"
 import { useConfirm } from "./ConfirmProvider"
-import { FileSpecsFields } from "./crep/FileSpecsFields"
+import { FileSpecsFields } from "./crep/register/FileSpecsFields"
 import { PrintButton } from "./print/ReactToPrint"
 import {
   updateExamRemarkById,
