@@ -34,8 +34,12 @@ export function getPreviousBusinessDay(dateString: string): string {
   const selectedDate = new Date(dateString)
   const selectedDay = selectedDate.getDay()
 
-  // 0 = Sunday; 1 = Monday
-  const daysToSubstract = selectedDay === 0 ? 2 : selectedDay === 1 ? 3 : 1
+  // 0 = Sunday; 1 = Monday - By default : go back 1 day
+  let daysToSubstract = 1
+  // If it's sunday go back 2 days
+  if (selectedDay === 0) daysToSubstract = 2
+  // If it's monday go back 3 days
+  else if (selectedDay === 1) daysToSubstract = 3
 
   selectedDate.setDate(selectedDate.getDate() - daysToSubstract)
 
