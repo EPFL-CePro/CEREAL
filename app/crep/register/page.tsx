@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 
-import RegisterForm from "../../components/crep/Register"
+import RegisterForm from "../../components/crep/register/RegisterForm"
 
 export const metadata = {
   title: "CREP - Register",
