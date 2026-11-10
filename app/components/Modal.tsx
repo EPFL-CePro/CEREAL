@@ -984,6 +984,7 @@ export function Modal({
                   "registered",
                   "registered-warning",
                   "registered-error",
+                  "reserved",
                 ].includes(previousStatus) &&
                 selectStatus === "toPrint"
               const shouldNotifyFinished =
