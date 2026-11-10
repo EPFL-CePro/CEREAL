@@ -188,6 +188,39 @@ export function Modal({
 
   const canEditModal = user.isAdmin || user.hasCrepAccess
 
+  const examSnapshot = JSON.stringify({
+    remark,
+    reproRemark,
+    selectStatus,
+    boxes,
+    priceUnit,
+    priceTotal,
+    desiredDate,
+    examDate,
+    financialCenter,
+    files,
+    authorizedPersons,
+    orderNumber,
+  })
+  const [initialValues] = useState(examSnapshot)
+  const crepExamChanged = examSnapshot !== initialValues
+
+  function closeModal() {
+    ;(document.getElementById("modal") as HTMLDialogElement | null)?.close()
+  }
+
+  async function preventModalClose() {
+    if (
+      crepExamChanged &&
+      !(await confirm(
+        "You have unsaved changes, your changes will be lost and nothing will be saved. Do you want to close it anyway?",
+      ))
+    ) {
+      return
+    }
+    closeModal()
+  }
+
   async function save() {
     // save remark, save status, and update the exams state
     const updatedExams = Array.isArray(exams)
@@ -405,6 +438,8 @@ export function Modal({
           {eventSnapshot?.title}
         </h3>
         <button
+          type="button"
+          onClick={preventModalClose}
           className="btn absolute right-4 top-4 p-1 hover:bg-gray-100 md:right-6 md:top-6"
           aria-label="Close"
         >
@@ -916,7 +951,13 @@ export function Modal({
           />
         </div>
         <div className="flex flex-row gap-4">
-          <button className="btn btn-secondary">Cancel</button>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={preventModalClose}
+          >
+            Cancel
+          </button>
           {/* on save, check if the status change into a status that requires admin privileges and confirm with the user */}
           <button
             className="btn btn-primary disabled:cursor-wait disabled:opacity-80"
