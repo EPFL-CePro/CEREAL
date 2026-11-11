@@ -37,7 +37,7 @@ import {
   updateCrepExamFields,
   updateCrepFileSpecs,
 } from "../lib/crep/database"
-import { examNotAdminStatus } from "../lib/crep/exam-status"
+import { examNotAdminStatus, registeredStatus } from "../lib/crep/exam-status"
 import { getBindingLabel, validateFilesSpecs } from "../lib/crep/file-specs"
 import { limitTextToLines } from "../lib/crep/remark-lines"
 import {
@@ -426,103 +426,76 @@ export function Modal({
     getTimePartFromDateTimeString(eventSnapshot?.endStr) ||
     (eventSnapshot?.end ? formatTimeInputValue(eventSnapshot.end) : "")
   const authorizedPersonsText =
-    authorizedPersons.length > 0
-      ? authorizedPersons
-          .map((authorizedPerson) => authorizedPerson.email)
-          .join("\n")
-      : "None"
+    authorizedPersons.map((person) => person.email).join(" ") || "None"
 
   const handleOnSave = async (e: React.MouseEvent) => {
     e.preventDefault()
-
     setIsSubmitting(true)
 
-    const previousStatus = extendedProps.status
+    const previousCrepExamStatus = extendedProps.status
+    const statusChanged = previousCrepExamStatus !== selectStatus
+
     // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
     const filesError = canEditModal ? validateFilesSpecs(files) : null
     if (filesError) {
       toast.error(filesError, { toasterId: "modal" })
-      setSelectStatus(previousStatus)
+      setSelectStatus(previousCrepExamStatus)
       setIsSubmitting(false)
       return
     }
 
-    const statusChanged = previousStatus !== selectStatus
-    const shouldNotifyRepro =
+    let confirmMessage: string | null = null
+    const isTransitionToPrint =
       statusChanged &&
-      [
-        "registered",
-        "registered-warning",
-        "registered-error",
-        "reserved",
-      ].includes(previousStatus) &&
+      registeredStatus.includes(previousCrepExamStatus) &&
       selectStatus === "toPrint"
-    const shouldNotifyFinished = statusChanged && selectStatus === "finished"
-    const selectedStatusNeedsAdmin =
+    const isTransitionToFinished = statusChanged && selectStatus === "finished"
+    const needsAdmin =
       statusChanged &&
-      examStatus?.find((status) => status.value === selectStatus)?.needsAdmin
+      examStatus?.find((s) => s.value === selectStatus)?.needsAdmin
 
-    // If the old status was `registered`, `registered-warning` or `registered-error` and that the new status is `toPrint`, we notify the Repro with an email.
-    if (shouldNotifyRepro) {
-      // proceed only if confirmed, else prevent modal close and save
-      if (
-        !(await confirm(
-          "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?",
-        ))
-      ) {
-        setSelectStatus(previousStatus)
-        setIsSubmitting(false)
-        return
-      }
+    if (isTransitionToPrint) {
+      confirmMessage =
+        "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?"
     }
-
-    if (shouldNotifyFinished) {
-      if (
+    if (isTransitionToFinished) {
+      const hasValidPricing =
         parseInt(boxes) <= 0 ||
         parseFloat(priceUnit) <= 0 ||
         parseFloat(priceTotal) <= 0
-      ) {
+
+      if (!hasValidPricing) {
         toast.warning(
           "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
           { toasterId: "modal" },
         )
-        setSelectStatus(previousStatus)
-        setIsSubmitting(false)
+        setSelectStatus(previousCrepExamStatus)
         return
       }
-      // proceed only if confirmed, else prevent modal close and save
-      if (
-        !(await confirm(
-          "You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?",
-        ))
-      ) {
-        setSelectStatus(previousStatus)
-        setIsSubmitting(false)
-        return
-      }
+      confirmMessage =
+        "You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?"
     }
 
-    if (selectedStatusNeedsAdmin) {
-      // proceed only if confirmed, else prevent modal close and save
-      if (
-        !(await confirm(
-          "You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?",
-        ))
-      ) {
-        setSelectStatus(previousStatus)
-        setIsSubmitting(false)
-        return
-      }
+    if (needsAdmin && !confirmMessage) {
+      confirmMessage =
+        "You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?"
+    }
+
+    // Confirmation - if user doesnt confirm
+    if (confirmMessage && !(await confirm(confirmMessage))) {
+      setSelectStatus(previousCrepExamStatus)
+      return
     }
 
     // Save changes before sending the email
+    // TODO - Handle this in a transaction -> better error handler and centralize the send email logic
     await save()
 
-    if (shouldNotifyRepro) {
+    if (isTransitionToPrint) {
       await sendEmailExamReadyToPrint(crepExamId)
     }
 
-    if (shouldNotifyFinished) {
+    if (isTransitionToFinished) {
       await sendEmailExamReadyToPickUp(crepExamId)
     }
 
