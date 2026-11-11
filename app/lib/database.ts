@@ -1,4 +1,5 @@
 "use server"
+import { type Prisma } from "@/app/generated/prisma/client"
 import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
@@ -10,6 +11,7 @@ import { type ExamStatus } from "@/types/examStatus"
 import { type ExamType } from "@/types/examType"
 import { type Service } from "@/types/service"
 import { type ServiceLevel } from "@/types/serviceLevel"
+import { type Teacher } from "@/types/teacher"
 
 import type { Absence, NewAbsence } from "@/types/absence"
 import type { NewDiffExam } from "@/types/diffExam"
@@ -518,24 +520,58 @@ export async function updateComment(
 }
 
 // Deferred exams management
+const deferredSessionInclude = {
+  days: { orderBy: { date: "asc" }, include: { exams: true } },
+} satisfies Prisma.deferred_sessionInclude
+
+type DeferredSessionRow = Prisma.deferred_sessionGetPayload<{
+  include: typeof deferredSessionInclude
+}>
+
+// Prisma types the JSON column `teachers` as JsonValue
+function toDeferredSession(row: DeferredSessionRow): DeferredSession {
+  return {
+    ...row,
+    days: row.days.map((day) => ({
+      ...day,
+      exams: day.exams.map((exam) => ({
+        ...exam,
+        teachers: exam.teachers as unknown as Teacher[],
+      })),
+    })),
+  }
+}
+
 export async function getAllDeferredSessions(): Promise<DeferredSession[]> {
   await requirePermission(Permission.ADMIN)
-  return await prisma.deferred_session.findMany({
-    include: { days: true },
+  const sessions = await prisma.deferred_session.findMany({
+    include: deferredSessionInclude,
   })
+  return sessions.map(toDeferredSession)
 }
 
 export async function insertDeferredSession(
   deferredSession: NewDeferredSession
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
-  return await prisma.deferred_session.create({
+  const created = await prisma.deferred_session.create({
     data: {
       name: deferredSession.name,
       days: {
-        create: deferredSession.days.map((day) => ({ date: day.date })),
+        create: deferredSession.days.map((day) => ({
+          date: day.date,
+          exams: {
+            create: day.exams.map((exam) => ({
+              exam_code: exam.exam_code,
+              exam_name: exam.exam_name,
+              teachers: exam.teachers,
+              slot: exam.slot,
+            })),
+          },
+        })),
       },
     },
-    include: { days: true },
+    include: deferredSessionInclude,
   })
+  return toDeferredSession(created)
 }
