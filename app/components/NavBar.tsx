@@ -4,7 +4,6 @@ import { type User } from "next-auth"
 import { SignIn } from "./auth/SignInButton"
 import { SignOut } from "./auth/SignOutButton"
 import { Export } from "./crep/exportData/Export"
-import Notifications from "./Notifications"
 
 interface NavBarProps {
   user: AppUser
@@ -34,7 +33,6 @@ export function NavBar({ user }: NavBarProps) {
           {user ? (
             <>
               <span className="mr-4">Welcome, {user.name} !</span>
-              <Notifications user={user} />
               <div className="flex gap-2">
                 <SignOut />
                 <Export user={user} />
