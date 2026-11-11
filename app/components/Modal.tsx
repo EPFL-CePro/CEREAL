@@ -15,6 +15,10 @@ import { XMarkIcon } from "@heroicons/react/24/outline"
 import { type User } from "next-auth"
 import { toast } from "sonner"
 
+import {
+  sendEmailExamReadyToPickUp,
+  sendEmailExamReadyToPrint,
+} from "@/app/lib/actions/exam-status"
 import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
@@ -147,7 +151,7 @@ export function Modal({
   const eventSnapshot = eventSnapshotRef.current
   const extendedProps: EventApi["extendedProps"] =
     eventSnapshot?.extendedProps ?? {}
-  const eventId = eventSnapshot?.id ?? ""
+  const crepExamId = eventSnapshot?.id ?? ""
 
   const [remark, setRemark] = useState(() =>
     limitTextToLines(extendedProps.remark ?? ""),
@@ -225,7 +229,7 @@ export function Modal({
     // save remark, save status, and update the exams state
     const updatedExams = Array.isArray(exams)
       ? exams.map((e: EventInput) => {
-          if (e.id === eventId) {
+          if (e.id === crepExamId) {
             e.remark = remark
             e.status = selectStatus
             e.reproRemark = reproRemark
@@ -242,17 +246,17 @@ export function Modal({
           return e
         })
       : []
-    await updateExamRemarkById(eventId, remark)
+    await updateExamRemarkById(crepExamId, remark)
     setRemark(remark)
 
-    await updateExamReproRemarkById(eventId, reproRemark)
+    await updateExamReproRemarkById(crepExamId, reproRemark)
     setReproRemark(reproRemark)
 
-    await updateExamStatusById(eventId, selectStatus)
+    await updateExamStatusById(crepExamId, selectStatus)
     setSelectStatus(selectStatus)
 
     if (canEditModal) {
-      await updateCrepExamFields(eventId, {
+      await updateCrepExamFields(crepExamId, {
         desired_date: desiredDate,
         exam_date: examDate,
         financial_center: financialCenter,
@@ -261,8 +265,10 @@ export function Modal({
       })
 
       // The printing duration depends on the number of copies of the files, so the end of the printing is updated
-      const printDuration = await updateCrepFileSpecs(Number(eventId), files)
-      const updatedExam = updatedExams.find((e: EventInput) => e.id === eventId)
+      const printDuration = await updateCrepFileSpecs(Number(crepExamId), files)
+      const updatedExam = updatedExams.find(
+        (e: EventInput) => e.id === crepExamId,
+      )
       if (updatedExam?.start) {
         updatedExam.end = formatDateTimeInputValue(
           new Date(
@@ -681,12 +687,11 @@ export function Modal({
                 name="boxesNumber"
                 value={boxes || "0"}
                 onChange={(e) => {
-                  const examId = eventId
-                  if (!examId) return
+                  if (!crepExamId) return
 
                   const nextBoxes = e.target.value
-                  updateBoxesState(examId, nextBoxes)
-                  updateCrepBoxes(examId, nextBoxes)
+                  updateBoxesState(crepExamId, nextBoxes)
+                  updateCrepBoxes(crepExamId, nextBoxes)
                 }}
               />
             </div>
@@ -704,12 +709,11 @@ export function Modal({
                   name="priceUnit"
                   value={priceUnit || "0"}
                   onChange={(e) => {
-                    const examId = eventId
-                    if (!examId) return
+                    if (!crepExamId) return
 
                     const nextPriceUnit = e.target.value
-                    updatePriceUnitState(examId, nextPriceUnit)
-                    updateCrepPriceUnit(examId, nextPriceUnit)
+                    updatePriceUnitState(crepExamId, nextPriceUnit)
+                    updateCrepPriceUnit(crepExamId, nextPriceUnit)
                   }}
                 />
               </div>
@@ -723,12 +727,11 @@ export function Modal({
                   name="priceTotal"
                   value={priceTotal || "0"}
                   onChange={(e) => {
-                    const examId = eventId
-                    if (!examId) return
+                    if (!crepExamId) return
 
                     const nextPriceTotal = e.target.value
-                    updatePriceTotalState(examId, nextPriceTotal)
-                    updateCrepPriceTotal(examId, nextPriceTotal)
+                    updatePriceTotalState(crepExamId, nextPriceTotal)
+                    updateCrepPriceTotal(crepExamId, nextPriceTotal)
                   }}
                 />
               </div>
@@ -921,7 +924,7 @@ export function Modal({
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => handleDeleteExam(eventId, selectStatus)}
+                onClick={() => handleDeleteExam(crepExamId, selectStatus)}
               >
                 Delete
               </button>
@@ -1047,36 +1050,16 @@ export function Modal({
                 }
               }
 
+              // Save changes before sending the email
+              await save()
+
               if (shouldNotifyRepro) {
-                if (process.env.NODE_ENV !== "development") {
-                  const datePrintSchedule = new Date(
-                    extendedProps.printSchedule,
-                  )
-                  const examURL = `https://cereal.epfl.ch/crep/?openExamId=${eventId}&day=${formatDateInputValue(datePrintSchedule)}`
-                  await sendTemplatedMail("exam_ready_to_print", {
-                    examCode: extendedProps.code,
-                    description: extendedProps.description,
-                    examURL,
-                  })
-                }
+                await sendEmailExamReadyToPrint(crepExamId)
               }
 
               if (shouldNotifyFinished) {
-                const authorizedPersonsEmails = authorizedPersons
-                  .map((e: AuthorizedPersons) => e.email)
-                  .join(", ")
-                if (process.env.NODE_ENV !== "development") {
-                  await sendTemplatedMail("exam_ready_to_pickup", {
-                    examCode: extendedProps.code,
-                    description: extendedProps.description,
-                    boxes,
-                    "contact.email": extendedProps.contact.email,
-                    authorizedPersons: authorizedPersonsEmails,
-                  })
-                }
+                await sendEmailExamReadyToPickUp(crepExamId)
               }
-
-              await save()
 
               setIsSubmitting(false)
             }}
