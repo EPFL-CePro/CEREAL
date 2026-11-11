@@ -30,6 +30,7 @@ import { type EmailTemplate } from "@/types/emailTemplate"
 import { type ExamStatus } from "@/types/examStatus"
 import { type Service } from "@/types/service"
 import { type ServiceLevel } from "@/types/serviceLevel"
+import DeferredSessionManager from "./DeferredSessionManager"
 
 type Tab =
   "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams"
@@ -878,6 +879,7 @@ export default function AdminPage() {
               </>
             )}
           </div>
+          <DeferredSessionManager />
         </div>
       )}
     </main>
