@@ -48,7 +48,6 @@ import {
   getDatePartFromDateTimeString,
   getTimePartFromDateTimeString,
 } from "../lib/dates/date-time"
-import { sendTemplatedMail } from "../lib/mail/send-templated-mail"
 
 interface AppUser extends User {
   isAdmin?: boolean
@@ -432,6 +431,103 @@ export function Modal({
           .map((authorizedPerson) => authorizedPerson.email)
           .join("\n")
       : "None"
+
+  const handleOnSave = async (e: React.MouseEvent) => {
+    e.preventDefault()
+
+    setIsSubmitting(true)
+
+    const previousStatus = extendedProps.status
+    // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
+    const filesError = canEditModal ? validateFilesSpecs(files) : null
+    if (filesError) {
+      toast.error(filesError, { toasterId: "modal" })
+      setSelectStatus(previousStatus)
+      setIsSubmitting(false)
+      return
+    }
+
+    const statusChanged = previousStatus !== selectStatus
+    const shouldNotifyRepro =
+      statusChanged &&
+      [
+        "registered",
+        "registered-warning",
+        "registered-error",
+        "reserved",
+      ].includes(previousStatus) &&
+      selectStatus === "toPrint"
+    const shouldNotifyFinished = statusChanged && selectStatus === "finished"
+    const selectedStatusNeedsAdmin =
+      statusChanged &&
+      examStatus?.find((status) => status.value === selectStatus)?.needsAdmin
+
+    // If the old status was `registered`, `registered-warning` or `registered-error` and that the new status is `toPrint`, we notify the Repro with an email.
+    if (shouldNotifyRepro) {
+      // proceed only if confirmed, else prevent modal close and save
+      if (
+        !(await confirm(
+          "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?",
+        ))
+      ) {
+        setSelectStatus(previousStatus)
+        setIsSubmitting(false)
+        return
+      }
+    }
+
+    if (shouldNotifyFinished) {
+      if (
+        parseInt(boxes) <= 0 ||
+        parseFloat(priceUnit) <= 0 ||
+        parseFloat(priceTotal) <= 0
+      ) {
+        toast.warning(
+          "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
+          { toasterId: "modal" },
+        )
+        setSelectStatus(previousStatus)
+        setIsSubmitting(false)
+        return
+      }
+      // proceed only if confirmed, else prevent modal close and save
+      if (
+        !(await confirm(
+          "You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?",
+        ))
+      ) {
+        setSelectStatus(previousStatus)
+        setIsSubmitting(false)
+        return
+      }
+    }
+
+    if (selectedStatusNeedsAdmin) {
+      // proceed only if confirmed, else prevent modal close and save
+      if (
+        !(await confirm(
+          "You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?",
+        ))
+      ) {
+        setSelectStatus(previousStatus)
+        setIsSubmitting(false)
+        return
+      }
+    }
+
+    // Save changes before sending the email
+    await save()
+
+    if (shouldNotifyRepro) {
+      await sendEmailExamReadyToPrint(crepExamId)
+    }
+
+    if (shouldNotifyFinished) {
+      await sendEmailExamReadyToPickUp(crepExamId)
+    }
+
+    setIsSubmitting(false)
+  }
 
   return (
     <form
@@ -965,104 +1061,7 @@ export function Modal({
           <button
             className="btn btn-primary disabled:cursor-wait disabled:opacity-80"
             disabled={isSubmitting}
-            onClick={async (e) => {
-              e.preventDefault()
-
-              setIsSubmitting(true)
-
-              const previousStatus = extendedProps.status
-              // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
-              const filesError = canEditModal ? validateFilesSpecs(files) : null
-              if (filesError) {
-                toast.error(filesError, { toasterId: "modal" })
-                setSelectStatus(previousStatus)
-                setIsSubmitting(false)
-                return
-              }
-
-              const statusChanged = previousStatus !== selectStatus
-              const shouldNotifyRepro =
-                statusChanged &&
-                [
-                  "registered",
-                  "registered-warning",
-                  "registered-error",
-                  "reserved",
-                ].includes(previousStatus) &&
-                selectStatus === "toPrint"
-              const shouldNotifyFinished =
-                statusChanged && selectStatus === "finished"
-              const selectedStatusNeedsAdmin =
-                statusChanged &&
-                examStatus?.find((status) => status.value === selectStatus)
-                  ?.needsAdmin
-
-              // If the old status was `registered`, `registered-warning` or `registered-error` and that the new status is `toPrint`, we notify the Repro with an email.
-              if (shouldNotifyRepro) {
-                // proceed only if confirmed, else prevent modal close and save
-                if (
-                  !(await confirm(
-                    "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?",
-                  ))
-                ) {
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-              }
-
-              if (shouldNotifyFinished) {
-                if (
-                  parseInt(boxes) <= 0 ||
-                  parseFloat(priceUnit) <= 0 ||
-                  parseFloat(priceTotal) <= 0
-                ) {
-                  toast.warning(
-                    "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
-                    { toasterId: "modal" },
-                  )
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-                // proceed only if confirmed, else prevent modal close and save
-                if (
-                  !(await confirm(
-                    "You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?",
-                  ))
-                ) {
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-              }
-
-              if (selectedStatusNeedsAdmin) {
-                // proceed only if confirmed, else prevent modal close and save
-                if (
-                  !(await confirm(
-                    "You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?",
-                  ))
-                ) {
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-              }
-
-              // Save changes before sending the email
-              await save()
-
-              if (shouldNotifyRepro) {
-                await sendEmailExamReadyToPrint(crepExamId)
-              }
-
-              if (shouldNotifyFinished) {
-                await sendEmailExamReadyToPickUp(crepExamId)
-              }
-
-              setIsSubmitting(false)
-            }}
+            onClick={handleOnSave}
           >
             {isSubmitting && (
               <span
