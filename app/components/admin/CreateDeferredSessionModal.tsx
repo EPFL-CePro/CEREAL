@@ -2,9 +2,11 @@
 
 import React, { useState } from "react"
 
+import { type NewDeferredSession } from "@/types/deferredSession"
+
 type Props = {
   onClose: () => void
-  onSubmit: (name: string) => void | Promise<void>
+  onSubmit: (deferredSession: NewDeferredSession) => void | Promise<void>
 }
 
 export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props) {
@@ -22,7 +24,7 @@ export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props)
     setError(null)
     setIsSubmitting(true)
     try {
-      await onSubmit(name.trim())
+      await onSubmit({ name: name.trim(), is_active: false })
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to create the session.")
     } finally {
