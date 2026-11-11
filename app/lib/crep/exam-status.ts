@@ -164,6 +164,12 @@ export const examStatus = [
   },
 ]
 
+export const registeredStatus = [
+  examStatus
+    .map((x) => x.value)
+    .filter((x) => x.includes("registered"), "reserved"),
+]
+
 export const examNotAdminStatus = examStatus.filter(
   (status) => !status.needsAdmin,
 )
