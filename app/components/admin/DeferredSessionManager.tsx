@@ -1,6 +1,6 @@
 "use client"
 
-import { getAllDeferredSessions } from "@/app/lib/database";
+import { getAllDeferredSessions, insertDeferredSession } from "@/app/lib/database";
 import { DeferredSession, NewDeferredSession } from "@/types/deferredSession"
 import { useEffect, useState } from "react"
 
@@ -19,8 +19,8 @@ export default function DeferredSessionManager() {
   }, [])
 
   const handleCreateSession = async (deferredSession: NewDeferredSession) => {
-    // TODO: persist the session in DB
-    console.log("New deferred session", deferredSession)
+    const created = await insertDeferredSession(deferredSession);
+    setDeferredSessions(prev => [...prev, created]);
     setIsCreateModalOpen(false)
   }
 
