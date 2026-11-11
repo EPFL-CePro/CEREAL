@@ -164,11 +164,10 @@ export const examStatus = [
   },
 ]
 
-export const registeredStatus = [
-  examStatus
-    .map((x) => x.value)
-    .filter((x) => x.includes("registered"), "reserved"),
-]
+// `registered`, `registered-warning`, `registered-error` and `reserved`
+export const registeredStatus = examStatus
+  .map((status) => status.value)
+  .filter((value) => value.startsWith("registered") || value === "reserved")
 
 export const examNotAdminStatus = examStatus.filter(
   (status) => !status.needsAdmin,
