@@ -179,3 +179,42 @@ model service_level {
   name String? @db.VarChar(50)
   exam exam[]
 }
+
+model deferred_session {
+  id               Int                    @id @default(autoincrement())
+  name             String                 @db.VarChar(200)
+  is_active        Boolean                @default(false)
+  created_at       DateTime               @default(now()) @db.DateTime(0)
+  days             deferred_session_day[]
+
+  @@unique([name])
+}
+
+model deferred_session_day {
+  id         Int                     @id @default(autoincrement())
+  session_id Int
+  date       DateTime                @db.Date
+  session    deferred_session        @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  exams      deferred_session_exam[]
+
+  @@unique([session_id, date])
+  @@unique([id, session_id])
+}
+
+model deferred_session_exam {
+  id         Int                  @id @default(autoincrement())
+  day_id     Int
+  session_id Int // copie de day.session_id, garantie par la FK composite
+  exam_code  String               @db.VarChar(30) // option.exam.code (OASIS)
+  exam_name  String               @db.VarChar(256) // option.exam.title (OASIS)
+  teachers   Json // option.exam.teachers : Teacher[]
+  slot       deferred_exam_slot
+  day        deferred_session_day @relation(fields: [day_id, session_id], references: [id, session_id], onDelete: Cascade)
+
+  @@unique([session_id, exam_code]) // un examen une seule fois par session
+}
+
+enum deferred_exam_slot {
+  morning
+  afternoon
+}
