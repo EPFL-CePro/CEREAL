@@ -126,11 +126,7 @@ export default function AdminPage() {
     Record<string, boolean>
   >({})
   const [selectedBoFile, setSelectedBoFile] = React.useState<File>()
-  const [selectedDiffExamsFile, setSelectedDiffExamsFile] =
-    React.useState<File>()
   const [alreadyExistingBo, setAlreadyExistingBo] =
-    React.useState<XLSXFile | null>(null)
-  const [alreadyExistingDiffExams, setAlreadyExistingDiffExams] =
     React.useState<XLSXFile | null>(null)
 
   function toggleSection(section: string) {
@@ -229,51 +225,12 @@ export default function AdminPage() {
     await refreshExistingBoFile()
   }
 
-  async function handleDiffExamsUpload() {
-    if (!selectedDiffExamsFile) return
-
-    const isXlsxFile =
-      selectedDiffExamsFile.name.toLowerCase().endsWith(".xlsx") ||
-      selectedDiffExamsFile.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-
-    if (!isXlsxFile) {
-      toast.error("Please upload an XLSX file")
-      return
-    }
-
-    const formData = new FormData()
-    formData.append("file", selectedDiffExamsFile)
-    formData.append("folder_name", "diff-exams")
-
-    const res = await fetch("/api/cereal/diff-exams/upload-xlsx", {
-      method: "POST",
-      body: formData,
-    })
-    if (!res.ok) {
-      console.error(await res.text())
-      return
-    }
-
-    await refreshExistingDiffExamsFile()
-  }
-
   const handleBoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
 
     const newFile = e.target.files[0]
 
     setSelectedBoFile(newFile)
-  }
-
-  const handleDiffExamsFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    if (!e.target.files) return
-
-    const newFile = e.target.files[0]
-
-    setSelectedDiffExamsFile(newFile)
   }
 
   async function handleAddItem(event: React.FormEvent<HTMLFormElement>) {
@@ -427,22 +384,6 @@ export default function AdminPage() {
     setAlreadyExistingBo(responseJson.file)
   }
 
-  async function refreshExistingDiffExamsFile() {
-    const res = await fetch(
-      "/api/cereal/diff-exams/check-existing-xlsx?folder_name=diff-exams",
-      {
-        method: "GET",
-      },
-    )
-    if (!res.ok) {
-      console.error(await res.text())
-      return
-    }
-    const responseJson = await res.json()
-
-    setAlreadyExistingDiffExams(responseJson.file)
-  }
-
   React.useEffect(() => {
     ;(async () => {
       await syncEmailTemplates()
@@ -465,7 +406,6 @@ export default function AdminPage() {
       setEmailTemplates(allEmailTemplates)
 
       await refreshExistingBoFile()
-      await refreshExistingDiffExamsFile()
     })()
   }, [])
 
@@ -933,48 +873,6 @@ export default function AdminPage() {
                     <dd>{alreadyExistingBo.firstSheetName || "Unknown"}</dd>
                     <dt className="font-semibold">Rows</dt>
                     <dd>{alreadyExistingBo.rowCount.toLocaleString()}</dd>
-                  </dl>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="flex flex-col gap-4">
-            <div className="flex">
-              <input
-                type="file"
-                onChange={handleDiffExamsFileChange}
-                className="inset-0 cursor-pointer"
-              />
-              <button onClick={() => handleDiffExamsUpload()}>
-                Upload diff exams file
-              </button>
-            </div>
-            {alreadyExistingDiffExams && (
-              <>
-                <div>
-                  A diff exams file already exists, named{" "}
-                  {alreadyExistingDiffExams.name}.<br />
-                  <span className="underline">
-                    Uploading a new file will completely erase the old one.
-                  </span>
-                </div>
-                <div>
-                  <h2 className="font-semibold">Stats of the actual file</h2>
-                  <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
-                    <dt className="font-semibold">Size</dt>
-                    <dd>{formatFileSize(alreadyExistingDiffExams.size)}</dd>
-                    <dt className="font-semibold">Last edited</dt>
-                    <dd>
-                      {formatDateTime(alreadyExistingDiffExams.lastModified)}
-                    </dd>
-                    <dt className="font-semibold">First sheet</dt>
-                    <dd>
-                      {alreadyExistingDiffExams.firstSheetName || "Unknown"}
-                    </dd>
-                    <dt className="font-semibold">Rows</dt>
-                    <dd>
-                      {alreadyExistingDiffExams.rowCount.toLocaleString()}
-                    </dd>
                   </dl>
                 </div>
               </>
