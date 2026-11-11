@@ -13,7 +13,7 @@ import { type ServiceLevel } from "@/types/serviceLevel"
 
 import type { Absence, NewAbsence } from "@/types/absence"
 import type { NewDiffExam } from "@/types/diffExam"
-import { DeferredSession } from "@/types/deferredSession"
+import { DeferredSession, NewDeferredSession } from "@/types/deferredSession"
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise<Service[]> {
@@ -518,4 +518,13 @@ export async function updateComment(
 export async function getAllDeferredSessions(): Promise<DeferredSession[]> {
   await requirePermission(Permission.ADMIN)
   return (await prisma.deferred_session.findMany()) as unknown as DeferredSession[]
+}
+
+export async function insertDeferredSession(
+  deferredSession: NewDeferredSession
+): Promise<DeferredSession> {
+  await requirePermission(Permission.ADMIN)
+  return await prisma.deferred_session.create({
+    data: { name: deferredSession.name },
+  })
 }
