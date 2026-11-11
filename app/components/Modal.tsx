@@ -15,10 +15,6 @@ import { XMarkIcon } from "@heroicons/react/24/outline"
 import { type User } from "next-auth"
 import { toast } from "sonner"
 
-import {
-  sendEmailExamReadyToPickUp,
-  sendEmailExamReadyToPrint,
-} from "@/app/lib/actions/exam-status"
 import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
@@ -48,6 +44,10 @@ import {
   getDatePartFromDateTimeString,
   getTimePartFromDateTimeString,
 } from "../lib/dates/date-time"
+import {
+  sendEmailExamReadyToPickUp,
+  sendEmailExamReadyToPrint,
+} from "@/app/lib/mail/crep-notifications"
 
 interface AppUser extends User {
   isAdmin?: boolean
@@ -426,7 +426,11 @@ export function Modal({
     getTimePartFromDateTimeString(eventSnapshot?.endStr) ||
     (eventSnapshot?.end ? formatTimeInputValue(eventSnapshot.end) : "")
   const authorizedPersonsText =
-    authorizedPersons.map((person) => person.email).join(" ") || "None"
+    authorizedPersons.length > 0
+      ? authorizedPersons
+          .map((authorizedPerson) => authorizedPerson.email)
+          .join("\n")
+      : "None"
 
   const handleOnSave = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -459,17 +463,18 @@ export function Modal({
         "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?"
     }
     if (isTransitionToFinished) {
-      const hasValidPricing =
+      const hasInvalidPricing =
         parseInt(boxes) <= 0 ||
         parseFloat(priceUnit) <= 0 ||
         parseFloat(priceTotal) <= 0
 
-      if (!hasValidPricing) {
+      if (hasInvalidPricing) {
         toast.warning(
           "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
           { toasterId: "modal" },
         )
         setSelectStatus(previousCrepExamStatus)
+        setIsSubmitting(false)
         return
       }
       confirmMessage =
@@ -484,6 +489,7 @@ export function Modal({
     // Confirmation - if user doesnt confirm
     if (confirmMessage && !(await confirm(confirmMessage))) {
       setSelectStatus(previousCrepExamStatus)
+      setIsSubmitting(false)
       return
     }
 

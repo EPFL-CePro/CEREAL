@@ -16,7 +16,6 @@ import {
 } from "@/app/lib/crep/database"
 import {
   defaultFileSpecs,
-  describeFile,
   getTotalCopies,
   validateFilesSpecs,
 } from "@/app/lib/crep/file-specs"
@@ -39,7 +38,7 @@ import {
   fetchPersonBySciper,
 } from "@/app/lib/epfl/epfl-api"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
-import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
+import { sendEmailCrepPrintingConfirmation } from "@/app/lib/mail/crep-notifications"
 import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
 import { type Inputs } from "@/types/inputs"
 import { type AuthorizedPersons } from "@/types/user"
@@ -503,46 +502,9 @@ export default function RegisterForm({ user }: RegisterProps) {
           return
         }
       }
-      /*
-            The mail checks if status is `registered-warning` or `registered-error`, and displays a message for the user and the CePro team to let them know about the exam printing situation.
-            If the status is `registered-warning`, that means that a printing schedule could be found, but that the timing is too short (less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date)
-            If the status is `registered-error`, that means that a printing schedule could NOT be found, so the CePro (and Repro) team need to do something for the user. 
-           */
-      if (process.env.NODE_ENV !== "development") {
-        const attentionRequired = [
-          "registered-warning",
-          "registered-error",
-        ].includes(status)
-        const attentionBlock = attentionRequired
-          ? `
-⚠️ : ${
-              status === "registered-error"
-                ? `Due to a printing planning extremely full or too tight delays, we could not determine a printing session for your exam.
-The CePro team will get in touch with you as soon as possible to discuss about your situation.`
-                : `We would like to inform you that you choose a desired delivery date that is inferior to ${MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days from today.
-The CePro team will get in touch with you shortly to discuss about your situation.
-Next time, please register to the printing service earlier to make sur that the printing team has the right amount of time to print your exam correctly.`
-            }
-`
-          : ""
-        await sendTemplatedMail("crep_printing_confirmation", {
-          attentionPrefix: attentionRequired ? "REQUIRES ATTENTION - " : "",
-          attentionBlock,
-          course: data.course?.label,
-          examDate: data.examDate,
-          desiredDate: data.desiredDate,
-          contact: `${contact?.firstname} ${contact?.lastname} (${contact?.email})`,
-          authorizedPersonsLine:
-            authorizedPersons.length > 0
-              ? `- Authorized persons: ${authorizedPersons.map((user) => `${user.email}`).join(", ")}`
-              : "",
-          files: printFiles
-            .map((file) => `\n    - ${describeFile(file)}`)
-            .join(""),
-          remarkLine: data.remark ? `- Additional remarks: ${data.remark}` : "",
-          "registrant.email": user.email || "",
-        })
-      }
+
+      await sendEmailCrepPrintingConfirmation(String(insertedExamId))
+
       if (status === "registered-warning") {
         // Modal with warning that there is less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date.
         openModal(
