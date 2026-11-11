@@ -376,29 +376,3 @@ export async function getCrepExamById(id: string): Promise<CrepExam | null> {
   })
   return exam ? toCrepExam(exam) : null
 }
-
-type LogRow = Omit<crep_log, "changes"> & {
-  changes: unknown
-  read_at: Date | null
-}
-
-export async function getLogs(sciper: string) {
-  await requirePermission(Permission.CREP)
-  const rows = await prisma.$queryRaw<LogRow[]>`
-    SELECT l.*, un.read_at
-    FROM crep_log l
-    LEFT JOIN user_notification un ON un.log_id = l.id AND un.sciper = ${sciper}
-    ORDER BY l.date_time DESC, l.id DESC
-  `
-  return rows.map((row) => ({ ...row, is_read: row.read_at !== null }))
-}
-
-export async function markAsRead(sciper: string) {
-  await requirePermission(Permission.CREP)
-  await prisma.$executeRaw`
-    INSERT INTO user_notification (log_id, sciper, read_at)
-    SELECT l.id, ${sciper}, CURRENT_TIMESTAMP(6) FROM crep_log l
-    ON DUPLICATE KEY UPDATE read_at = IF(user_notification.read_at IS NULL, CURRENT_TIMESTAMP(6), user_notification.read_at)
-  `
-  return { ok: true }
-}
