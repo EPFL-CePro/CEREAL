@@ -7,7 +7,7 @@ import { fetchCourses, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { prisma } from "@/app/lib/prisma"
 
-const isProdEnv = process.env.NODE_ENV !== "development"
+const isProdEnv = process.env.NODE_ENV !== "development" || process.env.MAIL_ENABLED === "true"
 
 function formatPapersManagement(papersManagement: string) {
   if (papersManagement === "repro_collect") {

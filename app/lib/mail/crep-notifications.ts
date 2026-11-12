@@ -13,7 +13,8 @@ import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { type AuthorizedPersons } from "@/types/user"
 
-const isProdEnv = process.env.NODE_ENV !== "development"
+const isProdEnv =
+  process.env.NODE_ENV !== "development" || process.env.MAIL_ENABLED === "true"
 
 // Crep exam must be already updated in database
 export async function sendEmailExamReadyToPickUp(crepExamId: string) {
@@ -49,6 +50,7 @@ export async function sendEmailExamReadyToPrint(crepExamId: string) {
   if (exam.status !== "toPrint") return
   if (!isProdEnv) return
 
+  // TODO - Set base URL in the .env APP_URL
   const examURL = `https://cereal.epfl.ch/crep/?openExamId=${exam.id}&day=${formatDateOnlyValue(exam.print_date)}`
 
   await sendTemplatedMail("exam_ready_to_print", {
