@@ -3,6 +3,7 @@
 import React from "react"
 
 import { toast } from "sonner"
+import { ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline"
 import * as XLSX from "xlsx"
 
 import { useConfirm } from "@/app/components/ConfirmProvider"
@@ -845,38 +846,68 @@ export default function AdminPage() {
 
       {activeTab === "defferedExams" && (
         <div className="flex flex-col gap-24">
-          <div className="flex flex-col gap-4">
-            <div className="flex">
-              <input
-                type="file"
-                onChange={handleBoFileChange}
-                className="inset-0 cursor-pointer"
-              />
-              <button onClick={() => handleBoUpload()}>Upload BO file</button>
-            </div>
-            {alreadyExistingBo && (
-              <>
-                <div>
-                  A BO file already exists, named {alreadyExistingBo.name}.
-                  <br />
-                  <span className="underline">
-                    Uploading a new file will completely erase the old one.
-                  </span>
-                </div>
-                <div>
-                  <h2 className="font-semibold">Stats of the actual file</h2>
-                  <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
-                    <dt className="font-semibold">Size</dt>
-                    <dd>{formatFileSize(alreadyExistingBo.size)}</dd>
-                    <dt className="font-semibold">Last edited</dt>
-                    <dd>{formatDateTime(alreadyExistingBo.lastModified)}</dd>
-                    <dt className="font-semibold">First sheet</dt>
-                    <dd>{alreadyExistingBo.firstSheetName || "Unknown"}</dd>
-                    <dt className="font-semibold">Rows</dt>
-                    <dd>{alreadyExistingBo.rowCount.toLocaleString()}</dd>
+          <div>
+            <h2 className="text-2xl font-bold mb-3">BO file</h2>
+            <div className="mb-4">
+              {alreadyExistingBo ? (
+                <div className="rounded-lg border border-slate-200 bg-white">
+                  <div className="flex items-center gap-2 px-4 py-3">
+                    <DocumentTextIcon className="h-5 w-5 shrink-0 text-slate-400" />
+                    <span className="truncate font-semibold text-slate-950">
+                      {alreadyExistingBo.name}
+                    </span>
+                    <span className="ml-auto shrink-0 text-sm text-slate-500">
+                      {formatFileSize(alreadyExistingBo.size)}
+                    </span>
+                  </div>
+                  <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 border-t border-slate-200 px-4 py-3 text-sm">
+                    <dt className="text-slate-500">Last edited</dt>
+                    <dd className="text-slate-900">
+                      {formatDateTime(alreadyExistingBo.lastModified)}
+                    </dd>
+                    <dt className="text-slate-500">First sheet</dt>
+                    <dd className="text-slate-900">
+                      {alreadyExistingBo.firstSheetName || "Unknown"}
+                    </dd>
+                    <dt className="text-slate-500">Rows</dt>
+                    <dd className="text-slate-900">
+                      {alreadyExistingBo.rowCount.toLocaleString()}
+                    </dd>
                   </dl>
                 </div>
-              </>
+              ) : (
+                <p className="rounded-md border border-dashed border-slate-300 px-3 py-4 text-center text-sm text-slate-500">
+                  No BO file uploaded yet.
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:cursor-pointer hover:bg-slate-50">
+                <ArrowUpTrayIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                <span
+                  className={`truncate ${selectedBoFile ? "text-slate-900" : "text-slate-500"}`}
+                >
+                  {selectedBoFile?.name ?? "Choose an XLSX file…"}
+                </span>
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleBoFileChange}
+                  className="hidden"
+                />
+              </label>
+              <button
+                className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedBoFile}
+                onClick={() => handleBoUpload()}
+              >
+                Upload BO file
+              </button>
+            </div>
+            {alreadyExistingBo && (
+              <p className="mt-2 text-xs text-slate-500">
+                Uploading a new file will completely replace the current one.
+              </p>
             )}
           </div>
           <div>            
