@@ -1,4 +1,4 @@
-"use server"
+import "server-only"
 
 import { getEmailTemplate } from "@/app/lib/database"
 import {
