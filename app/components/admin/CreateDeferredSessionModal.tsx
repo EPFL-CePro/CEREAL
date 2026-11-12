@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { fetchCourses } from "@/app/lib/epfl/epfl-api"
 import {
   type DeferredExamSlot,
+  type DeferredSession,
   type NewDeferredSession,
 } from "@/types/deferredSession"
 import { type CourseSelectOption } from "@/types/selectOption"
@@ -14,6 +15,7 @@ import { type CourseSelectOption } from "@/types/selectOption"
 import CourseSelect from "./CourseSelect"
 
 type Props = {
+  session?: DeferredSession // When provided, meaning that we are editing a session (populated with this session)
   onClose: () => void
   onSubmit: (deferredSession: NewDeferredSession) => void | Promise<void>
 }
@@ -33,9 +35,37 @@ type DayForm = {
 const inputClass =
   "rounded-md border border-slate-300 px-3 py-2 text-sm font-normal text-slate-950 outline-none focus:border-red-600 focus:ring-2 focus:ring-red-100"
 
-export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props) {
-  const [name, setName] = useState("")
-  const [days, setDays] = useState<DayForm[]>([])
+// Rebuild the form state from an existing session
+const toDayForms = (session: DeferredSession): DayForm[] =>
+  session.days.map((day) => ({
+    key: crypto.randomUUID(),
+    // Dates are stored as DATE (UTC midnight): keep the UTC day
+    date: new Date(day.date).toISOString().slice(0, 10),
+    exams: day.exams.map((exam) => ({
+      key: crypto.randomUUID(),
+      slot: exam.slot,
+      course: {
+        value: `${exam.exam_code}|${exam.exam_name}`,
+        label: `${exam.exam_code} - ${exam.exam_name} (${exam.teachers.map((t) => `${t.firstname} ${t.name}`).join(", ")})`,
+        exam: {
+          code: exam.exam_code,
+          title: exam.exam_name,
+          teachers: exam.teachers,
+        },
+      },
+    })),
+  }))
+
+export default function CreateDeferredSessionModal({
+  session,
+  onClose,
+  onSubmit,
+}: Props) {
+  const isEdit = !!session
+  const [name, setName] = useState(session?.name ?? "")
+  const [days, setDays] = useState<DayForm[]>(() =>
+    session ? toDayForms(session) : [],
+  )
   const [courses, setCourses] = useState<CourseSelectOption[]>([])
   const [isLoadingCourses, setIsLoadingCourses] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -126,7 +156,7 @@ export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props)
     try {
       await onSubmit({
         name: name.trim(),
-        is_active: false,
+        is_active: session?.is_active ?? false,
         days: days.map((d) => ({
           date: new Date(d.date),
           exams: d.exams.map((e) => ({
@@ -138,7 +168,7 @@ export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props)
         })),
       })
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to create the session.")
+      setError(e instanceof Error ? e.message : isEdit ? "Unable to update the session." : "Unable to create the session.")
     } finally {
       setIsSubmitting(false)
     }
@@ -160,7 +190,7 @@ export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props)
             className="text-lg font-semibold text-slate-950"
             id="create-session-title"
           >
-            New deferred session
+            {isEdit ? "Edit deferred session" : "New deferred session"}
           </h2>
           <button
             aria-label="Close"
@@ -300,7 +330,13 @@ export default function CreateDeferredSessionModal({ onClose, onSubmit }: Props)
             disabled={isSubmitting}
             type="submit"
           >
-            {isSubmitting ? "Creating..." : "Create session"}
+            {isSubmitting
+              ? isEdit
+                ? "Saving..."
+                : "Creating..."
+              : isEdit
+                ? "Save changes"
+                : "Create session"}
           </button>
         </div>
       </form>
