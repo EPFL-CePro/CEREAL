@@ -1,10 +1,17 @@
 "use server"
 import { type Prisma } from "@/app/generated/prisma/client"
-import { requirePermission } from "@/app/lib/auth/require-permission"
+import {
+  requirePermission,
+  requireUser,
+} from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
+import {
+  type DeferredSession,
+  type NewDeferredSession,
+} from "@/types/deferredSession"
 import { type EmailTemplate } from "@/types/emailTemplate"
 import { type Exam, type NewExam } from "@/types/exam"
 import { type ExamStatus } from "@/types/examStatus"
@@ -15,10 +22,6 @@ import { type Teacher } from "@/types/teacher"
 
 import type { Absence, NewAbsence } from "@/types/absence"
 import type { NewDiffExam } from "@/types/diffExam"
-import {
-  type DeferredSession,
-  type NewDeferredSession,
-} from "@/types/deferredSession"
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise<Service[]> {
@@ -404,6 +407,17 @@ export async function getAllAbsences(): Promise<Absence[]> {
       deferred_exam_registrations: deferredExamRegistrations,
     }),
   ) as unknown as Absence[]
+}
+
+// Only returns the absence if it belongs to the logged-in user
+export async function getAbsenceByUser(absenceId: number) {
+  const user = await requireUser()
+  if (!Number.isInteger(absenceId) || !user.sciper) return null
+
+  return await prisma.exam_student_absence.findFirst({
+    where: { id: absenceId, sciper: Number(user.sciper) },
+    include: { deferred_exam_registration: { orderBy: { id: "asc" } } },
+  })
 }
 
 export async function getAbsenceCertificateFileNameById(
