@@ -1,10 +1,10 @@
 "use client"
 
-import { getAllDeferredSessions, insertDeferredSession, updateDeferredSession } from "@/app/lib/database";
+import { deleteDeferredSession, getAllDeferredSessions, insertDeferredSession, updateDeferredSession } from "@/app/lib/database";
 import { DeferredSession, NewDeferredSession } from "@/types/deferredSession"
 import { useEffect, useState } from "react"
 
-import { ChevronRightIcon } from "@heroicons/react/24/outline"
+import { ChevronRightIcon, TrashIcon } from "@heroicons/react/24/outline"
 
 import CreateDeferredSessionModal from "./CreateDeferredSessionModal"
 
@@ -65,6 +65,13 @@ export default function DeferredSessionManager() {
     setEditingSession(null)
   }
 
+  async function handleDeleteSession(deferredSession: DeferredSession) {
+    if (confirm("Are you sure you want to delete this session ? It will delete all days and all exams related to it.")) {
+      await deleteDeferredSession(deferredSession)
+      setDeferredSessions(prev => prev.filter(s => s.id !== deferredSession.id))
+    }
+  }
+
   return (
     <div>
       <div className="mb-4 grid gap-2">
@@ -102,6 +109,17 @@ export default function DeferredSessionManager() {
                   type="button"
                 >
                   Edit
+                </button>
+                <button
+                  className="rounded-md border border-red-300 px-3 py-1 text-sm font-medium text-slate-700 hover:cursor-pointer hover:bg-red-50"
+                  onClick={(e) => {
+                    // Don't toggle the <details> when clicking the button
+                    e.preventDefault()
+                    handleDeleteSession(session)
+                  }}
+                  type="button"
+                >
+                  <TrashIcon className="h-4 text-red-600"/>
                 </button>
               </summary>
 
