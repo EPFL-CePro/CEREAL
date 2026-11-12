@@ -554,12 +554,16 @@ export async function insertDeferredSession(
   deferredSession: NewDeferredSession
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
-  const created = await prisma.deferred_session.create({
-    data: {
-      name: deferredSession.name,
-      days: { create: toDaysCreate(deferredSession) },
-    },
-    include: deferredSessionInclude,
+  const created = await prisma.$transaction(async (tx) => {
+    if (deferredSession.is_active) await deactivateDeferredSessions(tx)
+    return tx.deferred_session.create({
+      data: {
+        name: deferredSession.name,
+        is_active: deferredSession.is_active,
+        days: { create: toDaysCreate(deferredSession) },
+      },
+      include: deferredSessionInclude,
+    })
   })
   return toDeferredSession(created)
 }
@@ -570,15 +574,27 @@ export async function updateDeferredSession(
   deferredSession: NewDeferredSession
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
-  const updated = await prisma.deferred_session.update({
-    where: { id },
-    data: {
-      name: deferredSession.name,
-      days: { deleteMany: {}, create: toDaysCreate(deferredSession) },
-    },
-    include: deferredSessionInclude,
+  const updated = await prisma.$transaction(async (tx) => {
+    if (deferredSession.is_active) await deactivateDeferredSessions(tx)
+    return tx.deferred_session.update({
+      where: { id },
+      data: {
+        name: deferredSession.name,
+        is_active: deferredSession.is_active,
+        days: { deleteMany: {}, create: toDaysCreate(deferredSession) },
+      },
+      include: deferredSessionInclude,
+    })
   })
   return toDeferredSession(updated)
+}
+
+// Only one session can be active at a time
+function deactivateDeferredSessions(tx: Prisma.TransactionClient) {
+  return tx.deferred_session.updateMany({
+    where: { is_active: true },
+    data: { is_active: false },
+  })
 }
 
 function toDaysCreate(deferredSession: NewDeferredSession) {

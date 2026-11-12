@@ -31,6 +31,12 @@ const formatDay = (date: Date) =>
 const plural = (count: number, word: string) =>
   `${count} ${word}${count > 1 ? "s" : ""}`
 
+// Only one session can be active at a time: mirror what the database does
+const syncActive = (sessions: DeferredSession[], saved: DeferredSession) =>
+  saved.is_active
+    ? sessions.map(s => (s.is_active ? { ...s, is_active: false } : s))
+    : sessions
+
 export default function DeferredSessionManager() {
 
   const [deferredSessions, setDeferredSessions] = useState<DeferredSession[]>([]);
@@ -46,14 +52,16 @@ export default function DeferredSessionManager() {
 
   const handleCreateSession = async (deferredSession: NewDeferredSession) => {
     const created = await insertDeferredSession(deferredSession);
-    setDeferredSessions(prev => [...prev, created]);
+    setDeferredSessions(prev => [...syncActive(prev, created), created]);
     setIsCreateModalOpen(false)
   }
 
   const handleEditSession = async (deferredSession: NewDeferredSession) => {
     if (!editingSession) return;
     const updated = await updateDeferredSession(editingSession.id, deferredSession);
-    setDeferredSessions(prev => prev.map(s => (s.id === updated.id ? updated : s)));
+    setDeferredSessions(prev =>
+      syncActive(prev, updated).map(s => (s.id === updated.id ? updated : s))
+    );
     setEditingSession(null)
   }
 

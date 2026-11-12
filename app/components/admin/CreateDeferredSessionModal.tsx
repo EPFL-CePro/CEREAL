@@ -63,6 +63,7 @@ export default function CreateDeferredSessionModal({
 }: Props) {
   const isEdit = !!session
   const [name, setName] = useState(session?.name ?? "")
+  const [isActive, setIsActive] = useState(session?.is_active ?? false)
   const [days, setDays] = useState<DayForm[]>(() =>
     session ? toDayForms(session) : [],
   )
@@ -156,7 +157,7 @@ export default function CreateDeferredSessionModal({
     try {
       await onSubmit({
         name: name.trim(),
-        is_active: session?.is_active ?? false,
+        is_active: isActive,
         days: days.map((d) => ({
           date: new Date(d.date),
           exams: d.exams.map((e) => ({
@@ -211,6 +212,16 @@ export default function CreateDeferredSessionModal({
               onChange={(e) => setName(e.target.value)}
               value={name}
             />
+          </label>
+
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              checked={isActive}
+              className="h-4 w-4 accent-red-600"
+              onChange={(e) => setIsActive(e.target.checked)}
+              type="checkbox"
+            />
+            Active
           </label>
 
           <div className="grid gap-3">
