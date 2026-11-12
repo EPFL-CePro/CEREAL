@@ -564,6 +564,23 @@ export async function insertDeferredSession(
   return toDeferredSession(created)
 }
 
+// Days and exams are replaced: delete them (exams cascade) and recreate them, in one transaction
+export async function updateDeferredSession(
+  id: number,
+  deferredSession: NewDeferredSession
+): Promise<DeferredSession> {
+  await requirePermission(Permission.ADMIN)
+  const updated = await prisma.deferred_session.update({
+    where: { id },
+    data: {
+      name: deferredSession.name,
+      days: { deleteMany: {}, create: toDaysCreate(deferredSession) },
+    },
+    include: deferredSessionInclude,
+  })
+  return toDeferredSession(updated)
+}
+
 function toDaysCreate(deferredSession: NewDeferredSession) {
   return deferredSession.days.map((day) => ({
     date: day.date,

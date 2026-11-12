@@ -1,6 +1,6 @@
 "use client"
 
-import { getAllDeferredSessions, insertDeferredSession } from "@/app/lib/database";
+import { getAllDeferredSessions, insertDeferredSession, updateDeferredSession } from "@/app/lib/database";
 import { DeferredSession, NewDeferredSession } from "@/types/deferredSession"
 import { useEffect, useState } from "react"
 
@@ -51,8 +51,9 @@ export default function DeferredSessionManager() {
   }
 
   const handleEditSession = async (deferredSession: NewDeferredSession) => {
-    // TODO: persist the update (backend) and replace the session in the state with the returned one
-    console.log("Update session", editingSession?.id, deferredSession);
+    if (!editingSession) return;
+    const updated = await updateDeferredSession(editingSession.id, deferredSession);
+    setDeferredSessions(prev => prev.map(s => (s.id === updated.id ? updated : s)));
     setEditingSession(null)
   }
 
