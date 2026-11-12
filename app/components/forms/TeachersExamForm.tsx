@@ -7,14 +7,11 @@ import Link from "next/link"
 import { type User } from "next-auth"
 import { useForm, type SubmitHandler, useFieldArray } from "react-hook-form"
 
-import {
-  getAllExamTypes,
-  getAllServices,
-  insertExam,
-} from "@/app/lib/database"
+import { getAllExamTypes, getAllServices, insertExam } from "@/app/lib/database"
 import { getCurrentAcademicYear } from "@/app/lib/dates/academic-year"
 import { fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
+import { sendEmailExamServicesConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type ExamType } from "@/types/examType"
 import { type Inputs } from "@/types/inputs"
 import { type Service } from "@/types/service"
@@ -22,7 +19,6 @@ import { type Service } from "@/types/service"
 import ReactSelect from "./ReactSelect"
 import { RedAsterisk } from "../RedAsterisk"
 import { RegisterModal } from "./RegisterModal"
-import { sendEmailExamServicesConfirmation } from "@/app/lib/mail/cereal-notifications"
 
 interface RegisterProps {
   user: AppUser
