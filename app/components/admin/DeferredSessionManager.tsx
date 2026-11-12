@@ -35,6 +35,7 @@ export default function DeferredSessionManager() {
 
   const [deferredSessions, setDeferredSessions] = useState<DeferredSession[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<DeferredSession | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -47,6 +48,12 @@ export default function DeferredSessionManager() {
     const created = await insertDeferredSession(deferredSession);
     setDeferredSessions(prev => [...prev, created]);
     setIsCreateModalOpen(false)
+  }
+
+  const handleEditSession = async (deferredSession: NewDeferredSession) => {
+    // TODO: persist the update (backend) and replace the session in the state with the returned one
+    console.log("Update session", editingSession?.id, deferredSession);
+    setEditingSession(null)
   }
 
   return (
@@ -76,6 +83,17 @@ export default function DeferredSessionManager() {
                 <span className="ml-auto text-sm text-slate-500">
                   {plural(session.days.length, "day")} · {plural(examCount, "exam")}
                 </span>
+                <button
+                  className="rounded-md border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 hover:cursor-pointer hover:bg-slate-50"
+                  onClick={(e) => {
+                    // Don't toggle the <details> when clicking the button
+                    e.preventDefault()
+                    setEditingSession(session)
+                  }}
+                  type="button"
+                >
+                  Edit
+                </button>
               </summary>
 
               <div className="grid gap-2 border-t border-slate-200 p-4">
@@ -146,6 +164,14 @@ export default function DeferredSessionManager() {
         <CreateDeferredSessionModal
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={handleCreateSession}
+        />
+      )}
+
+      {editingSession && (
+        <CreateDeferredSessionModal
+          onClose={() => setEditingSession(null)}
+          onSubmit={handleEditSession}
+          session={editingSession}
         />
       )}
     </div>
