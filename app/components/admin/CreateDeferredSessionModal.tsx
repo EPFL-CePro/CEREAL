@@ -134,16 +134,9 @@ export default function CreateDeferredSessionModal({
     if (new Set(dates).size !== dates.length)
       return "The same date is used more than once."
 
-    const exams = days.flatMap((d) => d.exams)
-    if (exams.some((e) => !e.course)) return "Every exam must be selected."
-    // An exam can only appear once per session (unique session_id + exam_code)
-    const seen = new Set<string>()
-    for (const exam of exams) {
-      const code = exam.course!.exam.code
-      if (seen.has(code))
-        return `${code} is used more than once in this session.`
-      seen.add(code)
-    }
+    // The same exam may appear several times, on the same day or across the session
+    if (days.some((d) => d.exams.some((e) => !e.course)))
+      return "Every exam must be selected."
     return null
   }
 

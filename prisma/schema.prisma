@@ -210,8 +210,6 @@ model deferred_session_exam {
   teachers   Json // option.exam.teachers : Teacher[]
   slot       deferred_exam_slot
   day        deferred_session_day @relation(fields: [day_id, session_id], references: [id, session_id], onDelete: Cascade)
-
-  @@unique([session_id, exam_code]) // un examen une seule fois par session
 }
 
 enum deferred_exam_slot {
