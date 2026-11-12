@@ -56,6 +56,18 @@ services:
       - 8088:80
     networks:
       - cereal-app-network
+  mailpit:
+    image: axllent/mailpit
+    container_name: cereal-mailpit
+    restart: unless-stopped
+    ports:
+      - 8025:8025 # Web UI
+    environment:
+      MP_SMTP_BIND_ADDR: 0.0.0.0:587 # Same as send-mail.ts
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    networks:
+      - cereal-app-network
 
 volumes:
   pnpm-store:
