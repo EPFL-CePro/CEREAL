@@ -15,6 +15,10 @@ import { XMarkIcon } from "@heroicons/react/24/outline"
 import { type User } from "next-auth"
 import { toast } from "sonner"
 
+import {
+  sendEmailExamReadyToPickUp,
+  sendEmailExamReadyToPrint,
+} from "@/app/lib/mail/crep-notifications"
 import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
@@ -44,10 +48,6 @@ import {
   getDatePartFromDateTimeString,
   getTimePartFromDateTimeString,
 } from "../lib/dates/date-time"
-import {
-  sendEmailExamReadyToPickUp,
-  sendEmailExamReadyToPrint,
-} from "@/app/lib/mail/crep-notifications"
 
 interface AppUser extends User {
   isAdmin?: boolean

@@ -14,7 +14,7 @@ export async function requirePermission(permission: Permission) {
   return session.user
 }
 
-export async function requireUser(){
+export async function requireUser() {
   const session = await auth()
   if (!session?.user) {
     throw new Error("Unauthorized")
