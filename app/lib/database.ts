@@ -610,3 +610,14 @@ function toDaysCreate(deferredSession: NewDeferredSession) {
     },
   }))
 }
+
+export async function deleteDeferredSession(
+  deferredSession: DeferredSession
+): Promise<boolean> {
+  await requirePermission(Permission.ADMIN)
+  await prisma.deferred_session.delete({
+    where: { id: deferredSession.id}
+  })
+  
+  return true;
+}
