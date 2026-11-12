@@ -1,6 +1,7 @@
 "use server"
 
 import { requireUser } from "@/app/lib/auth/require-permission"
+import { getAbsenceByUser } from "@/app/lib/database"
 import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
 import { fetchCourses, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
@@ -98,5 +99,26 @@ export async function sendEmailExamServicesConfirmation(examIds: number[]) {
       .join("\n"),
     remark: firstExam.remark,
     "registrant.email": user.email || "",
+  })
+}
+
+export async function sendEmailAbsenceConfirmation(absenceId: number) {
+  const user = await requireUser()
+  const absence = await getAbsenceByUser(absenceId)
+
+  if (!user.email || !absence) return
+  if (!isProdEnv) return
+
+  await sendTemplatedMail("absence_confirmation", {
+    dateFrom: formatDateOnlyValue(absence.certificate_date_from),
+    dateTo: formatDateOnlyValue(absence.certificate_date_to),
+    diff_exams:
+      absence.deferred_exam_registration.length > 0
+        ? absence.deferred_exam_registration
+            .map((exam) => `${exam.exam_code} - ${exam.exam_name}`)
+            .join(", ")
+        : "None",
+    "registrant.email": user.email,
+    remark: absence.comment ?? "",
   })
 }

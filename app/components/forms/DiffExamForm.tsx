@@ -7,7 +7,7 @@ import { useForm, type SubmitHandler } from "react-hook-form"
 
 import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
-import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
+import { sendEmailAbsenceConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type BoFileForUser } from "@/types/boFile"
 import { type DiffExamFormInputs } from "@/types/diffExamForm"
 
@@ -167,7 +167,7 @@ export default function App({ user }: DiffExamFormProps) {
     }
     const { fileName } = (await res.json()) as { fileName: string }
 
-    const absence = await insertAbsence({
+    const absenceId = await insertAbsence({
       sciper: Number(user.sciper),
       first_name: user.first_name || "",
       last_name: user.last_name || "",
@@ -181,7 +181,7 @@ export default function App({ user }: DiffExamFormProps) {
     for (let index = 0; index < data.diffExams.length; index++) {
       const exam = data.diffExams[index]
       await insertDiffExamSubscription({
-        exam_student_absence_id: absence,
+        exam_student_absence_id: absenceId,
         exam_code: exam["codification matière (indépendant du plan)"],
         exam_name: exam["matière (libellé fr)"],
         exam_date: new Date(exam["date séance"]),
@@ -189,23 +189,7 @@ export default function App({ user }: DiffExamFormProps) {
       })
     }
 
-    if (process.env.NODE_ENV !== "development") {
-      await sendTemplatedMail("absence_confirmation", {
-        dateFrom: data.startingAbsenceDate,
-        dateTo: data.endingAbsenceDate,
-        diff_exams:
-          data.diffExams.length > 0
-            ? data.diffExams
-                .map(
-                  (exam) =>
-                    `${exam["codification matière (indépendant du plan)"]} - ${exam["matière (libellé fr)"]}`,
-                )
-                .join(", ")
-            : "None",
-        "registrant.email": user.email,
-        remark: data.comment,
-      })
-    }
+    await sendEmailAbsenceConfirmation(absenceId)
 
     openModal(
       "Success",
