@@ -9,8 +9,6 @@ import { prisma } from "@/app/lib/prisma"
 
 const isProdEnv = process.env.NODE_ENV !== "development"
 
-// TODO - sendEmailAbsenceConfirmation
-
 function formatPapersManagement(papersManagement: string) {
   if (papersManagement === "repro_collect") {
     return "The exam papers are at the printing centre and I will come and collect them shortly."
