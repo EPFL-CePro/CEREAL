@@ -879,7 +879,10 @@ export default function AdminPage() {
               </>
             )}
           </div>
-          <DeferredSessionManager />
+          <div>            
+            <h2 className="text-2xl font-bold mb-3">Manage deferred exams sessions</h2>
+            <DeferredSessionManager />
+          </div>
         </div>
       )}
     </main>
