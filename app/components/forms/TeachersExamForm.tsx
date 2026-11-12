@@ -11,20 +11,18 @@ import {
   getAllExamTypes,
   getAllServices,
   insertExam,
-  getServiceById,
 } from "@/app/lib/database"
 import { getCurrentAcademicYear } from "@/app/lib/dates/academic-year"
 import { fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
-import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { type ExamType } from "@/types/examType"
 import { type Inputs } from "@/types/inputs"
 import { type Service } from "@/types/service"
-import { type EPFLUser } from "@/types/user"
 
 import ReactSelect from "./ReactSelect"
 import { RedAsterisk } from "../RedAsterisk"
 import { RegisterModal } from "./RegisterModal"
+import { sendEmailExamServicesConfirmation } from "@/app/lib/mail/cereal-notifications"
 
 interface RegisterProps {
   user: AppUser
@@ -178,15 +176,13 @@ export default function App({ user }: RegisterProps) {
     try {
       const contact = await fetchPersonBySciper(data.contact)
 
-      const service = await getServiceById(data.service)
-
-      const teachers: EPFLUser[] = []
+      const insertedExamIds: number[] = []
 
       for (let index = 0; index < data.examType.length; index++) {
         const examType = data.examType[index]
         if (!examType.checked) continue
 
-        const insertedExam = await insertExam({
+        const insertedExamId = await insertExam({
           code: data.course.exam.code,
           name: data.course.exam.title,
           service_level_id: 2, // Silver by default for everyone, but this is a TODO
@@ -203,7 +199,7 @@ export default function App({ user }: RegisterProps) {
           responsible_id: null,
           contact: formatContactForDB(contact, data.contact),
         })
-        if (typeof insertedExam !== "number") {
+        if (typeof insertedExamId !== "number") {
           openModal(
             "Registration Error",
             "An error occurred while registering your exam. Please try again later.",
@@ -211,41 +207,11 @@ export default function App({ user }: RegisterProps) {
           setIsSubmitting(false)
           return
         }
+        insertedExamIds.push(insertedExamId)
       }
 
-      await Promise.all(
-        data.course.exam.teachers.map(async (t) => {
-          if (!t.sciper) return
-          const fullTeacher = await fetchPersonBySciper(t.sciper)
+      await sendEmailExamServicesConfirmation(insertedExamIds)
 
-          if (fullTeacher.email) {
-            teachers.push(fullTeacher)
-          }
-        }),
-      )
-
-      if (process.env.NODE_ENV !== "development") {
-        await sendTemplatedMail("exam_services_confirmation", {
-          course: data.course.exam.code,
-          teachers: teachers.map((teacher) => teacher.email).join(", "),
-          contactEmail: contact.email,
-          examTypes: data.examType
-            .filter((examType) => examType.checked)
-            .map((examType) => examType.name)
-            .join(", "),
-          service: service[0].description,
-          serviceLevel: "Silver",
-          examDates: data.examType
-            .filter((examType) => examType.checked)
-            .map(
-              (examType) =>
-                `    - ${examType.name} : ${examType.dontKnowYet ? `Don't know yet` : examType.date}`,
-            )
-            .join("\n"),
-          remark: data.remark,
-          "registrant.email": user.email || "",
-        })
-      }
       openModal(
         "Registration Successful",
         `Your Exam ${data.course.exam.code} has been registered and a confirmation has been sent to your email.`,
