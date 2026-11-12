@@ -29,6 +29,7 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
   - [For the admins of the application](#for-the-admins-of-the-application)
 - [Technologies](#technologies)
 - [How to run ?](#how-to-run-)
+- [Testing emails locally](#testing-emails-locally)
 - [Prisma migrations](#prisma-migrations)
 - [How to deploy ?](#how-to-deploy-)
 - [Contributing](#contributing)
@@ -81,6 +82,26 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 4. Run `make up`
 5. Go to http://localhost:3000/
 
+## Testing emails locally
+
+In development, emails are not sent by default (`MAIL_ENABLED=false`). To test them, a [Mailpit] container (started with `make up`) catches every email sent by the app: nothing reaches real people.
+
+1. Set these values in your `.env`:
+
+   ```env
+   MAIL_SMTP_HOST=mailpit
+   MAIL_AUTH_USER=dev
+   MAIL_AUTH_PASS=dev
+   MAIL_FROM_EMAIL=noreply@example.com
+   MAIL_ENABLED=true
+   ```
+
+2. Restart the containers: `make up`
+3. Trigger an action that sends an email (e.g. register an exam for printing)
+4. Open http://localhost:8025/ to see the emails
+
+WARNING: never set `MAIL_ENABLED=true` with real SMTP credentials in development, otherwise the emails will really be sent.
+
 ## Prisma migrations
 
 WARNING: Those commands use the running docker containers, so make sure that the containers are up and running before using them !
@@ -132,6 +153,7 @@ If you are willing to contribute to this project in any way, please do ! But res
 [EPFL]: https://epfl.ch/
 [FullCalendar]: https://fullcalendar.io/
 [issue]: https://github.com/EPFL-CePro/CEREAL/issues/new/
+[Mailpit]: https://mailpit.axllent.org/
 [MySQL]: https://mysql.com/
 [Next-Auth]: https://next-auth.js.org/
 [Next.js]: https://nextjs.org/
