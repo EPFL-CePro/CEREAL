@@ -557,21 +557,23 @@ export async function insertDeferredSession(
   const created = await prisma.deferred_session.create({
     data: {
       name: deferredSession.name,
-      days: {
-        create: deferredSession.days.map((day) => ({
-          date: day.date,
-          exams: {
-            create: day.exams.map((exam) => ({
-              exam_code: exam.exam_code,
-              exam_name: exam.exam_name,
-              teachers: exam.teachers,
-              slot: exam.slot,
-            })),
-          },
-        })),
-      },
+      days: { create: toDaysCreate(deferredSession) },
     },
     include: deferredSessionInclude,
   })
   return toDeferredSession(created)
+}
+
+function toDaysCreate(deferredSession: NewDeferredSession) {
+  return deferredSession.days.map((day) => ({
+    date: day.date,
+    exams: {
+      create: day.exams.map((exam) => ({
+        exam_code: exam.exam_code,
+        exam_name: exam.exam_name,
+        teachers: exam.teachers,
+        slot: exam.slot,
+      })),
+    },
+  }))
 }
