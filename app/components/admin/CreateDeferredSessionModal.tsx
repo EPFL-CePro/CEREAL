@@ -162,7 +162,13 @@ export default function CreateDeferredSessionModal({
         })),
       })
     } catch (e) {
-      setError(e instanceof Error ? e.message : isEdit ? "Unable to update the session." : "Unable to create the session.")
+      setError(
+        e instanceof Error
+          ? e.message
+          : isEdit
+            ? "Unable to update the session."
+            : "Unable to create the session.",
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -247,7 +253,10 @@ export default function CreateDeferredSessionModal({
                     aria-label={`Day ${dayIndex + 1}`}
                     className={`${inputClass} flex-1 bg-white`}
                     onChange={(e) =>
-                      updateDay(day.key, (d) => ({ ...d, date: e.target.value }))
+                      updateDay(day.key, (d) => ({
+                        ...d,
+                        date: e.target.value,
+                      }))
                     }
                     type="date"
                     value={day.date}
