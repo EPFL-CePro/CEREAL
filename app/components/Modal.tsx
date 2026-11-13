@@ -15,6 +15,10 @@ import { XMarkIcon } from "@heroicons/react/24/outline"
 import { type User } from "next-auth"
 import { toast } from "sonner"
 
+import {
+  sendEmailExamReadyToPickUp,
+  sendEmailExamReadyToPrint,
+} from "@/app/lib/mail/crep-notifications"
 import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
@@ -33,7 +37,7 @@ import {
   updateCrepExamFields,
   updateCrepFileSpecs,
 } from "../lib/crep/database"
-import { examNotAdminStatus } from "../lib/crep/exam-status"
+import { examNotAdminStatus, registeredStatus } from "../lib/crep/exam-status"
 import { getBindingLabel, validateFilesSpecs } from "../lib/crep/file-specs"
 import { limitTextToLines } from "../lib/crep/remark-lines"
 import {
@@ -44,7 +48,6 @@ import {
   getDatePartFromDateTimeString,
   getTimePartFromDateTimeString,
 } from "../lib/dates/date-time"
-import { sendTemplatedMail } from "../lib/mail/send-templated-mail"
 
 interface AppUser extends User {
   isAdmin?: boolean
@@ -147,7 +150,7 @@ export function Modal({
   const eventSnapshot = eventSnapshotRef.current
   const extendedProps: EventApi["extendedProps"] =
     eventSnapshot?.extendedProps ?? {}
-  const eventId = eventSnapshot?.id ?? ""
+  const crepExamId = eventSnapshot?.id ?? ""
 
   const [remark, setRemark] = useState(() =>
     limitTextToLines(extendedProps.remark ?? ""),
@@ -225,7 +228,7 @@ export function Modal({
     // save remark, save status, and update the exams state
     const updatedExams = Array.isArray(exams)
       ? exams.map((e: EventInput) => {
-          if (e.id === eventId) {
+          if (e.id === crepExamId) {
             e.remark = remark
             e.status = selectStatus
             e.reproRemark = reproRemark
@@ -242,17 +245,17 @@ export function Modal({
           return e
         })
       : []
-    await updateExamRemarkById(eventId, remark)
+    await updateExamRemarkById(crepExamId, remark)
     setRemark(remark)
 
-    await updateExamReproRemarkById(eventId, reproRemark)
+    await updateExamReproRemarkById(crepExamId, reproRemark)
     setReproRemark(reproRemark)
 
-    await updateExamStatusById(eventId, selectStatus)
+    await updateExamStatusById(crepExamId, selectStatus)
     setSelectStatus(selectStatus)
 
     if (canEditModal) {
-      await updateCrepExamFields(eventId, {
+      await updateCrepExamFields(crepExamId, {
         desired_date: desiredDate,
         exam_date: examDate,
         financial_center: financialCenter,
@@ -261,8 +264,10 @@ export function Modal({
       })
 
       // The printing duration depends on the number of copies of the files, so the end of the printing is updated
-      const printDuration = await updateCrepFileSpecs(Number(eventId), files)
-      const updatedExam = updatedExams.find((e: EventInput) => e.id === eventId)
+      const printDuration = await updateCrepFileSpecs(Number(crepExamId), files)
+      const updatedExam = updatedExams.find(
+        (e: EventInput) => e.id === crepExamId,
+      )
       if (updatedExam?.start) {
         updatedExam.end = formatDateTimeInputValue(
           new Date(
@@ -426,6 +431,82 @@ export function Modal({
           .map((authorizedPerson) => authorizedPerson.email)
           .join("\n")
       : "None"
+
+  const handleOnSave = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    const previousCrepExamStatus = extendedProps.status
+    const statusChanged = previousCrepExamStatus !== selectStatus
+
+    // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
+    const filesError = canEditModal ? validateFilesSpecs(files) : null
+    if (filesError) {
+      toast.error(filesError, { toasterId: "modal" })
+      setSelectStatus(previousCrepExamStatus)
+      setIsSubmitting(false)
+      return
+    }
+
+    let confirmMessage: string | null = null
+    const isTransitionToPrint =
+      statusChanged &&
+      registeredStatus.includes(previousCrepExamStatus) &&
+      selectStatus === "toPrint"
+    const isTransitionToFinished = statusChanged && selectStatus === "finished"
+    const needsAdmin =
+      statusChanged &&
+      examStatus?.find((s) => s.value === selectStatus)?.needsAdmin
+
+    if (isTransitionToPrint) {
+      confirmMessage =
+        "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?"
+    }
+    if (isTransitionToFinished) {
+      const hasInvalidPricing =
+        parseInt(boxes) <= 0 ||
+        parseFloat(priceUnit) <= 0 ||
+        parseFloat(priceTotal) <= 0
+
+      if (hasInvalidPricing) {
+        toast.warning(
+          "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
+          { toasterId: "modal" },
+        )
+        setSelectStatus(previousCrepExamStatus)
+        setIsSubmitting(false)
+        return
+      }
+      confirmMessage =
+        "You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?"
+    }
+
+    if (needsAdmin && !confirmMessage) {
+      confirmMessage =
+        "You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?"
+    }
+
+    // Confirmation - if user doesnt confirm
+    if (confirmMessage && !(await confirm(confirmMessage))) {
+      setSelectStatus(previousCrepExamStatus)
+      setIsSubmitting(false)
+      return
+    }
+
+    // Save changes before sending the email
+    // TODO - Handle this in a transaction -> better error handler and centralize the send email logic
+    await save()
+
+    if (isTransitionToPrint) {
+      await sendEmailExamReadyToPrint(crepExamId)
+    }
+
+    if (isTransitionToFinished) {
+      await sendEmailExamReadyToPickUp(crepExamId)
+    }
+
+    setIsSubmitting(false)
+  }
 
   return (
     <form
@@ -681,12 +762,11 @@ export function Modal({
                 name="boxesNumber"
                 value={boxes || "0"}
                 onChange={(e) => {
-                  const examId = eventId
-                  if (!examId) return
+                  if (!crepExamId) return
 
                   const nextBoxes = e.target.value
-                  updateBoxesState(examId, nextBoxes)
-                  updateCrepBoxes(examId, nextBoxes)
+                  updateBoxesState(crepExamId, nextBoxes)
+                  updateCrepBoxes(crepExamId, nextBoxes)
                 }}
               />
             </div>
@@ -704,12 +784,11 @@ export function Modal({
                   name="priceUnit"
                   value={priceUnit || "0"}
                   onChange={(e) => {
-                    const examId = eventId
-                    if (!examId) return
+                    if (!crepExamId) return
 
                     const nextPriceUnit = e.target.value
-                    updatePriceUnitState(examId, nextPriceUnit)
-                    updateCrepPriceUnit(examId, nextPriceUnit)
+                    updatePriceUnitState(crepExamId, nextPriceUnit)
+                    updateCrepPriceUnit(crepExamId, nextPriceUnit)
                   }}
                 />
               </div>
@@ -723,12 +802,11 @@ export function Modal({
                   name="priceTotal"
                   value={priceTotal || "0"}
                   onChange={(e) => {
-                    const examId = eventId
-                    if (!examId) return
+                    if (!crepExamId) return
 
                     const nextPriceTotal = e.target.value
-                    updatePriceTotalState(examId, nextPriceTotal)
-                    updateCrepPriceTotal(examId, nextPriceTotal)
+                    updatePriceTotalState(crepExamId, nextPriceTotal)
+                    updateCrepPriceTotal(crepExamId, nextPriceTotal)
                   }}
                 />
               </div>
@@ -921,7 +999,7 @@ export function Modal({
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => handleDeleteExam(eventId, selectStatus)}
+                onClick={() => handleDeleteExam(crepExamId, selectStatus)}
               >
                 Delete
               </button>
@@ -962,124 +1040,7 @@ export function Modal({
           <button
             className="btn btn-primary disabled:cursor-wait disabled:opacity-80"
             disabled={isSubmitting}
-            onClick={async (e) => {
-              e.preventDefault()
-
-              setIsSubmitting(true)
-
-              const previousStatus = extendedProps.status
-              // Enforcing the same print settings rules as when submitting the form (e.g. A3 → pages multiple of 4).
-              const filesError = canEditModal ? validateFilesSpecs(files) : null
-              if (filesError) {
-                toast.error(filesError, { toasterId: "modal" })
-                setSelectStatus(previousStatus)
-                setIsSubmitting(false)
-                return
-              }
-
-              const statusChanged = previousStatus !== selectStatus
-              const shouldNotifyRepro =
-                statusChanged &&
-                [
-                  "registered",
-                  "registered-warning",
-                  "registered-error",
-                  "reserved",
-                ].includes(previousStatus) &&
-                selectStatus === "toPrint"
-              const shouldNotifyFinished =
-                statusChanged && selectStatus === "finished"
-              const selectedStatusNeedsAdmin =
-                statusChanged &&
-                examStatus?.find((status) => status.value === selectStatus)
-                  ?.needsAdmin
-
-              // If the old status was `registered`, `registered-warning` or `registered-error` and that the new status is `toPrint`, we notify the Repro with an email.
-              if (shouldNotifyRepro) {
-                // proceed only if confirmed, else prevent modal close and save
-                if (
-                  !(await confirm(
-                    "You are changing the status from a `registered` one to `toPrint`. The Repro will be notified. Are you sure you want to proceed?",
-                  ))
-                ) {
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-              }
-
-              if (shouldNotifyFinished) {
-                if (
-                  parseInt(boxes) <= 0 ||
-                  parseFloat(priceUnit) <= 0 ||
-                  parseFloat(priceTotal) <= 0
-                ) {
-                  toast.warning(
-                    "To change the status to `Finished`, these fields need to be set to something bigger than 0 : Number of boxes, Price Unit, Price Total",
-                    { toasterId: "modal" },
-                  )
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-                // proceed only if confirmed, else prevent modal close and save
-                if (
-                  !(await confirm(
-                    "You are changing the status to `finished`. This will send an email to the contact person and authorized persons saying that they can pick up the exam at the Repro. Are you sure you want to proceed?",
-                  ))
-                ) {
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-              }
-
-              if (selectedStatusNeedsAdmin) {
-                // proceed only if confirmed, else prevent modal close and save
-                if (
-                  !(await confirm(
-                    "You are changing the status to one that requires admin privileges. It means that this exam will be hidden to non-admin users. Are you sure you want to proceed?",
-                  ))
-                ) {
-                  setSelectStatus(previousStatus)
-                  setIsSubmitting(false)
-                  return
-                }
-              }
-
-              if (shouldNotifyRepro) {
-                if (process.env.NODE_ENV !== "development") {
-                  const datePrintSchedule = new Date(
-                    extendedProps.printSchedule,
-                  )
-                  const examURL = `https://cereal.epfl.ch/crep/?openExamId=${eventId}&day=${formatDateInputValue(datePrintSchedule)}`
-                  await sendTemplatedMail("exam_ready_to_print", {
-                    examCode: extendedProps.code,
-                    description: extendedProps.description,
-                    examURL,
-                  })
-                }
-              }
-
-              if (shouldNotifyFinished) {
-                const authorizedPersonsEmails = authorizedPersons
-                  .map((e: AuthorizedPersons) => e.email)
-                  .join(", ")
-                if (process.env.NODE_ENV !== "development") {
-                  await sendTemplatedMail("exam_ready_to_pickup", {
-                    examCode: extendedProps.code,
-                    description: extendedProps.description,
-                    boxes,
-                    "contact.email": extendedProps.contact.email,
-                    authorizedPersons: authorizedPersonsEmails,
-                  })
-                }
-              }
-
-              await save()
-
-              setIsSubmitting(false)
-            }}
+            onClick={handleOnSave}
           >
             {isSubmitting && (
               <span
