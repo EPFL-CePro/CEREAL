@@ -54,7 +54,9 @@ export default function CourseSelect({
       isLoading={isLoading}
       // The modal body scrolls: render the menu outside so it isn't clipped
       menuPortalTarget={document.body}
-      noOptionsMessage={() => (isLoading ? "Loading courses..." : "No course found")}
+      noOptionsMessage={() =>
+        isLoading ? "Loading courses..." : "No course found"
+      }
       onChange={onChange}
       onInputChange={(newValue, { action }) => {
         if (action === "input-change") setQuery(newValue)

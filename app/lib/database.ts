@@ -5,6 +5,10 @@ import { Permission } from "@/app/lib/auth/route-access"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
+import {
+  type DeferredSession,
+  type NewDeferredSession,
+} from "@/types/deferredSession"
 import { type EmailTemplate } from "@/types/emailTemplate"
 import { type Exam, type NewExam } from "@/types/exam"
 import { type ExamStatus } from "@/types/examStatus"
@@ -15,10 +19,6 @@ import { type Teacher } from "@/types/teacher"
 
 import type { Absence, NewAbsence } from "@/types/absence"
 import type { NewDiffExam } from "@/types/diffExam"
-import {
-  type DeferredSession,
-  type NewDeferredSession,
-} from "@/types/deferredSession"
 
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllServices(): Promise<Service[]> {
@@ -551,7 +551,7 @@ export async function getAllDeferredSessions(): Promise<DeferredSession[]> {
 }
 
 export async function insertDeferredSession(
-  deferredSession: NewDeferredSession
+  deferredSession: NewDeferredSession,
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
   const created = await prisma.$transaction(async (tx) => {
@@ -571,7 +571,7 @@ export async function insertDeferredSession(
 // Days and exams are replaced: delete them (exams cascade) and recreate them, in one transaction
 export async function updateDeferredSession(
   id: number,
-  deferredSession: NewDeferredSession
+  deferredSession: NewDeferredSession,
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
   const updated = await prisma.$transaction(async (tx) => {
@@ -612,12 +612,12 @@ function toDaysCreate(deferredSession: NewDeferredSession) {
 }
 
 export async function deleteDeferredSession(
-  deferredSession: DeferredSession
+  deferredSession: DeferredSession,
 ): Promise<boolean> {
   await requirePermission(Permission.ADMIN)
   await prisma.deferred_session.delete({
-    where: { id: deferredSession.id}
+    where: { id: deferredSession.id },
   })
-  
-  return true;
+
+  return true
 }

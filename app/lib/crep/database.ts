@@ -1,6 +1,6 @@
 "use server"
 
-import { type crep_log, type Prisma } from "@/app/generated/prisma/client"
+import { type Prisma } from "@/app/generated/prisma/client"
 import { requirePermission } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { getAcademicYearDateRange } from "@/app/lib/dates/academic-year"

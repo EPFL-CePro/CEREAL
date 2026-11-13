@@ -2,8 +2,8 @@
 
 import React from "react"
 
-import { toast } from "sonner"
 import { ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline"
+import { toast } from "sonner"
 import * as XLSX from "xlsx"
 
 import { useConfirm } from "@/app/components/ConfirmProvider"
@@ -31,6 +31,7 @@ import { type EmailTemplate } from "@/types/emailTemplate"
 import { type ExamStatus } from "@/types/examStatus"
 import { type Service } from "@/types/service"
 import { type ServiceLevel } from "@/types/serviceLevel"
+
 import DeferredSessionManager from "./DeferredSessionManager"
 
 type Tab =
@@ -910,8 +911,10 @@ export default function AdminPage() {
               </p>
             )}
           </div>
-          <div>            
-            <h2 className="text-2xl font-bold mb-3">Manage deferred exams sessions</h2>
+          <div>
+            <h2 className="text-2xl font-bold mb-3">
+              Manage deferred exams sessions
+            </h2>
             <DeferredSessionManager />
           </div>
         </div>
