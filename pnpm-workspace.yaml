@@ -4,6 +4,7 @@ catalog:
 overrides:
   postcss: ^8.5.15
   next-auth>nodemailer: "catalog:"
+  minimatch@^9.0.0: ^11.0.1
 
 allowBuilds:
   "@prisma/engines": true
