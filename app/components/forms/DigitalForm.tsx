@@ -6,6 +6,9 @@ import { type User } from "next-auth"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
+  PAPERS_MANAGEMENT_MESSAGES,
+} from "@/app/lib/archive/archive-papers-management"
+import {
   getAcademicYearOptions,
   getCurrentAcademicYear,
 } from "@/app/lib/dates/academic-year"
@@ -265,44 +268,20 @@ export default function App({ user }: RegisterProps) {
             Management of exam papers
             <RedAsterisk />
           </label>
-          <div>
-            <input
-              {...register("papersManagement")}
-              className="mr-2"
-              type="radio"
-              id="repro_collect"
-              value="repro_collect"
-            />
-            <label htmlFor="repro_collect" className="text-sm">
-              The exam papers are at the printing centre and I will come and
-              collect them shortly.
-            </label>
-          </div>
-          <div>
-            <input
-              {...register("papersManagement")}
-              className="mr-2"
-              type="radio"
-              id="repro_destroy"
-              value="repro_destroy"
-            />
-            <label htmlFor="repro_destroy" className="text-sm">
-              The exam papers are at the printing centre and may be destroyed by
-              CePro.
-            </label>
-          </div>
-          <div>
-            <input
-              {...register("papersManagement")}
-              className="mr-2"
-              type="radio"
-              id="papers_user"
-              value="papers_user"
-            />
-            <label htmlFor="papers_user" className="text-sm">
-              The exam papers are in my possession and I will take care of them.
-            </label>
-          </div>
+          {Object.entries(PAPERS_MANAGEMENT_MESSAGES).map(([key, message]) => (
+            <div key={key}>
+              <input
+                type="radio"
+                {...register("papersManagement")}
+                className="mr-2"
+                id={key}
+                value={key}
+              />
+              <label htmlFor={key} className="text-sm">
+                {message}
+              </label>
+            </div>
+          ))}
         </div>
 
         {error && (
