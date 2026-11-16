@@ -1,5 +1,9 @@
 "use server"
 
+import {
+  formatPapersManagement,
+  type PapersManagement,
+} from "@/app/lib/archive/archive-papers-management"
 import { requireUser } from "@/app/lib/auth/require-permission"
 import { getAbsenceByUser } from "@/app/lib/database"
 import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
@@ -7,26 +11,15 @@ import { fetchCourses, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { prisma } from "@/app/lib/prisma"
 
-const isProdEnv = process.env.NODE_ENV !== "development" || process.env.MAIL_ENABLED === "true"
-
-function formatPapersManagement(papersManagement: string) {
-  if (papersManagement === "repro_collect") {
-    return "The exam papers are at the printing centre and I will come and collect them shortly."
-  }
-  if (papersManagement === "repro_destroy") {
-    return "The exam papers are at the printing centre and may be destroyed by CePro."
-  }
-  if (papersManagement === "papers_user") {
-    return "The exam papers are in my possession and I will take care of them."
-  }
-}
+const isProdEnv =
+  process.env.NODE_ENV !== "development" || process.env.MAIL_ENABLED === "true"
 
 // Sent after the upload: the recipient is always the logged-in user (+ CePro in cc)
 export async function sendEmailArchivingConfirmation(archive: {
   courseName: string
   academicYear: string
   pdfsNumber: number
-  papersManagement: string
+  papersManagement: PapersManagement
   nasPath: string
 }) {
   const user = await requireUser()
@@ -39,7 +32,9 @@ export async function sendEmailArchivingConfirmation(archive: {
     courseName: archive.courseName,
     academicYear: archive.academicYear,
     pdfsNumber: archive.pdfsNumber,
-    papersManagement: formatPapersManagement(archive.papersManagement),
+    papersManagement: formatPapersManagement(
+      archive.papersManagement,
+    ),
     nasPath: archive.nasPath,
   })
 }
