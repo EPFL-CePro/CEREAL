@@ -1,3 +1,5 @@
+import { z } from "zod"
+
 import { type CrepFile, type CrepFileSpecs } from "@/types/crepExam"
 
 export const paperFormats = [
@@ -24,6 +26,40 @@ export const defaultFileSpecs: CrepFileSpecs = {
   need_scan: true,
 }
 
+// Business rule : A3 page multiple 4
+const A3_PAGE_MULTIPLE = 4
+const isValidA3PageCount = (format: string, pages: number) =>
+  format !== "A3" || pages % A3_PAGE_MULTIPLE === 0
+
+// Generic Validation
+const positiveInt = (message: string) => z.coerce.number().int().min(1, message)
+
+export const fileSpecsSchema = z
+  .object({
+    exam_students: positiveInt("The number of copies must be at least 1."),
+    exam_pages: positiveInt(
+      "The number of pages per document must be at least 1.",
+    ),
+    paper_format: z.enum(
+      paperFormats.map((x) => x.value),
+      "Invalid bindings.",
+    ),
+    paper_color: z.enum(
+      paperColors.map((x) => x.value),
+      "Invalid paper color.",
+    ),
+    print: z.enum(
+      printSides.map((x) => x.value),
+      "Invalid print side.",
+    ),
+    need_scan: z.coerce.boolean(),
+  })
+  .refine((s) => isValidA3PageCount(s.paper_format, s.exam_pages), {
+    message:
+      "When printing in A3, the number of pages per document must be a multiple of 4.",
+    path: ["exam_pages"],
+  })
+
 export function pickFileSpecs(file: CrepFileSpecs): CrepFileSpecs {
   return {
     exam_students: Number(file.exam_students),
@@ -35,33 +71,9 @@ export function pickFileSpecs(file: CrepFileSpecs): CrepFileSpecs {
   }
 }
 
-// Returns an error message, or `null` if the print settings are valid.
 export function validateFileSpecs(specs: CrepFileSpecs): string | null {
-  if (
-    !Number.isInteger(Number(specs.exam_students)) ||
-    Number(specs.exam_students) < 1
-  ) {
-    return "The number of copies must be at least 1."
-  }
-  if (
-    !Number.isInteger(Number(specs.exam_pages)) ||
-    Number(specs.exam_pages) < 1
-  ) {
-    return "The number of pages per document must be at least 1."
-  }
-  if (!paperFormats.some(({ value }) => value === specs.paper_format)) {
-    return "Invalid bindings."
-  }
-  if (!paperColors.some(({ value }) => value === specs.paper_color)) {
-    return "Invalid paper color."
-  }
-  if (!printSides.some(({ value }) => value === specs.print)) {
-    return "Invalid print side."
-  }
-  if (specs.paper_format === "A3" && Number(specs.exam_pages) % 4 !== 0) {
-    return "When printing in A3, the number of pages per document must be a multiple of 4."
-  }
-  return null
+  const result = fileSpecsSchema.safeParse(specs)
+  return result.success ? null : result.error.issues[0].message
 }
 
 // Validates the print settings of several files, the error message is prefixed by the file name.
