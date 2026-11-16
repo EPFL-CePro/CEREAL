@@ -5,9 +5,7 @@ import { useRef, useState } from "react"
 import { type User } from "next-auth"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import {
-  PAPERS_MANAGEMENT_MESSAGES,
-} from "@/app/lib/archive/archive-papers-management"
+import { PAPERS_MANAGEMENT_MESSAGES } from "@/app/lib/archive/archive-papers-management"
 import {
   getAcademicYearOptions,
   getCurrentAcademicYear,

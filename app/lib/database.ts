@@ -565,7 +565,7 @@ export async function getAllDeferredSessions(): Promise<DeferredSession[]> {
 }
 
 export async function insertDeferredSession(
-  deferredSession: NewDeferredSession
+  deferredSession: NewDeferredSession,
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
   const created = await prisma.$transaction(async (tx) => {
@@ -585,7 +585,7 @@ export async function insertDeferredSession(
 // Days and exams are replaced: delete them (exams cascade) and recreate them, in one transaction
 export async function updateDeferredSession(
   id: number,
-  deferredSession: NewDeferredSession
+  deferredSession: NewDeferredSession,
 ): Promise<DeferredSession> {
   await requirePermission(Permission.ADMIN)
   const updated = await prisma.$transaction(async (tx) => {
@@ -626,12 +626,12 @@ function toDaysCreate(deferredSession: NewDeferredSession) {
 }
 
 export async function deleteDeferredSession(
-  deferredSession: DeferredSession
+  deferredSession: DeferredSession,
 ): Promise<boolean> {
   await requirePermission(Permission.ADMIN)
   await prisma.deferred_session.delete({
-    where: { id: deferredSession.id}
+    where: { id: deferredSession.id },
   })
-  
-  return true;
+
+  return true
 }

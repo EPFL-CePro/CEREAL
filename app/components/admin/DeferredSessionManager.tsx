@@ -1,10 +1,19 @@
 "use client"
 
-import { deleteDeferredSession, getAllDeferredSessions, insertDeferredSession, updateDeferredSession } from "@/app/lib/database";
-import { DeferredSession, NewDeferredSession } from "@/types/deferredSession"
 import { useEffect, useState } from "react"
 
 import { ChevronRightIcon, TrashIcon } from "@heroicons/react/24/outline"
+
+import {
+  deleteDeferredSession,
+  getAllDeferredSessions,
+  insertDeferredSession,
+  updateDeferredSession,
+} from "@/app/lib/database"
+import {
+  type DeferredSession,
+  type NewDeferredSession,
+} from "@/types/deferredSession"
 
 import CreateDeferredSessionModal from "./CreateDeferredSessionModal"
 
@@ -34,41 +43,53 @@ const plural = (count: number, word: string) =>
 // Only one session can be active at a time: mirror what the database does
 const syncActive = (sessions: DeferredSession[], saved: DeferredSession) =>
   saved.is_active
-    ? sessions.map(s => (s.is_active ? { ...s, is_active: false } : s))
+    ? sessions.map((s) => (s.is_active ? { ...s, is_active: false } : s))
     : sessions
 
 export default function DeferredSessionManager() {
-
-  const [deferredSessions, setDeferredSessions] = useState<DeferredSession[]>([]);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState<DeferredSession | null>(null);
+  const [deferredSessions, setDeferredSessions] = useState<DeferredSession[]>(
+    [],
+  )
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [editingSession, setEditingSession] = useState<DeferredSession | null>(
+    null,
+  )
 
   useEffect(() => {
-    (async () => {
-      const allDeferredSessions = await getAllDeferredSessions();
-      setDeferredSessions(allDeferredSessions);
+    ;(async () => {
+      const allDeferredSessions = await getAllDeferredSessions()
+      setDeferredSessions(allDeferredSessions)
     })()
   }, [])
 
   const handleCreateSession = async (deferredSession: NewDeferredSession) => {
-    const created = await insertDeferredSession(deferredSession);
-    setDeferredSessions(prev => [...syncActive(prev, created), created]);
+    const created = await insertDeferredSession(deferredSession)
+    setDeferredSessions((prev) => [...syncActive(prev, created), created])
     setIsCreateModalOpen(false)
   }
 
   const handleEditSession = async (deferredSession: NewDeferredSession) => {
-    if (!editingSession) return;
-    const updated = await updateDeferredSession(editingSession.id, deferredSession);
-    setDeferredSessions(prev =>
-      syncActive(prev, updated).map(s => (s.id === updated.id ? updated : s))
-    );
+    if (!editingSession) return
+    const updated = await updateDeferredSession(
+      editingSession.id,
+      deferredSession,
+    )
+    setDeferredSessions((prev) =>
+      syncActive(prev, updated).map((s) => (s.id === updated.id ? updated : s)),
+    )
     setEditingSession(null)
   }
 
   async function handleDeleteSession(deferredSession: DeferredSession) {
-    if (confirm("Are you sure you want to delete this session ? It will delete all days and all exams related to it.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this session ? It will delete all days and all exams related to it.",
+      )
+    ) {
       await deleteDeferredSession(deferredSession)
-      setDeferredSessions(prev => prev.filter(s => s.id !== deferredSession.id))
+      setDeferredSessions((prev) =>
+        prev.filter((s) => s.id !== deferredSession.id),
+      )
     }
   }
 
@@ -81,8 +102,11 @@ export default function DeferredSessionManager() {
           </p>
         )}
 
-        {deferredSessions.map(session => {
-          const examCount = session.days.reduce((n, day) => n + day.exams.length, 0)
+        {deferredSessions.map((session) => {
+          const examCount = session.days.reduce(
+            (n, day) => n + day.exams.length,
+            0,
+          )
           return (
             <details
               className="group/session rounded-lg border border-slate-200 bg-white"
@@ -90,14 +114,17 @@ export default function DeferredSessionManager() {
             >
               <summary className={`${summaryClass} px-4 py-3`}>
                 {sessionChevron}
-                <span className="font-semibold text-slate-950">{session.name}</span>
+                <span className="font-semibold text-slate-950">
+                  {session.name}
+                </span>
                 {session.is_active && (
                   <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                     Active
                   </span>
                 )}
                 <span className="ml-auto text-sm text-slate-500">
-                  {plural(session.days.length, "day")} · {plural(examCount, "exam")}
+                  {plural(session.days.length, "day")} ·{" "}
+                  {plural(examCount, "exam")}
                 </span>
                 <button
                   className="rounded-md border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 hover:cursor-pointer hover:bg-slate-50"
@@ -119,16 +146,18 @@ export default function DeferredSessionManager() {
                   }}
                   type="button"
                 >
-                  <TrashIcon className="h-4 text-red-600"/>
+                  <TrashIcon className="h-4 text-red-600" />
                 </button>
               </summary>
 
               <div className="grid gap-2 border-t border-slate-200 p-4">
                 {session.days.length === 0 && (
-                  <p className="text-sm text-slate-500">No day in this session.</p>
+                  <p className="text-sm text-slate-500">
+                    No day in this session.
+                  </p>
                 )}
 
-                {session.days.map(day => (
+                {session.days.map((day) => (
                   <details
                     className="group/day rounded-md border border-slate-200 bg-slate-50"
                     key={day.id}
@@ -145,10 +174,12 @@ export default function DeferredSessionManager() {
 
                     <ul className="grid gap-2 border-t border-slate-200 p-3">
                       {day.exams.length === 0 && (
-                        <li className="text-sm text-slate-500">No exam on this day.</li>
+                        <li className="text-sm text-slate-500">
+                          No exam on this day.
+                        </li>
                       )}
 
-                      {day.exams.map(exam => (
+                      {day.exams.map((exam) => (
                         <li
                           className="flex items-start gap-3 rounded-md bg-white px-3 py-2 text-sm"
                           key={exam.id}
@@ -163,7 +194,7 @@ export default function DeferredSessionManager() {
                             {exam.teachers.length > 0 && (
                               <p className="text-slate-500">
                                 {exam.teachers
-                                  .map(t => `${t.firstname} ${t.name}`)
+                                  .map((t) => `${t.firstname} ${t.name}`)
                                   .join(", ")}
                               </p>
                             )}

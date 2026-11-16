@@ -32,9 +32,7 @@ export async function sendEmailArchivingConfirmation(archive: {
     courseName: archive.courseName,
     academicYear: archive.academicYear,
     pdfsNumber: archive.pdfsNumber,
-    papersManagement: formatPapersManagement(
-      archive.papersManagement,
-    ),
+    papersManagement: formatPapersManagement(archive.papersManagement),
     nasPath: archive.nasPath,
   })
 }
