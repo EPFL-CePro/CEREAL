@@ -184,6 +184,8 @@ export default function App({ user }: DiffExamFormProps) {
         exam_code: exam["codification matière (indépendant du plan)"],
         exam_name: exam["matière (libellé fr)"],
         exam_date: new Date(exam["date séance"]),
+        exam_start_time: exam["heure séance"] || null,
+        exam_end_time: exam["heure fin séance"] || null,
         isa_has_grade: false,
       })
     }

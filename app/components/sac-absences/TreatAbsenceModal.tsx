@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import { toast } from "sonner"
 
+import { formatExamSchedule } from "@/app/lib/sac/format-exam-schedule"
 import { type SacDecision, treatAbsence } from "@/app/lib/sac/treat-absence"
 import { type Absence } from "@/types/absence"
 
@@ -180,7 +181,7 @@ export default function TreatAbsenceModal({
                       </td>
                       <td className="px-3 py-2">{exam.exam_name}</td>
                       <td className="whitespace-nowrap px-3 py-2">
-                        {dateToString(exam.exam_date)}
+                        {formatExamSchedule(exam)}
                       </td>
                       <td className="px-3 py-2">
                         <DecisionRadios
