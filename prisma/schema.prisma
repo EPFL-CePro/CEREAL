@@ -76,6 +76,8 @@ model deferred_exam_registration {
   exam_code               String               @db.VarChar(25)
   exam_name               String               @db.VarChar(256)
   exam_date               DateTime             @db.Date
+  exam_start_time         String?              @db.VarChar(5)
+  exam_end_time           String?              @db.VarChar(5)
   sac_status              sac_status           @default(not_treated)
   sac_remark              String?              @db.VarChar(500)
   isa_has_grade           Boolean?

@@ -6,6 +6,8 @@ export type DiffExam = {
   exam_code: string
   exam_name: string
   exam_date: Date
+  exam_start_time: string | null
+  exam_end_time: string | null
   isa_has_grade: boolean
   sac_status: SacStatus
   sac_remark: string

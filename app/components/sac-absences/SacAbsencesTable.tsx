@@ -21,6 +21,7 @@ import {
   updateRegistrationSacRemark,
 } from "@/app/lib/database"
 import { exportAbsences, type ExportMode } from "@/app/lib/sac/export-absences"
+import { formatExamSchedule } from "@/app/lib/sac/format-exam-schedule"
 import { SAC_STATUS_LABELS } from "@/app/lib/sac/sac-status"
 import { type Absence } from "@/types/absence"
 import { type SacStatus } from "@/types/sacStatus"
@@ -137,7 +138,7 @@ export function SacAbsencesTable() {
       (exam) => [
         exam.exam_code,
         exam.exam_name,
-        dateToString(exam.exam_date),
+        formatExamSchedule(exam),
         exam.sac_remark,
       ],
     )
@@ -401,7 +402,7 @@ export function SacAbsencesTable() {
                             {exam.exam_name}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2 text-gray-700">
-                            {dateToString(exam.exam_date)}
+                            {formatExamSchedule(exam)}
                           </td>
                           <td className="px-3 py-2 text-center">
                             <SacStatusBadge status={exam.sac_status} />

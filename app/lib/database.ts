@@ -386,6 +386,8 @@ export async function insertDiffExamSubscription(
       exam_code: diffExam.exam_code,
       exam_name: diffExam.exam_name,
       exam_date: diffExam.exam_date,
+      exam_start_time: diffExam.exam_start_time,
+      exam_end_time: diffExam.exam_end_time,
       isa_has_grade: diffExam.isa_has_grade,
     },
   })
