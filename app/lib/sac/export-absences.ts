@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx"
 
 import { formatDateInputValue } from "@/app/lib/dates/date-time"
+import { SAC_STATUS_LABELS } from "@/app/lib/sac/sac-status"
 import { type Absence } from "@/types/absence"
 import { type DiffExam } from "@/types/diffExam"
 import { type SacStatus } from "@/types/sacStatus"
@@ -16,12 +17,6 @@ function dateToString(date: Date | string) {
 function booleanToString(value: boolean | null | undefined) {
   if (value === null || value === undefined) return ""
   return value ? "Yes" : "No"
-}
-
-const SAC_STATUS_LABELS: Record<SacStatus, string> = {
-  not_treated: "Not yet treated",
-  accepted: "Accepted",
-  not_accepted: "Not accepted",
 }
 
 function sacStatusToString(value: SacStatus | undefined) {
