@@ -370,7 +370,6 @@ export async function insertAbsence(absence: NewAbsence): Promise<number> {
       certificate_date_to: absence.certificate_date_to,
       certificate_file_name: absence.certificate_file_name,
       comment: absence.comment,
-      sac_has_accepted: absence.sac_has_accepted,
       sac_remark: absence.sac_remark,
     },
   })
@@ -446,7 +445,7 @@ export async function updateAbsenceAccepted(absenceId: string, value: boolean) {
   await requirePermission(Permission.SAC)
   await prisma.exam_student_absence.update({
     where: { id: Number(absenceId) },
-    data: { sac_has_accepted: value },
+    data: { sac_status: value ? "accepted" : "not_treated" },
   })
 }
 
@@ -465,7 +464,7 @@ export async function updateRegistrationAccepted(
   await requirePermission(Permission.SAC)
   await prisma.deferred_exam_registration.update({
     where: { id: Number(absenceId) },
-    data: { sac_has_accepted: value },
+    data: { sac_status: value ? "accepted" : "not_treated" },
   })
 }
 

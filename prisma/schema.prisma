@@ -76,7 +76,7 @@ model deferred_exam_registration {
   exam_code               String               @db.VarChar(25)
   exam_name               String               @db.VarChar(256)
   exam_date               DateTime             @db.Date
-  sac_has_accepted        Boolean?
+  sac_status              sac_status           @default(not_treated)
   sac_remark              String?              @db.VarChar(500)
   isa_has_grade           Boolean?
   exam_student_absence    exam_student_absence @relation(fields: [exam_student_absence_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "deferred_exam_registration_ibfk_1")
@@ -147,7 +147,7 @@ model exam_student_absence {
   certificate_file_name      String?                      @db.VarChar(255)
   created_at                 DateTime                     @default(now()) @db.DateTime(0)
   comment                    String?                      @db.VarChar(500)
-  sac_has_accepted           Boolean?
+  sac_status                 sac_status                   @default(not_treated)
   sac_remark                 String?                      @db.VarChar(500)
   deferred_exam_registration deferred_exam_registration[]
 }
@@ -215,4 +215,10 @@ model deferred_session_exam {
 enum deferred_exam_slot {
   morning
   afternoon
+}
+
+enum sac_status {
+  not_treated
+  accepted
+  not_accepted
 }

@@ -173,7 +173,7 @@ export function SacAbsencesTable() {
         header: "Comment",
       },
       {
-        accessorKey: "sac_has_accepted",
+        accessorKey: "sac_status",
         header: "Accepted",
       },
       {
@@ -272,7 +272,7 @@ export function SacAbsencesTable() {
                           ? "descending"
                           : "none"
                     }
-                    className={`px-4 py-3 ${header.column.id === "sac_has_accepted" ? "text-center" : ""}`}
+                    className={`px-4 py-3 ${header.column.id === "sac_status" ? "text-center" : ""}`}
                   >
                     <button
                       type="button"
@@ -337,7 +337,7 @@ export function SacAbsencesTable() {
               </td>
               <td className="px-4 py-3 text-center">
                 <BooleanCheckbox
-                  defaultValue={absence.sac_has_accepted}
+                  defaultValue={absence.sac_status === "accepted"}
                   absenceId={absence.id}
                   onUpdate={updateAbsenceAccepted}
                 />
@@ -379,7 +379,7 @@ export function SacAbsencesTable() {
                           </td>
                           <td className="px-3 py-2 text-center">
                             <BooleanCheckbox
-                              defaultValue={exam.sac_has_accepted}
+                              defaultValue={exam.sac_status === "accepted"}
                               absenceId={exam.id}
                               onUpdate={updateRegistrationAccepted}
                             />
