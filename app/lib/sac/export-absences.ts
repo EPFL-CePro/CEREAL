@@ -3,6 +3,7 @@ import * as XLSX from "xlsx"
 import { formatDateInputValue } from "@/app/lib/dates/date-time"
 import { type Absence } from "@/types/absence"
 import { type DiffExam } from "@/types/diffExam"
+import { type SacStatus } from "@/types/sacStatus"
 
 export type ExportMode = "all" | "accepted" | "by-student" | "by-exam"
 
@@ -15,6 +16,16 @@ function dateToString(date: Date | string) {
 function booleanToString(value: boolean | null | undefined) {
   if (value === null || value === undefined) return ""
   return value ? "Yes" : "No"
+}
+
+const SAC_STATUS_LABELS: Record<SacStatus, string> = {
+  not_treated: "Not yet treated",
+  accepted: "Accepted",
+  not_accepted: "Not accepted",
+}
+
+function sacStatusToString(value: SacStatus | undefined) {
+  return value ? SAC_STATUS_LABELS[value] : ""
 }
 
 function sanitizeFileName(name: string) {
@@ -35,7 +46,7 @@ function absenceColumns(absence: Absence): Row {
     "Begin date": dateToString(absence.certificate_date_from),
     "Ending date": dateToString(absence.certificate_date_to),
     Comment: absence.comment ?? "",
-    Accepted: booleanToString(absence.sac_has_accepted),
+    Accepted: sacStatusToString(absence.sac_status),
     Remark: absence.sac_remark ?? "",
     "Created on": dateToString(absence.created_at),
   }
@@ -46,14 +57,14 @@ function examColumns(exam?: DiffExam): Row {
     "Course code": exam?.exam_code ?? "",
     "Course name": exam?.exam_name ?? "",
     "Exam date": exam ? dateToString(exam.exam_date) : "",
-    "SAC accepted": booleanToString(exam?.sac_has_accepted),
+    "SAC accepted": sacStatusToString(exam?.sac_status),
     "SAC remark": exam?.sac_remark ?? "",
     "ISA has grade": booleanToString(exam?.isa_has_grade),
   }
 }
 
 function isAcceptedRegistration(absence: Absence, exam: DiffExam) {
-  return Boolean(absence.sac_has_accepted) && Boolean(exam.sac_has_accepted)
+  return absence.sac_status === "accepted" && exam.sac_status === "accepted"
 }
 
 function absencesToRows(absences: Absence[]): Row[] {
@@ -98,7 +109,7 @@ export function exportAbsences(absences: Absence[], mode: ExportMode): boolean {
       const selected =
         mode === "all"
           ? absences
-          : absences.filter((absence) => absence.sac_has_accepted)
+          : absences.filter((absence) => absence.sac_status === "accepted")
       const rows = absencesToRows(selected)
       if (rows.length === 0) return false
       writeRows(rows, "Absences", `absences_${mode}_${today}.xlsx`)
