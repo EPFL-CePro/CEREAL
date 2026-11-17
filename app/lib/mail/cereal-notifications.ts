@@ -4,10 +4,15 @@ import {
   formatPapersManagement,
   type PapersManagement,
 } from "@/app/lib/archive/archive-papers-management"
-import { requireUser } from "@/app/lib/auth/require-permission"
+import {
+  requirePermission,
+  requireUser,
+} from "@/app/lib/auth/require-permission"
+import { Permission } from "@/app/lib/auth/route-access"
 import { getAbsenceByUser } from "@/app/lib/database"
 import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
 import { fetchCourses, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
+import { type EmailTemplateKey } from "@/app/lib/mail/email-templates"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { prisma } from "@/app/lib/prisma"
 
@@ -34,6 +39,59 @@ export async function sendEmailArchivingConfirmation(archive: {
     pdfsNumber: archive.pdfsNumber,
     papersManagement: formatPapersManagement(archive.papersManagement),
     nasPath: archive.nasPath,
+  })
+}
+
+function getAbsenceTreatedTemplateKey(
+  isAbsenceAccepted: boolean,
+  registrationsCount: number,
+  acceptedRegistrationsCount: number,
+): EmailTemplateKey {
+  if (!isAbsenceAccepted) return "absence_refused"
+  if (registrationsCount === 0) return "absence_accepted_no_deferred_exam"
+  if (acceptedRegistrationsCount === 0) {
+    return "absence_accepted_deferred_exams_refused"
+  }
+  return "absence_accepted_deferred_exams"
+}
+
+// Sent to the student once the SAC has treated the absence (and its deferred exam registrations).
+// Throws if the email cannot be sent, so that the caller can warn the SAC.
+export async function sendEmailAbsenceTreated(absenceId: number) {
+  await requirePermission(Permission.SAC)
+  const absence = await prisma.exam_student_absence.findUnique({
+    where: { id: absenceId },
+    include: { deferred_exam_registration: { orderBy: { id: "asc" } } },
+  })
+
+  if (!absence) throw new Error("Absence not found")
+  if (absence.sac_status === "not_treated") {
+    throw new Error("Absence not treated yet")
+  }
+
+  const registrations = absence.deferred_exam_registration
+  const acceptedExams = registrations.filter(
+    (exam) => exam.sac_status === "accepted",
+  )
+
+  const templateKey = getAbsenceTreatedTemplateKey(
+    absence.sac_status === "accepted",
+    registrations.length,
+    acceptedExams.length,
+  )
+
+  if (!isProdEnv) return
+
+  const student = await fetchPersonBySciper(String(absence.sciper))
+  if (!student?.email) throw new Error("Student email not found")
+
+  await sendTemplatedMail(templateKey, {
+    "student.email": student.email,
+    dateFrom: formatDateOnlyValue(absence.certificate_date_from),
+    dateTo: formatDateOnlyValue(absence.certificate_date_to),
+    accepted_exams: acceptedExams
+      .map((exam) => `- ${exam.exam_code} - ${exam.exam_name}`)
+      .join("\n"),
   })
 }
 

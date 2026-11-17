@@ -16,6 +16,13 @@ export type TemplateDefinition = {
   }
 }
 
+// Shared by the emails sent to the student once the SAC has treated an absence
+const ABSENCE_TREATED_PLACEHOLDERS: Placeholder[] = [
+  { token: "student.email", desc: "Student who submitted the absence (email)" },
+  { token: "dateFrom", desc: "Starting date of the absence" },
+  { token: "dateTo", desc: "Ending date of the absence" },
+]
+
 export const EMAIL_TEMPLATES = {
   exam_services_confirmation: {
     section: "CEREAL",
@@ -215,6 +222,118 @@ Best
 CePro
 `,
       to: "{{registrant.email}}",
+      cc: "annonce-absence-examen@groupes.epfl.ch",
+      replyTo: "",
+    },
+  },
+
+  absence_refused: {
+    section: "CEREAL",
+    name: "Absence not accepted by the SAC",
+    placeholders: ABSENCE_TREATED_PLACEHOLDERS,
+    defaults: {
+      subject: "Your absence has not been accepted",
+      body: `
+Hello,
+
+Your absence from {{dateFrom}} to {{dateTo}} has not been accepted by the Registrar's office.
+Your registrations to deferred exams linked to this absence, if any, have therefore not been accepted either.
+
+More information available on https://go.epfl.ch/absence-examen-prope
+
+This is an automated email !
+
+Best
+
+CePro
+`,
+      to: "{{student.email}}",
+      cc: "annonce-absence-examen@groupes.epfl.ch",
+      replyTo: "",
+    },
+  },
+
+  absence_accepted_no_deferred_exam: {
+    section: "CEREAL",
+    name: "Absence accepted (no deferred exam registration)",
+    placeholders: ABSENCE_TREATED_PLACEHOLDERS,
+    defaults: {
+      subject: "Your absence has been accepted",
+      body: `
+Hello,
+
+Your absence from {{dateFrom}} to {{dateTo}} has been accepted by the Registrar's office.
+
+If you also want to register to deferred exams, you can do it here: https://cereal.epfl.ch/diff-exam-subscribe
+Please note that registrations to deferred exams are subject to deadlines. More information available on https://go.epfl.ch/absence-examen-prope
+
+This is an automated email !
+
+Best
+
+CePro
+`,
+      to: "{{student.email}}",
+      cc: "annonce-absence-examen@groupes.epfl.ch",
+      replyTo: "",
+    },
+  },
+
+  absence_accepted_deferred_exams: {
+    section: "CEREAL",
+    name: "Absence and deferred exams accepted",
+    placeholders: [
+      ...ABSENCE_TREATED_PLACEHOLDERS,
+      {
+        token: "accepted_exams",
+        desc: "Accepted deferred exams (one per line)",
+      },
+    ],
+    defaults: {
+      subject: "Your absence and deferred exams have been accepted",
+      body: `
+Hello,
+
+Your absence from {{dateFrom}} to {{dateTo}} has been accepted by the Registrar's office.
+
+Your registration to the following deferred exams has been accepted:
+{{accepted_exams}}
+
+The official convocations to these exams will follow.
+
+This is an automated email !
+
+Best
+
+CePro
+`,
+      to: "{{student.email}}",
+      cc: "annonce-absence-examen@groupes.epfl.ch",
+      replyTo: "",
+    },
+  },
+
+  absence_accepted_deferred_exams_refused: {
+    section: "CEREAL",
+    name: "Absence accepted, deferred exams not accepted",
+    placeholders: ABSENCE_TREATED_PLACEHOLDERS,
+    defaults: {
+      subject: "Your absence has been accepted",
+      body: `
+Hello,
+
+Your absence from {{dateFrom}} to {{dateTo}} has been accepted by the Registrar's office.
+However, none of your registrations to deferred exams linked to this absence has been accepted.
+
+More information available on https://go.epfl.ch/absence-examen-prope
+
+This is an automated email !
+
+Best
+
+CePro
+`,
+      to: "{{student.email}}",
       cc: "annonce-absence-examen@groupes.epfl.ch",
       replyTo: "",
     },
