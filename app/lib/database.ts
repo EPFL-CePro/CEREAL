@@ -441,30 +441,11 @@ export async function updateAbsenceComment(absenceId: string, value: string) {
   })
 }
 
-export async function updateAbsenceAccepted(absenceId: string, value: boolean) {
-  await requirePermission(Permission.SAC)
-  await prisma.exam_student_absence.update({
-    where: { id: Number(absenceId) },
-    data: { sac_status: value ? "accepted" : "not_treated" },
-  })
-}
-
 export async function updateAbsenceSacRemark(absenceId: string, value: string) {
   await requirePermission(Permission.SAC)
   await prisma.exam_student_absence.update({
     where: { id: Number(absenceId) },
     data: { sac_remark: value },
-  })
-}
-
-export async function updateRegistrationAccepted(
-  absenceId: string,
-  value: boolean,
-) {
-  await requirePermission(Permission.SAC)
-  await prisma.deferred_exam_registration.update({
-    where: { id: Number(absenceId) },
-    data: { sac_status: value ? "accepted" : "not_treated" },
   })
 }
 
