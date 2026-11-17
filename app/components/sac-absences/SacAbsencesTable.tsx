@@ -15,15 +15,33 @@ import { toast } from "sonner"
 
 import {
   getAllAbsences,
-  updateAbsenceAccepted,
   updateAbsenceComment,
   updateAbsenceSacRemark,
-  updateRegistrationAccepted,
   updateRegistrationIsaHasGrade,
   updateRegistrationSacRemark,
 } from "@/app/lib/database"
 import { exportAbsences, type ExportMode } from "@/app/lib/sac/export-absences"
+import { SAC_STATUS_LABELS } from "@/app/lib/sac/sac-status"
 import { type Absence } from "@/types/absence"
+import { type SacStatus } from "@/types/sacStatus"
+
+import TreatAbsenceModal from "./TreatAbsenceModal"
+
+const SAC_STATUS_CLASSES: Record<SacStatus, string> = {
+  not_treated: "bg-gray-100 text-gray-700",
+  accepted: "bg-green-100 text-green-800",
+  not_accepted: "bg-red-100 text-red-800",
+}
+
+function SacStatusBadge({ status }: { status: SacStatus }) {
+  return (
+    <span
+      className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${SAC_STATUS_CLASSES[status]}`}
+    >
+      {SAC_STATUS_LABELS[status]}
+    </span>
+  )
+}
 
 export function SacAbsencesTable() {
   const [absences, setAbsences] = useState<Absence[] | null>(null)
@@ -31,12 +49,14 @@ export function SacAbsencesTable() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [exportMode, setExportMode] = useState<ExportMode>("all")
   const [isExporting, setIsExporting] = useState(false)
+  const [treatingAbsence, setTreatingAbsence] = useState<Absence | null>(null)
+
+  async function loadAbsences() {
+    setAbsences(await getAllAbsences())
+  }
 
   useEffect(() => {
-    ;(async function () {
-      const allAbsences = await getAllAbsences()
-      setAbsences(allAbsences)
-    })()
+    loadAbsences()
   }, [])
 
   async function handleExport() {
@@ -336,11 +356,17 @@ export function SacAbsencesTable() {
                 />
               </td>
               <td className="px-4 py-3 text-center">
-                <BooleanCheckbox
-                  defaultValue={absence.sac_status === "accepted"}
-                  absenceId={absence.id}
-                  onUpdate={updateAbsenceAccepted}
-                />
+                {absence.sac_status === "not_treated" ? (
+                  <button
+                    type="button"
+                    onClick={() => setTreatingAbsence(absence)}
+                    className="whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-blue-700"
+                  >
+                    Treat now
+                  </button>
+                ) : (
+                  <SacStatusBadge status={absence.sac_status} />
+                )}
               </td>
               <td className="px-4 py-3 text-gray-700">
                 <TextareaRemarks
@@ -378,11 +404,7 @@ export function SacAbsencesTable() {
                             {dateToString(exam.exam_date)}
                           </td>
                           <td className="px-3 py-2 text-center">
-                            <BooleanCheckbox
-                              defaultValue={exam.sac_status === "accepted"}
-                              absenceId={exam.id}
-                              onUpdate={updateRegistrationAccepted}
-                            />
+                            <SacStatusBadge status={exam.sac_status} />
                           </td>
                           <td className="px-3 py-2 text-gray-700">
                             <TextareaRemarks
@@ -410,6 +432,16 @@ export function SacAbsencesTable() {
           ))}
         </tbody>
       </table>
+      {treatingAbsence && (
+        <TreatAbsenceModal
+          absence={treatingAbsence}
+          onClose={() => setTreatingAbsence(null)}
+          onTreated={async () => {
+            setTreatingAbsence(null)
+            await loadAbsences()
+          }}
+        />
+      )}
     </div>
   )
 }
