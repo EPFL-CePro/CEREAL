@@ -56,7 +56,7 @@ services:
       - 8088:80
     networks:
       - cereal-app-network
-  mailpit:
+  cereal-mailpit:
     image: axllent/mailpit
     container_name: cereal-mailpit
     restart: unless-stopped

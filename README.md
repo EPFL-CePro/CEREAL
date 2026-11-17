@@ -86,10 +86,10 @@ Your issue have to be clear, concise, and with the correct tags and prefix. If n
 
 In development, emails are not sent by default (`MAIL_ENABLED=false`). To test them, a [Mailpit] container (started with `make up`) catches every email sent by the app: nothing reaches real people.
 
-1. Set these values in your `.env`:
+1. Set these values in your `.env` MAIL_SMTP_HOST must be the name of the mailpit container:
 
    ```env
-   MAIL_SMTP_HOST=mailpit
+   MAIL_SMTP_HOST=cereal-mailpit
    MAIL_AUTH_USER=dev
    MAIL_AUTH_PASS=dev
    MAIL_FROM_EMAIL=noreply@example.com
