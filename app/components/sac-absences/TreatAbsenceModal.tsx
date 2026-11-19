@@ -5,7 +5,11 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { formatExamSchedule } from "@/app/lib/sac/format-exam-schedule"
-import { type SacDecision, treatAbsence } from "@/app/lib/sac/treat-absence"
+import {
+  type AbsenceDecision,
+  type SacDecision,
+  treatAbsence,
+} from "@/app/lib/sac/treat-absence"
 import { type Absence } from "@/types/absence"
 
 type Props = {
@@ -18,23 +22,30 @@ function dateToString(date: Date | string) {
   return new Date(date).toLocaleDateString("fr-FR")
 }
 
-function DecisionRadios({
+const SAC_DECISION_OPTIONS: [SacDecision, string][] = [
+  ["accepted", "Accept"],
+  ["not_accepted", "Not accept"],
+]
+
+const ABSENCE_DECISION_OPTIONS: [AbsenceDecision, string][] = [
+  ...SAC_DECISION_OPTIONS,
+  ["on_hold", "On hold"],
+]
+
+function DecisionRadios<Decision extends string>({
   name,
+  options,
   value,
   onChange,
 }: {
   name: string
-  value: SacDecision | undefined
-  onChange: (value: SacDecision) => void
+  options: [Decision, string][]
+  value: Decision | undefined
+  onChange: (value: Decision) => void
 }) {
   return (
     <div className="flex gap-4">
-      {(
-        [
-          ["accepted", "Accept"],
-          ["not_accepted", "Not accept"],
-        ] as const
-      ).map(([decision, label]) => (
+      {options.map(([decision, label]) => (
         <label
           className="flex items-center gap-1.5 hover:cursor-pointer"
           key={decision}
@@ -58,7 +69,9 @@ export default function TreatAbsenceModal({
   onClose,
   onTreated,
 }: Props) {
-  const [absenceDecision, setAbsenceDecision] = useState<SacDecision>()
+  const [absenceDecision, setAbsenceDecision] = useState<
+    AbsenceDecision | undefined
+  >(absence.sac_status === "on_hold" ? "on_hold" : undefined)
   const [registrationDecisions, setRegistrationDecisions] = useState<
     Record<string, SacDecision>
   >({})
@@ -67,6 +80,7 @@ export default function TreatAbsenceModal({
 
   const registrations = absence.deferred_exam_registrations
   const isAccepted = absenceDecision === "accepted"
+  const isOnHold = absenceDecision === "on_hold"
   const canSubmit =
     absenceDecision !== undefined &&
     (!isAccepted ||
@@ -74,14 +88,14 @@ export default function TreatAbsenceModal({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!canSubmit) return
+    if (!canSubmit || !absenceDecision) return
 
     setIsSubmitting(true)
     setError(null)
     try {
       const { emailSent } = await treatAbsence(
         Number(absence.id),
-        isAccepted,
+        absenceDecision,
         isAccepted
           ? registrations.map((exam) => ({
               id: Number(exam.id),
@@ -89,7 +103,9 @@ export default function TreatAbsenceModal({
             }))
           : [],
       )
-      if (emailSent) {
+      if (isOnHold) {
+        toast.success("Absence set on hold, no email has been sent.")
+      } else if (emailSent) {
         toast.success("Absence treated, an email has been sent to the student.")
       } else {
         toast.warning(
@@ -155,6 +171,7 @@ export default function TreatAbsenceModal({
             <DecisionRadios
               name="absence-decision"
               onChange={setAbsenceDecision}
+              options={ABSENCE_DECISION_OPTIONS}
               value={absenceDecision}
             />
           </div>
@@ -192,6 +209,7 @@ export default function TreatAbsenceModal({
                               [exam.id]: decision,
                             }))
                           }
+                          options={SAC_DECISION_OPTIONS}
                           value={registrationDecisions[exam.id]}
                         />
                       </td>
@@ -210,8 +228,9 @@ export default function TreatAbsenceModal({
           )}
 
           <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-800">
-            This decision is final: it cannot be changed afterwards and an email
-            will be sent to the student.
+            {isOnHold
+              ? "The absence stays on hold until it is treated: no email will be sent to the student."
+              : "This decision is final: it cannot be changed afterwards and an email will be sent to the student."}
           </p>
         </div>
 
