@@ -21,6 +21,18 @@ describe("canAccessRoute", () => {
     expect(canAccessRoute(sacUser, "/sac-absences")).toBe(true)
   })
 
+  it("denies the deferred session route to a user with SAC access", () => {
+    const sacUser = { hasSACAccess: true }
+
+    expect(canAccessRoute(sacUser, "/deferred-session")).toBe(false)
+  })
+
+  it("allows the deferred session route to an admin", () => {
+    const admin = { isAdmin: true }
+
+    expect(canAccessRoute(admin, "/deferred-session")).toBe(true)
+  })
+
   it("allows a route that is not protected to a user without any role", () => {
     const userWithoutRole = {}
 

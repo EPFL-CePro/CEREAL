@@ -38,8 +38,15 @@ export const adminNavGroups: NavGroup[] = [
     ],
   },
   {
-    label: "SAC",
-    links: [{ label: "Absences", url: "/sac-absences", icon: "userMinus" }],
+    label: "Deferred exams",
+    links: [
+      {
+        label: "Session tracking",
+        url: "/deferred-session",
+        icon: "clipboardCheck",
+      },
+      { label: "SAC absences", url: "/sac-absences", icon: "userMinus" },
+    ],
   },
   {
     label: "Administration",

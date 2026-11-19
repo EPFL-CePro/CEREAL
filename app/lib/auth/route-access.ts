@@ -41,6 +41,11 @@ const PROTECTED_ROUTES: ProtectedRoute[] = [
   { path: "/sac-absences", includeSubPages: true, permission: Permission.SAC },
   { path: "/admin", includeSubPages: true, permission: Permission.ADMIN },
   { path: "/exams", includeSubPages: true, permission: Permission.ADMIN },
+  {
+    path: "/deferred-session",
+    includeSubPages: true,
+    permission: Permission.ADMIN,
+  },
 ]
 
 function isRouteConcerned(route: ProtectedRoute, pathname: string): boolean {
