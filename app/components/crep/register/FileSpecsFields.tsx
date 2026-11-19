@@ -24,16 +24,16 @@ const printSideUi: Record<
   { description?: string; icon: React.ReactNode }
 > = {
   "recto-verso": {
-    icon: <ArrowPathIcon className="size-6" aria-hidden="true" />,
+    icon: <ArrowPathIcon className="size-5" aria-hidden="true" />,
   },
-  recto: { icon: <DocumentIcon className="size-6" aria-hidden="true" /> },
+  recto: { icon: <DocumentIcon className="size-5" aria-hidden="true" /> },
 }
 const bindingUi: Record<
   string,
   { description?: string; icon: React.ReactNode }
 > = {
-  A3: { icon: <BookOpenIcon className="size-6" aria-hidden="true" /> },
-  A4: { icon: <DocumentIcon className="size-6" aria-hidden="true" /> },
+  A3: { icon: <BookOpenIcon className="size-5" aria-hidden="true" /> },
+  A4: { icon: <DocumentIcon className="size-5" aria-hidden="true" /> },
 }
 
 const paperColorUi: Record<
@@ -41,11 +41,11 @@ const paperColorUi: Record<
   { description?: string; icon: React.ReactNode }
 > = {
   greyscale: {
-    icon: <DocumentTextIcon className="size-6" aria-hidden="true" />,
+    icon: <DocumentTextIcon className="size-5" aria-hidden="true" />,
   },
   color: {
     description: "At your expense",
-    icon: <SwatchIcon className="size-6" aria-hidden="true" />,
+    icon: <SwatchIcon className="size-5" aria-hidden="true" />,
   },
 }
 
