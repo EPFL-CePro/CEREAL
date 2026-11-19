@@ -45,3 +45,30 @@ export function getPreviousBusinessDay(dateString: string): string {
 
   return formatDateInputValue(selectedDate)
 }
+
+// Deferred exam registration stays open during the full business days following the ordinary exam day.
+const DEFERRED_EXAM_REGISTRATION_BUSINESS_DAYS = 3
+
+// `examDate` is expected at UTC midnight, as produced from the BO file.
+export function isDeferredExamRegistrationOpen(
+  examDate: string | Date,
+  now = new Date(),
+) {
+  const lastOpenDay = new Date(examDate)
+  if (Number.isNaN(lastOpenDay.getTime())) return false
+
+  let remainingBusinessDays = DEFERRED_EXAM_REGISTRATION_BUSINESS_DAYS
+  while (remainingBusinessDays > 0) {
+    lastOpenDay.setUTCDate(lastOpenDay.getUTCDate() + 1)
+    const day = lastOpenDay.getUTCDay()
+    // 0 = sunday, 6 = saturday
+    if (day !== 0 && day !== 6) remainingBusinessDays--
+  }
+
+  // "en-CA" formats as YYYY-MM-DD, so both dates can be compared as strings
+  const todayInZurich = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Zurich",
+  }).format(now)
+
+  return todayInZurich <= lastOpenDay.toISOString().slice(0, 10)
+}
