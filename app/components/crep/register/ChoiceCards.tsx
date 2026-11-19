@@ -31,7 +31,7 @@ export default function ChoiceCards({
         {options.map((option) => (
           <label
             key={option.value}
-            className={`flex items-center gap-3 p-3 border rounded-md transition has-focus-visible:ring-2 has-focus-visible:ring-red-500 ${option.value === value ? "border-red-500 bg-red-50" : "border-slate-300 bg-white"} ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-slate-50"}`}
+            className={`flex items-center gap-3 p-3 border rounded-md transition has-focus-visible:ring-2 has-focus-visible:ring-red-500 ${option.value === value ? "border-red-500 bg-red-50 ring-1 ring-red-500" : "border-slate-300 bg-white"} ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-slate-50"}`}
           >
             <input
               type="radio"
@@ -42,6 +42,14 @@ export default function ChoiceCards({
               disabled={disabled}
               onChange={() => onChange(option.value)}
             />
+            <span
+              aria-hidden="true"
+              className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 bg-white ${option.value === value ? "border-red-500" : "border-slate-400"}`}
+            >
+              {option.value === value && (
+                <span className="size-2.5 rounded-full bg-red-500" />
+              )}
+            </span>
             {option.icon && (
               <span className="mt-0.5 shrink-0 text-red-500">
                 {option.icon}
