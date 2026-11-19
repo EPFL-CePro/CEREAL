@@ -31,6 +31,25 @@ function formatCounts({ accepted, notTreated }: RegistrationCounts) {
   return `${accepted} accepted, ${notTreated} not yet treated`
 }
 
+function RegistrationStatusBadge({ isOpen }: { isOpen: boolean | null }) {
+  if (isOpen === null) {
+    return (
+      <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+        Registration deadline unknown
+      </span>
+    )
+  }
+  return isOpen ? (
+    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+      Registration still open
+    </span>
+  ) : (
+    <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+      Registration closed
+    </span>
+  )
+}
+
 function RegistrationsTable({
   registrations,
   showExam = false,
@@ -96,6 +115,7 @@ function ExamBlock({ exam }: { exam: TrackedExam }) {
         <span className="ml-auto shrink-0 text-sm text-slate-500">
           {formatCounts(exam.counts)}
         </span>
+        <RegistrationStatusBadge isOpen={exam.isRegistrationOpen} />
       </summary>
 
       {exam.registrations.length > 0 && (

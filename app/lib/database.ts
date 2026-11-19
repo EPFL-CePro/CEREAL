@@ -7,6 +7,7 @@ import {
 import { Permission } from "@/app/lib/auth/route-access"
 import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
 import { groupRegistrationsBySession } from "@/app/lib/deferred-session/group-registrations"
+import { getBOFileOrdinaryExamDates } from "@/app/lib/files/deferred-exams-files"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
@@ -621,5 +622,17 @@ export async function getActiveDeferredSessionTracking(): Promise<DeferredSessio
     }),
   )
 
-  return groupRegistrationsBySession(toDeferredSession(session), registrations)
+  // Without a readable BO file, the page still works: deadlines are shown as unknown
+  const ordinaryExamDates = await getBOFileOrdinaryExamDates().catch(
+    (error: unknown) => {
+      console.error(error)
+      return new Map<string, string>()
+    },
+  )
+
+  return groupRegistrationsBySession(
+    toDeferredSession(session),
+    registrations,
+    ordinaryExamDates,
+  )
 }

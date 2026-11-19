@@ -1,3 +1,4 @@
+import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
 import { type DeferredSession } from "@/types/deferredSession"
 import {
   type DeferredSessionTracking,
@@ -36,9 +37,12 @@ function sumCounts(counts: RegistrationCounts[]): RegistrationCounts {
 
 // Puts each registration under every exam of the session with the same code
 // (an exam can be planned several times: its students are shown each time)
+// `ordinaryExamDates` gives the ordinary exam date of each exam code (from the BO file)
 export function groupRegistrationsBySession(
   session: DeferredSession,
   registrations: TrackedRegistration[],
+  ordinaryExamDates: Map<string, string>,
+  now = new Date(),
 ): DeferredSessionTracking {
   const visible = registrations
     .filter((r) => VISIBLE_STATUSES.includes(r.sac_status))
@@ -63,10 +67,14 @@ export function groupRegistrationsBySession(
         .map((exam) => {
           const examRegistrations =
             registrationsByCode.get(exam.exam_code) ?? []
+          const ordinaryExamDate = ordinaryExamDates.get(exam.exam_code)
           return {
             ...exam,
             registrations: examRegistrations,
             counts: countRegistrations(examRegistrations),
+            isRegistrationOpen: ordinaryExamDate
+              ? isDeferredExamRegistrationOpen(ordinaryExamDate, now)
+              : null,
           }
         })
 

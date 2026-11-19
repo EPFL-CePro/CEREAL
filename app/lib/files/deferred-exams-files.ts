@@ -195,9 +195,8 @@ export async function getExistingXLSXFileMetadata(
   }
 }
 
-export async function getBOFileRowsForSciper(
-  sciper: string,
-): Promise<BoFileForUser[] | null> {
+// First sheet of the uploaded BO file (null if no BO file is uploaded)
+async function readBOFirstSheet(): Promise<XLSX.WorkSheet | undefined | null> {
   const name = await checkExistingXLSXFile("BO")
   if (!name) return null
 
@@ -205,10 +204,14 @@ export async function getBOFileRowsForSciper(
   const buffer = await readFile(filePath)
   const workbook = XLSX.read(buffer, { type: "buffer", cellNF: true })
   const firstSheetName = workbook.SheetNames[0] ?? ""
-  const firstSheet = firstSheetName
-    ? workbook.Sheets[firstSheetName]
-    : undefined
+  return firstSheetName ? workbook.Sheets[firstSheetName] : undefined
+}
 
+export async function getBOFileRowsForSciper(
+  sciper: string,
+): Promise<BoFileForUser[] | null> {
+  const firstSheet = await readBOFirstSheet()
+  if (firstSheet === null) return null
   if (!firstSheet?.["!ref"]) return []
 
   const range = XLSX.utils.decode_range(firstSheet["!ref"])
@@ -261,6 +264,40 @@ const ALLOWED_FILE_TYPES: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
+}
+
+// Ordinary exam date (ISO string, UTC midnight) of each exam code of the BO file
+export async function getBOFileOrdinaryExamDates(): Promise<
+  Map<string, string>
+> {
+  const dates = new Map<string, string>()
+  const firstSheet = await readBOFirstSheet()
+  if (!firstSheet?.["!ref"]) return dates
+
+  const range = XLSX.utils.decode_range(firstSheet["!ref"])
+  const headers = getSheetHeaders(firstSheet, range)
+  const codeIndex = headers.indexOf(
+    "codification matière (indépendant du plan)",
+  )
+  const dateIndex = headers.indexOf("date séance")
+  if (codeIndex === -1 || dateIndex === -1) return dates
+
+  for (let row = range.s.r + 1; row <= range.e.r; row++) {
+    const code =
+      firstSheet[XLSX.utils.encode_cell({ r: row, c: range.s.c + codeIndex })]
+        ?.v
+    const date = dateCellToIso(
+      firstSheet[XLSX.utils.encode_cell({ r: row, c: range.s.c + dateIndex })],
+    )
+    if (!code || !date) continue
+
+    // An exam has a single ordinary date: keep the latest one, just in case
+    const key = String(code)
+    const known = dates.get(key)
+    if (!known || date > known) dates.set(key, date)
+  }
+
+  return dates
 }
 
 export async function uploadAbsenceFile(file: File): Promise<string> {

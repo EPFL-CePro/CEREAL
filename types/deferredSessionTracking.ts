@@ -22,6 +22,8 @@ export type RegistrationCounts = {
 export type TrackedExam = DeferredSessionExam & {
   registrations: TrackedRegistration[]
   counts: RegistrationCounts
+  // null when the exam is not in the BO file: its ordinary date is unknown
+  isRegistrationOpen: boolean | null
 }
 
 export type TrackedDay = {

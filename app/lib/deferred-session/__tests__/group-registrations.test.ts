@@ -60,9 +60,24 @@ function registration(
   }
 }
 
+// Most tests don't care about registration deadlines
+function group(
+  deferredSession: DeferredSession,
+  registrations: TrackedRegistration[],
+  ordinaryExamDates = new Map<string, string>(),
+  now = new Date("2026-06-25T10:00:00Z"),
+) {
+  return groupRegistrationsBySession(
+    deferredSession,
+    registrations,
+    ordinaryExamDates,
+    now,
+  )
+}
+
 describe("groupRegistrationsBySession", () => {
   it("puts registrations under the exam with the same code", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([
         {
           id: 1,
@@ -82,7 +97,7 @@ describe("groupRegistrationsBySession", () => {
   })
 
   it("shows the students of an exam planned twice under both days", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([
         { id: 1, date: "2027-01-14", exams: [exam(1, "CS-101")] },
         { id: 2, date: "2027-01-15", exams: [exam(2, "CS-101")] },
@@ -95,7 +110,7 @@ describe("groupRegistrationsBySession", () => {
   })
 
   it("hides refused registrations", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([{ id: 1, date: "2027-01-14", exams: [exam(1, "CS-101")] }]),
       [
         registration(1, "CS-101", "not_accepted"),
@@ -108,7 +123,7 @@ describe("groupRegistrationsBySession", () => {
   })
 
   it("counts on hold registrations with the not yet treated ones", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([
         {
           id: 1,
@@ -132,7 +147,7 @@ describe("groupRegistrationsBySession", () => {
   })
 
   it("lists registrations to an exam that is not in the session", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([{ id: 1, date: "2027-01-14", exams: [exam(1, "CS-101")] }]),
       [
         registration(1, "CS-101", "accepted"),
@@ -144,7 +159,7 @@ describe("groupRegistrationsBySession", () => {
   })
 
   it("keeps an exam without any registration", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([{ id: 1, date: "2027-01-14", exams: [exam(1, "CS-101")] }]),
       [],
     )
@@ -154,7 +169,7 @@ describe("groupRegistrationsBySession", () => {
   })
 
   it("sorts days by date, exams by slot and students by name", () => {
-    const result = groupRegistrationsBySession(
+    const result = group(
       session([
         { id: 2, date: "2027-01-15", exams: [] },
         {
@@ -180,5 +195,30 @@ describe("groupRegistrationsBySession", () => {
     expect(
       result.days[0].exams[1].registrations.map((r) => r.last_name),
     ).toEqual(["Albert", "Zimmer"])
+  })
+
+  it("tells whether registrations can still come for each exam", () => {
+    const result = group(
+      session([
+        {
+          id: 1,
+          date: "2027-01-14",
+          exams: [exam(1, "CS-101"), exam(2, "MATH-201"), exam(3, "PHYS-101")],
+        },
+      ]),
+      [],
+      // Thursday 2026-06-25: CS-101 (Monday 22nd) is open until Thursday 25th,
+      // MATH-201 (Friday 19th) was open until Wednesday 24th, PHYS-101 is not in the BO file
+      new Map([
+        ["CS-101", "2026-06-22T00:00:00.000Z"],
+        ["MATH-201", "2026-06-19T00:00:00.000Z"],
+      ]),
+    )
+
+    expect(result.days[0].exams.map((e) => e.isRegistrationOpen)).toEqual([
+      true,
+      false,
+      null,
+    ])
   })
 })
