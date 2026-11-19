@@ -18,7 +18,7 @@ export default function Checkbox({
   return (
     <label
       htmlFor={id}
-      className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer transition hover:bg-slate-50 has-focus-visible:ring-2 has-focus-visible:ring-red-500 ${checked ? "border-red-500 bg-red-50 hover:bg-red-50" : "border-slate-300"}`}
+      className={`flex items-start gap-3 px-3 py-2 border rounded-md cursor-pointer transition hover:bg-slate-50 has-focus-visible:ring-2 has-focus-visible:ring-red-500 ${checked ? "border-red-500 bg-red-50 hover:bg-red-50" : "border-slate-300"}`}
     >
       <input
         id={id}
