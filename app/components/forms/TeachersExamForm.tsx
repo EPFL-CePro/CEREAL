@@ -10,6 +10,7 @@ import {
   useForm,
   type SubmitHandler,
   useFieldArray,
+  useWatch,
 } from "react-hook-form"
 
 import Callout from "@/app/components/Callout"
@@ -107,6 +108,7 @@ export default function App({ user }: RegisterProps) {
     control,
     name: "examType",
   })
+  const watchedExamTypes = useWatch({ control, name: "examType" })
 
   const openModal = (title: string, message: string) => {
     setIsConfirmModal(false)
@@ -327,10 +329,7 @@ export default function App({ user }: RegisterProps) {
             Exam type <RedAsterisk />
           </p>
           {fields.map((field, index) => (
-            <div
-              key={field.id}
-              className="grid grid-cols-1 gap-4 items-center sm:grid-cols-3"
-            >
+            <div key={field.id} className="flex flex-col gap-3">
               <Controller
                 control={control}
                 name={`examType.${index}.checked`}
@@ -342,21 +341,28 @@ export default function App({ user }: RegisterProps) {
                   />
                 )}
               />
-              <DateInput
-                label="Exam Date"
-                registration={register(`examType.${index}.date`)}
-              />
-              <Controller
-                control={control}
-                name={`examType.${index}.dontKnowYet`}
-                render={({ field: checkbox }) => (
-                  <Checkbox
-                    label="I don't know yet"
-                    checked={Boolean(checkbox.value)}
-                    onChange={checkbox.onChange}
+              {watchedExamTypes?.[index]?.checked && (
+                <div className="grid grid-cols-1 gap-4 items-end ml-8 pl-4 border-l-2 border-red-200 sm:grid-cols-2">
+                  <DateInput
+                    label="Exam Date"
+                    registration={register(`examType.${index}.date`)}
                   />
-                )}
-              />
+                  <Controller
+                    control={control}
+                    name={`examType.${index}.dontKnowYet`}
+                    render={({ field: checkbox }) => (
+                      // mb-2 matches the bottom margin of the date input
+                      <div className="mb-2">
+                        <Checkbox
+                          label="I don't know yet"
+                          checked={Boolean(checkbox.value)}
+                          onChange={checkbox.onChange}
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </FormSection>
