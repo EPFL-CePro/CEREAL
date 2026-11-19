@@ -6,6 +6,7 @@ import { type User } from "next-auth"
 import { useForm, type SubmitHandler } from "react-hook-form"
 
 import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database"
+import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { sendEmailAbsenceConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type BoFileForUser } from "@/types/boFile"
@@ -340,6 +341,9 @@ export default function App({ user }: DiffExamFormProps) {
                       const isExamSelected = selectedDiffExams.some(
                         (selectedExam) => getExamKey(selectedExam) === examKey,
                       )
+                      const isRegistrationOpen = isDeferredExamRegistrationOpen(
+                        exam["date séance"],
+                      )
 
                       return (
                         <tr
@@ -362,10 +366,17 @@ export default function App({ user }: DiffExamFormProps) {
                             <input
                               type="checkbox"
                               checked={isExamSelected}
+                              disabled={!isRegistrationOpen}
+                              className={`${!isRegistrationOpen && 'hidden'}`}
                               onChange={(e) =>
                                 handleDiffExamChange(exam, e.target.checked)
                               }
                             />
+                            {!isRegistrationOpen && (
+                              <span className="block text-xs text-slate-500">
+                                Registration closed
+                              </span>
+                            )}
                           </td>
                         </tr>
                       )

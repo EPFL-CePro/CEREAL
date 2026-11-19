@@ -5,6 +5,7 @@ import {
   requireUser,
 } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
+import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
@@ -380,6 +381,10 @@ export async function insertAbsence(absence: NewAbsence): Promise<number> {
 export async function insertDiffExamSubscription(
   diffExam: NewDiffExam,
 ): Promise<number> {
+  if (!isDeferredExamRegistrationOpen(diffExam.exam_date)) {
+    throw new Error("Deferred exam registration is closed for this exam")
+  }
+
   const created = await prisma.deferred_exam_registration.create({
     data: {
       exam_student_absence_id: diffExam.exam_student_absence_id,
