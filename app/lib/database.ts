@@ -6,6 +6,7 @@ import {
 } from "@/app/lib/auth/require-permission"
 import { Permission } from "@/app/lib/auth/route-access"
 import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
+import { groupRegistrationsBySession } from "@/app/lib/deferred-session/group-registrations"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
 import { type Comment } from "@/types/comment"
@@ -13,6 +14,7 @@ import {
   type DeferredSession,
   type NewDeferredSession,
 } from "@/types/deferredSession"
+import { type DeferredSessionTracking } from "@/types/deferredSessionTracking"
 import { type EmailTemplate } from "@/types/emailTemplate"
 import { type Exam } from "@/types/exam"
 import { type ExamStatus } from "@/types/examStatus"
@@ -588,4 +590,36 @@ export async function deleteDeferredSession(
   })
 
   return true
+}
+
+// Days, exams and registrations of the active session (null if no session is active)
+export async function getActiveDeferredSessionTracking(): Promise<DeferredSessionTracking | null> {
+  await requirePermission(Permission.ADMIN)
+  const session = await prisma.deferred_session.findFirst({
+    where: { is_active: true },
+    include: deferredSessionInclude,
+  })
+  if (!session) return null
+
+  // Registrations are emptied after each session: all of them belong to the active one
+  const rows = await prisma.deferred_exam_registration.findMany({
+    select: {
+      id: true,
+      exam_code: true,
+      exam_name: true,
+      exam_date: true,
+      sac_status: true,
+      exam_student_absence: {
+        select: { sciper: true, first_name: true, last_name: true },
+      },
+    },
+  })
+  const registrations = rows.map(
+    ({ exam_student_absence: student, ...registration }) => ({
+      ...registration,
+      ...student,
+    }),
+  )
+
+  return groupRegistrationsBySession(toDeferredSession(session), registrations)
 }
