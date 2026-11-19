@@ -42,7 +42,6 @@ function absenceColumns(absence: Absence): Row {
     "Ending date": dateToString(absence.certificate_date_to),
     Comment: absence.comment ?? "",
     Accepted: sacStatusToString(absence.sac_status),
-    Remark: absence.sac_remark ?? "",
     "Created on": dateToString(absence.created_at),
   }
 }

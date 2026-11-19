@@ -176,7 +176,6 @@ export default function App({ user }: DiffExamFormProps) {
       certificate_date_to: new Date(data.endingAbsenceDate),
       certificate_file_name: fileName,
       comment: data.comment,
-      sac_remark: "",
     })
     for (let index = 0; index < data.diffExams.length; index++) {
       const exam = data.diffExams[index]

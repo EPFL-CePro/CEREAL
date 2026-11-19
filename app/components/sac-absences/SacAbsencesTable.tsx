@@ -16,7 +16,6 @@ import { toast } from "sonner"
 import {
   getAllAbsences,
   updateAbsenceComment,
-  updateAbsenceSacRemark,
   updateRegistrationIsaHasGrade,
   updateRegistrationSacRemark,
 } from "@/app/lib/database"
@@ -152,7 +151,6 @@ export function SacAbsencesTable() {
       dateToString(absence.certificate_date_to),
       absence.certificate_file_name,
       absence.comment,
-      absence.sac_remark,
       dateToString(absence.created_at),
       ...deferredExams,
     ]
@@ -197,10 +195,6 @@ export function SacAbsencesTable() {
       {
         accessorKey: "sac_status",
         header: "Accepted",
-      },
-      {
-        accessorKey: "sac_remark",
-        header: "Remark",
       },
       {
         id: "created_at",
@@ -375,13 +369,6 @@ export function SacAbsencesTable() {
                 ) : (
                   <SacStatusBadge status={absence.sac_status} />
                 )}
-              </td>
-              <td className="px-4 py-3 text-gray-700">
-                <TextareaRemarks
-                  defaultValue={absence.sac_remark}
-                  id={absence.id}
-                  onChange={updateAbsenceSacRemark}
-                />
               </td>
               <td className="whitespace-nowrap px-4 py-3 text-gray-700">
                 {dateToString(absence.created_at)}

@@ -371,7 +371,6 @@ export async function insertAbsence(absence: NewAbsence): Promise<number> {
       certificate_date_to: absence.certificate_date_to,
       certificate_file_name: absence.certificate_file_name,
       comment: absence.comment,
-      sac_remark: absence.sac_remark,
     },
   })
   return created.id
@@ -445,14 +444,6 @@ export async function updateAbsenceComment(absenceId: string, value: string) {
   await prisma.exam_student_absence.update({
     where: { id: Number(absenceId) },
     data: { comment: value },
-  })
-}
-
-export async function updateAbsenceSacRemark(absenceId: string, value: string) {
-  await requirePermission(Permission.SAC)
-  await prisma.exam_student_absence.update({
-    where: { id: Number(absenceId) },
-    data: { sac_remark: value },
   })
 }
 

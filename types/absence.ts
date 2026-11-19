@@ -11,7 +11,6 @@ export type Absence = {
   certificate_file_name: string
   comment: string
   sac_status: SacStatus
-  sac_remark: string
   created_at: Date
   deferred_exam_registrations: DiffExam[]
 }
