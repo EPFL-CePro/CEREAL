@@ -32,6 +32,7 @@ const SAC_STATUS_CLASSES: Record<SacStatus, string> = {
   not_treated: "bg-gray-100 text-gray-700",
   accepted: "bg-green-100 text-green-800",
   not_accepted: "bg-red-100 text-red-800",
+  on_hold: "bg-amber-100 text-amber-800",
 }
 
 function SacStatusBadge({ status }: { status: SacStatus }) {
@@ -357,14 +358,20 @@ export function SacAbsencesTable() {
                 />
               </td>
               <td className="px-4 py-3 text-center">
-                {absence.sac_status === "not_treated" ? (
-                  <button
-                    type="button"
-                    onClick={() => setTreatingAbsence(absence)}
-                    className="whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-blue-700"
-                  >
-                    Treat now
-                  </button>
+                {absence.sac_status === "not_treated" ||
+                absence.sac_status === "on_hold" ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTreatingAbsence(absence)}
+                      className="whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:cursor-pointer hover:bg-blue-700"
+                    >
+                      Treat now
+                    </button>
+                    {absence.sac_status === "on_hold" && (
+                      <SacStatusBadge status={absence.sac_status} />
+                    )}
+                  </div>
                 ) : (
                   <SacStatusBadge status={absence.sac_status} />
                 )}

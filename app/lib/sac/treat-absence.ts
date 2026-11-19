@@ -6,12 +6,19 @@ import { sendEmailAbsenceTreated } from "@/app/lib/mail/cereal-notifications"
 import { prisma } from "@/app/lib/prisma"
 import { type SacStatus } from "@/types/sacStatus"
 
-export type SacDecision = Exclude<SacStatus, "not_treated">
+// Final decision, also used for each deferred exam registration
+export type SacDecision = "accepted" | "not_accepted"
+
+// "on_hold": the SAC waits for more information, the absence can be treated later
+export type AbsenceDecision = SacDecision | "on_hold"
 
 export type RegistrationDecision = {
   id: number
   status: SacDecision
 }
+
+// An absence can still be treated as long as no final decision has been taken
+const TREATABLE_STATUSES: SacStatus[] = ["not_treated", "on_hold"]
 
 function isSacDecision(value: unknown): value is SacDecision {
   return value === "accepted" || value === "not_accepted"
@@ -23,10 +30,11 @@ function isSacDecision(value: unknown): value is SacDecision {
  - accepted: each linked registration must have its own decision
  Then sends the email to the student. The decision is kept even if the email fails,
  `emailSent` tells the caller whether it has been sent.
+ An absence can first be put "on_hold" (no email, registrations untouched) and treated later.
 */
 export async function treatAbsence(
   absenceId: number,
-  isAccepted: boolean,
+  decision: AbsenceDecision,
   registrationDecisions: RegistrationDecision[],
 ): Promise<{ emailSent: boolean }> {
   await requirePermission(Permission.SAC)
@@ -37,9 +45,19 @@ export async function treatAbsence(
     include: { deferred_exam_registration: { select: { id: true } } },
   })
   if (!absence) throw new Error("Absence not found")
-  if (absence.sac_status !== "not_treated") {
+  if (!TREATABLE_STATUSES.includes(absence.sac_status)) {
     throw new Error("Absence already treated")
   }
+
+  if (decision === "on_hold") {
+    await prisma.exam_student_absence.updateMany({
+      where: { id: absenceId, sac_status: { in: TREATABLE_STATUSES } },
+      data: { sac_status: "on_hold" },
+    })
+    return { emailSent: false }
+  }
+  if (!isSacDecision(decision)) throw new Error("Invalid decision")
+  const isAccepted = decision === "accepted"
 
   const registrationIds = absence.deferred_exam_registration.map(({ id }) => id)
 
@@ -64,8 +82,8 @@ export async function treatAbsence(
   await prisma.$transaction(async (tx) => {
     // The status condition prevents treating (and emailing) the same absence twice
     const { count } = await tx.exam_student_absence.updateMany({
-      where: { id: absenceId, sac_status: "not_treated" },
-      data: { sac_status: isAccepted ? "accepted" : "not_accepted" },
+      where: { id: absenceId, sac_status: { in: TREATABLE_STATUSES } },
+      data: { sac_status: decision },
     })
     if (count === 0) throw new Error("Absence already treated")
 

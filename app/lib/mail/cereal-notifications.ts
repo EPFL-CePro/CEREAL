@@ -65,7 +65,10 @@ export async function sendEmailAbsenceTreated(absenceId: number) {
   })
 
   if (!absence) throw new Error("Absence not found")
-  if (absence.sac_status === "not_treated") {
+  if (
+    absence.sac_status === "not_treated" ||
+    absence.sac_status === "on_hold"
+  ) {
     throw new Error("Absence not treated yet")
   }
 
