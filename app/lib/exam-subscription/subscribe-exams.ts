@@ -15,15 +15,12 @@ import {
   type SubscribedExam,
 } from "@/app/lib/exam-subscription/queries"
 import { examSubscriptionSchema } from "@/app/lib/exam-subscription/schema"
+import { type ActionResult } from "@/types/actionResult"
 import { type Exam } from "@/types/exam"
 
 // TODO - Silver by default for everyone
 const DEFAULT_SERVICE_LEVEL_ID = 2
 const DEFAULT_EXAM_STATUS_ID = 2
-
-type ActionResult =
-  | { success: true; warning?: string }
-  | { success: false; error: string; fieldErrors?: Record<string, string[]> }
 
 export async function subscribeExams(input: unknown): Promise<ActionResult> {
   const user = await requireUser()
