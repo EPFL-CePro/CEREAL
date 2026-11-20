@@ -97,7 +97,7 @@ export async function sendEmailAbsenceTreated(absenceId: number) {
       .join("\n"),
   })
 }
-
+// TODO - Delete queries and business logic, receive only
 export async function sendEmailExamServicesConfirmation(examIds: number[]) {
   const user = await requireUser()
   // TODO - Extract in a dedicated function in data layout
@@ -153,6 +153,7 @@ export async function sendEmailExamServicesConfirmation(examIds: number[]) {
     "registrant.email": user.email || "",
   })
 }
+// TODO - Get only the necessary data to send the email
 
 export async function sendEmailAbsenceConfirmation(absenceId: number) {
   const user = await requireUser()
