@@ -4,13 +4,17 @@ import { z } from "zod"
 
 import { requireUser } from "@/app/lib/auth/require-permission"
 import { getCurrentAcademicYear } from "@/app/lib/dates/academic-year"
-import { fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
+import {
+  fetchCourseTeacherEmails,
+  fetchPersonBySciper,
+} from "@/app/lib/epfl/epfl-api"
+import { sendExamSubscriptionConfirmation } from "@/app/lib/exam-subscription/mail"
 import {
   createSubscribedExams,
   type NewSubscribedExam,
+  type SubscribedExam,
 } from "@/app/lib/exam-subscription/queries"
 import { examSubscriptionSchema } from "@/app/lib/exam-subscription/schema"
-import { sendEmailExamServicesConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type Exam } from "@/types/exam"
 
 // TODO - Silver by default for everyone
@@ -22,7 +26,7 @@ type ActionResult =
   | { success: false; error: string; fieldErrors?: Record<string, string[]> }
 
 export async function subscribeExams(input: unknown): Promise<ActionResult> {
-  await requireUser()
+  const user = await requireUser()
 
   // Business rules
   const parsed = examSubscriptionSchema.safeParse(input)
@@ -36,18 +40,19 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
   const data = parsed.data
 
   // Enrich and insert
-  let examIds: number[]
+  const academicYear = getCurrentAcademicYear()
+  let contact: Exam["contact"]
+  let exams: SubscribedExam[]
   try {
     const person = await fetchPersonBySciper(data.contact)
-    const contact: Exam["contact"] = {
+    contact = {
       firstname: person.firstname ?? "",
       lastname: person.lastname ?? "",
       email: person.email ?? "",
       sciper: String(person.id ?? data.contact),
     }
-    const academicYear = getCurrentAcademicYear()
 
-    examIds = await createSubscribedExams(
+    exams = await createSubscribedExams(
       data.examTypes.map((examType): NewSubscribedExam => ({
         code: data.courseCode,
         name: data.courseName,
@@ -73,10 +78,29 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
 
   // Email: the exams are already saved, so a failure is only a warning
   try {
-    await sendEmailExamServicesConfirmation(examIds)
+    const teacherEmails = await fetchCourseTeacherEmails(
+      data.courseCode,
+      data.courseName,
+      academicYear,
+    )
+    // All the exams share the same service and service level
+    const [firstExam] = exams
+    await sendExamSubscriptionConfirmation({
+      courseCode: data.courseCode,
+      teacherEmails,
+      contactEmail: contact.email,
+      registrantEmail: user.email ?? "",
+      service: firstExam.service?.description ?? "",
+      serviceLevel: firstExam.service_level?.name ?? "",
+      exams: exams.map((exam) => ({
+        examType: exam.exam_type?.name ?? "",
+        date: exam.exam_date,
+      })),
+      remark: data.remark || null,
+    })
   } catch (err) {
     console.error(
-      `[subscribeExams] Confirmation email failed for exams ${examIds.join(", ")}`,
+      `[subscribeExams] Confirmation email failed for exams ${exams.map((exam) => exam.id).join(", ")}`,
       err,
     )
     return {

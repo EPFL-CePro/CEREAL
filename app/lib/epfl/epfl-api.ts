@@ -256,6 +256,26 @@ export async function fetchTeachersByCourseCode(
   return teachersByCourse
 }
 
+// Emails of the teachers of a course (same course matching as the course select)
+export async function fetchCourseTeacherEmails(
+  courseCode: string,
+  courseName: string,
+  academicYear: string,
+): Promise<string[]> {
+  const courses = await fetchCourses(academicYear)
+  const course = courses.find(
+    (c) => c.exam.code === courseCode && c.exam.title === courseName,
+  )
+  const teachers = await Promise.all(
+    (course?.exam.teachers ?? [])
+      .filter((teacher) => teacher.sciper)
+      .map((teacher) => fetchPersonBySciper(String(teacher.sciper))),
+  )
+  return teachers
+    .map((teacher) => teacher.email)
+    .filter((email): email is string => Boolean(email))
+}
+
 export async function fetchCeproAdminsIT(): Promise<GroupUser[]> {
   const url = `${EPFL_API_BASE}/groups/CePro_admin_IT/members`
   const res = await epflFetch(url)

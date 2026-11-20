@@ -18,12 +18,31 @@ export type NewSubscribedExam = {
   contact: Exam["contact"]
 }
 
-// One exam per row. Returns the ids of the created exams.
+// One created exam, with the labels needed by the confirmation email
+export type SubscribedExam = {
+  id: number
+  exam_date: Date | null
+  exam_type: { name: string | null } | null
+  service: { description: string | null } | null
+  service_level: { name: string | null } | null
+}
+
+// One exam per row, all or nothing.
 export async function createSubscribedExams(
   exams: NewSubscribedExam[],
-): Promise<number[]> {
-  const created = await prisma.$transaction(
-    exams.map((data) => prisma.exam.create({ data, select: { id: true } })),
+): Promise<SubscribedExam[]> {
+  return prisma.$transaction(
+    exams.map((data) =>
+      prisma.exam.create({
+        data,
+        select: {
+          id: true,
+          exam_date: true,
+          exam_type: { select: { name: true } },
+          service: { select: { description: true } },
+          service_level: { select: { name: true } },
+        },
+      }),
+    ),
   )
-  return created.map((exam) => exam.id)
 }
