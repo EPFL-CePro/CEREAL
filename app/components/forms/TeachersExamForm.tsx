@@ -12,6 +12,7 @@ import {
   useFieldArray,
   useWatch,
 } from "react-hook-form"
+import { toast } from "sonner"
 
 import Callout from "@/app/components/Callout"
 import Checkbox from "@/app/components/crep/register/Checkbox"
@@ -29,7 +30,6 @@ import { type Service } from "@/types/service"
 
 import ReactSelect from "./ReactSelect"
 import { RedAsterisk } from "../RedAsterisk"
-import { RegisterModal } from "./RegisterModal"
 
 interface RegisterProps {
   user: AppUser
@@ -58,15 +58,6 @@ function formatContactForDB(
 }
 
 export default function App({ user }: RegisterProps) {
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalTitle, setModalTitle] = useState("Registration Successful")
-  const [modalMessage, setModalMessage] = useState(
-    "Your exam has been successfully registered.",
-  )
-  const [modalResolver, setModalResolver] = useState<
-    ((confirmed: boolean) => void) | null
-  >(null)
-  const [isConfirmModal, setIsConfirmModal] = useState(false)
   const [services, setServices] = useState<Service[]>([])
   const [examTypes, setExamTypes] = useState<ExamType[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -110,35 +101,19 @@ export default function App({ user }: RegisterProps) {
   })
   const watchedExamTypes = useWatch({ control, name: "examType" })
 
-  const openModal = (title: string, message: string) => {
-    setIsConfirmModal(false)
-    setModalResolver(null)
-    setModalTitle(title)
-    setModalMessage(message)
-    setModalOpen(true)
-    const dialog = document.getElementById(
-      "register-modal",
-    ) as HTMLDialogElement | null
-    dialog?.showModal?.()
-  }
-  const handleModalResult = (confirmed: boolean) => {
-    if (modalResolver) {
-      modalResolver(confirmed)
-      setModalResolver(null)
-    }
-    setModalOpen(false)
-  }
+  const showError = (title: string, message: string) =>
+    toast.error(title, { description: message })
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsSubmitting(true)
     if (!data.course) {
-      openModal("Course Selection Error", "Please select a course.")
+      showError("Course Selection Error", "Please select a course.")
       setIsSubmitting(false)
       return
     }
 
     if (!data.examType.some((examType) => examType.checked)) {
-      openModal(
+      showError(
         "Exam type selection Error",
         "Please select at least one exam type.",
       )
@@ -151,7 +126,7 @@ export default function App({ user }: RegisterProps) {
       if (!examType.checked) continue
 
       if (!examType.dontKnowYet && !examType.date) {
-        openModal(
+        showError(
           "Exam type selection Error",
           `Please select a date for your exam type "${examType.name}". If you are not sure about the date, please check the "I don't know yet" box.`,
         )
@@ -160,7 +135,7 @@ export default function App({ user }: RegisterProps) {
       }
 
       if (examType.date && examType.dontKnowYet) {
-        openModal(
+        showError(
           "Exam type selection Error",
           `You have checked the "I don't know yet" box for your "${examType.name}" exam type, but a date is also selected. Please either only check the "I don't know yet" box, or only select a date for the exam.`,
         )
@@ -170,13 +145,13 @@ export default function App({ user }: RegisterProps) {
     }
 
     if (!data.service) {
-      openModal("Service Selection Error", "Please select a service.")
+      showError("Service Selection Error", "Please select a service.")
       setIsSubmitting(false)
       return
     }
 
     if (!data.contact) {
-      openModal("Contact Selection Error", "Please select a contact.")
+      showError("Contact Selection Error", "Please select a contact.")
       setIsSubmitting(false)
       return
     }
@@ -208,7 +183,7 @@ export default function App({ user }: RegisterProps) {
           contact: formatContactForDB(contact, data.contact),
         })
         if (typeof insertedExamId !== "number") {
-          openModal(
+          showError(
             "Registration Error",
             "An error occurred while registering your exam. Please try again later.",
           )
@@ -220,15 +195,14 @@ export default function App({ user }: RegisterProps) {
 
       await sendEmailExamServicesConfirmation(insertedExamIds)
 
-      openModal(
-        "Registration Successful",
-        `Your Exam ${data.course.exam.code} has been registered and a confirmation has been sent to your email.`,
-      )
+      toast.success("Registration Successful", {
+        description: `Your Exam ${data.course.exam.code} has been registered and a confirmation has been sent to your email.`,
+      })
       setIsSubmitting(false)
       reset()
     } catch (err) {
       console.error(err)
-      openModal(
+      showError(
         "Unexpected Error",
         "An unexpected error occurred while registering the exam.",
       )
@@ -239,27 +213,6 @@ export default function App({ user }: RegisterProps) {
   return (
     /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
     <div className="flex flex-col items-center m-24">
-      <dialog
-        id="register-modal"
-        className="modal fixed top-3/8 left-1/8 w-3/4 md:left-1/4 md:w-2/4 rounded-xl flex items-center justify-center z-50 drop-shadow-2xl backdrop:backdrop-blur-xs opacity-98"
-        onClose={() => {
-          setModalOpen(false)
-          if (modalResolver) {
-            modalResolver(false)
-            setModalResolver(null)
-          }
-        }}
-      >
-        {modalOpen && (
-          <RegisterModal
-            setModalOpen={setModalOpen}
-            title={modalTitle}
-            message={modalMessage}
-            isConfirm={isConfirmModal}
-            onResult={handleModalResult}
-          />
-        )}
-      </dialog>
       <form
         className="flex flex-col gap-4 w-full max-w-3xl"
         onSubmit={handleSubmit(onSubmit)}
