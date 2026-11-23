@@ -22,7 +22,7 @@ import { type Exam } from "@/types/exam"
 const DEFAULT_SERVICE_LEVEL_ID = 2
 const DEFAULT_EXAM_STATUS_ID = 2
 
-export async function subscribeExams(input: unknown): Promise<ActionResult> {
+export async function actions(input: unknown): Promise<ActionResult> {
   const user = await requireUser()
 
   // Business rules
@@ -69,7 +69,7 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
       })),
     )
   } catch (err) {
-    console.error("[subscribeExams] Registration failed", err)
+    console.error("[actions] Registration failed", err)
     return {
       success: false,
       error:
