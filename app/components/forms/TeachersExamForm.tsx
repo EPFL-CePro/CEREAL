@@ -120,7 +120,9 @@ export default function App({ user }: RegisterProps) {
     <div className="flex flex-col items-center m-24">
       <form
         className="flex flex-col gap-4 w-full max-w-3xl"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmit, () =>
+          showError("Form error", "Please check the form for errors."),
+        )}
         onKeyDown={preventEnterSubmit}
         encType="multipart/form-data"
       >
