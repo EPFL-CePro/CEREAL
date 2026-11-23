@@ -43,7 +43,7 @@ interface AppUser extends User {
   sciper: string
 }
 
-export default function App({ user }: RegisterProps) {
+export default function TeachersExamForm({ user }: RegisterProps) {
   const [services, setServices] = useState<Service[]>([])
   const [examTypes, setExamTypes] = useState<ExamType[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -215,7 +215,6 @@ export default function App({ user }: RegisterProps) {
                     <DateInput
                       label="Exam Date"
                       registration={register(`examTypes.${index}.date`)}
-                      error={errors.examTypes?.[index]?.date?.message}
                     />
                     {/* mb-2 matches the bottom margin of the date input */}
                     <div className="mb-2">
@@ -232,6 +231,13 @@ export default function App({ user }: RegisterProps) {
                         }
                       />
                     </div>
+                    {errors.examTypes?.[index]?.date && (
+                      <div className="sm:col-span-2">
+                        <FieldError
+                          message={errors.examTypes[index].date.message}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
