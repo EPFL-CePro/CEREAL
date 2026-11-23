@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto"
 import {
   mkdir,
   writeFile,
@@ -252,22 +253,38 @@ export async function getBOFileRowsForSciper(
 
   return rows
 }
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ABSENCES_DIR = safeJoinPath(getDeferredExamsDir(), "certificates")
+const ALLOWED_FILE_TYPES: Record<string, string> = { // Extension, MIME type
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpg",
+  ".jpeg": "image/jpeg",
+}
 
 export async function uploadAbsenceFile(file: File): Promise<string> {
-  // TODO - Maybe check the file type
-  const absencesDir = safeJoinPath(getDeferredExamsDir(), "certificates")
+  if (file.size === 0) throw new Error("The file is empty")
+  if (file.size > MAX_FILE_SIZE)
+    throw new Error("The file is too large (max 10MB)")
 
-  //create folder
-  await mkdir(absencesDir, { recursive: true })
+  // Check file type
+  const extension = path.extname(file.name).toLowerCase()
+  if (ALLOWED_FILE_TYPES[extension] !== file.type) {
+    throw new Error(
+      `Invalid file type. Allowed types: ${Object.keys(ALLOWED_FILE_TYPES).join(", ")}`,
+    )
+  }
+
+  // Create folder if it doesn't exist
+  await mkdir(ABSENCES_DIR, { recursive: true })
 
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
 
-  // TODO - Add UUID to the file name, so that a file cannot replace another one with the same name
-  const fileName = path.basename(file.name)
-
-  const filePath = safeJoinPath(absencesDir, fileName)
-  await writeFile(filePath, buffer)
+  // Unique name
+  const fileName = `${randomUUID()}${extension}`
+  const filePath = safeJoinPath(ABSENCES_DIR, fileName)
+  await writeFile(filePath, buffer, { flag: "wx" }) // wx, fails if the file already exists
 
   return fileName
 }
