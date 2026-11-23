@@ -20,6 +20,7 @@ import Checkbox from "@/app/components/crep/register/Checkbox"
 import ChoiceCards from "@/app/components/crep/register/ChoiceCards"
 import DateInput from "@/app/components/crep/register/DateInput"
 import FormSection from "@/app/components/crep/register/FormSection"
+import { FieldError } from "@/app/components/FieldError"
 import { getAllExamTypes, getAllServices } from "@/app/lib/database"
 import {
   examSubscriptionSchema,
@@ -57,16 +58,22 @@ export default function App({ user }: RegisterProps) {
     })()
   }, [])
 
-  const { control, register, handleSubmit, reset, setValue } =
-    useForm<ExamSubscription>({
-      resolver: zodResolver(examSubscriptionSchema),
-      defaultValues: {
-        semester: "1",
-        contact: user.sciper,
-        examTypes: [],
-        remark: "",
-      },
-    })
+  const {
+    control,
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<ExamSubscription>({
+    resolver: zodResolver(examSubscriptionSchema),
+    defaultValues: {
+      semester: "1",
+      contact: user.sciper,
+      examTypes: [],
+      remark: "",
+    },
+  })
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -113,9 +120,7 @@ export default function App({ user }: RegisterProps) {
     <div className="flex flex-col items-center m-24">
       <form
         className="flex flex-col gap-4 w-full max-w-3xl"
-        onSubmit={handleSubmit(onSubmit, () =>
-          showError("Form error", "Please check the form for errors."),
-        )}
+        onSubmit={handleSubmit(onSubmit)}
         onKeyDown={preventEnterSubmit}
         encType="multipart/form-data"
       >
@@ -161,6 +166,7 @@ export default function App({ user }: RegisterProps) {
               />
             )}
           />
+          <FieldError message={errors.semester?.message} />
           <div>
             <h3>
               Select your exam <RedAsterisk />
@@ -173,6 +179,7 @@ export default function App({ user }: RegisterProps) {
               containCourses={true}
               instanceId={1}
             />
+            <FieldError message={errors.course?.message} />
           </div>
         </FormSection>
 
@@ -180,6 +187,11 @@ export default function App({ user }: RegisterProps) {
           <p>
             Exam type <RedAsterisk />
           </p>
+          <FieldError
+            message={
+              errors.examTypes?.message ?? errors.examTypes?.root?.message
+            }
+          />
           {examTypes.map((examType) => {
             const index = fields.findIndex(
               (field) => field.examTypeId === examType.id,
@@ -201,6 +213,7 @@ export default function App({ user }: RegisterProps) {
                     <DateInput
                       label="Exam Date"
                       registration={register(`examTypes.${index}.date`)}
+                      error={errors.examTypes?.[index]?.date?.message}
                     />
                     {/* mb-2 matches the bottom margin of the date input */}
                     <div className="mb-2">
@@ -240,6 +253,7 @@ export default function App({ user }: RegisterProps) {
               />
             )}
           />
+          <FieldError message={errors.serviceId?.message} />
         </FormSection>
 
         <FormSection number={4} title="Contact and remarks">
@@ -261,6 +275,7 @@ export default function App({ user }: RegisterProps) {
             isMultiChoice={false}
             instanceId={2}
           />
+          <FieldError message={errors.contact?.message} />
           <label htmlFor="remark">Additional remarks</label>
           <textarea
             id="remark"

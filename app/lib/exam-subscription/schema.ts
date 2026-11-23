@@ -2,15 +2,15 @@ import { z } from "zod"
 
 export const examSubscriptionSchema = z.object({
   semester: z.enum(["1", "2"], "Please select a semester."),
-  course: z.object({
-    exam: z.object(
-      {
+  course: z.object(
+    {
+      exam: z.object({
         code: z.string().trim().min(1),
         title: z.string().trim().min(1),
-      },
-      "Please select a course.",
-    ),
-  }),
+      }),
+    },
+    "Please select a course.",
+  ),
   examTypes: z
     .array(
       z.object({
