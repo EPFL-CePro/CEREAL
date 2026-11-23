@@ -254,11 +254,11 @@ export async function getBOFileRowsForSciper(
   return rows
 }
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-const ABSENCES_DIR = safeJoinPath(getDeferredExamsDir(), "certificates")
+const getAbsencesDir = () => safeJoinPath(getDeferredExamsDir(), "certificates")
 const ALLOWED_FILE_TYPES: Record<string, string> = { // Extension, MIME type
   ".pdf": "application/pdf",
   ".png": "image/png",
-  ".jpg": "image/jpg",
+  ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
 }
 
@@ -276,14 +276,14 @@ export async function uploadAbsenceFile(file: File): Promise<string> {
   }
 
   // Create folder if it doesn't exist
-  await mkdir(ABSENCES_DIR, { recursive: true })
+  await mkdir(getAbsencesDir(), { recursive: true })
 
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
 
   // Unique name
   const fileName = `${randomUUID()}${extension}`
-  const filePath = safeJoinPath(ABSENCES_DIR, fileName)
+  const filePath = safeJoinPath(getAbsencesDir(), fileName)
   await writeFile(filePath, buffer, { flag: "wx" }) // wx, fails if the file already exists
 
   return fileName
