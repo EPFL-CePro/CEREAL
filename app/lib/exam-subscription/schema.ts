@@ -1,14 +1,23 @@
 import { z } from "zod"
 
 export const examSubscriptionSchema = z.object({
-  semester: z.enum(["1", "2"]),
-  courseCode: z.string().trim().min(1),
-  courseName: z.string().trim().min(1),
+  semester: z.enum(["1", "2"], "Please select a semester."),
+  course: z.object({
+    exam: z.object(
+      {
+        code: z.string().trim().min(1),
+        title: z.string().trim().min(1),
+      },
+      "Please select a course.",
+    ),
+  }),
   examTypes: z
     .array(
       z.object({
         examTypeId: z.number().int().positive(),
-        date: z.iso.date().nullable(), // null = "I don't know yet"
+        date: z.iso
+          .date(`Please select a date, or check "I don't know yet".`)
+          .nullable(), // null = "I don't know yet"
       }),
     )
     .min(1, "Please select at least one exam type.")
@@ -18,10 +27,18 @@ export const examSubscriptionSchema = z.object({
         examTypes.length,
       "Each exam type can only be selected once.",
     ),
-  serviceId: z.coerce.number().int().positive(),
-  contact: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, "Invalid sciper."), // SCIPER, the server builds the JSON
-  remark: z.string().trim().max(1000).optional().default(""),
+  serviceId: z.number("Please select a service.").int().positive(),
+  contact: z.union(
+    [
+      z
+        .string()
+        .trim()
+        .regex(/^\d{6}$/),
+      z.number().int().positive(),
+    ],
+    "Please select a contact.",
+  ),
+  remark: z.string().trim().max(1000).optional(),
 })
+
+export type ExamSubscription = z.infer<typeof examSubscriptionSchema>
