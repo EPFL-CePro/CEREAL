@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 import Link from "next/link"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { type User } from "next-auth"
 import {
   Controller,
@@ -20,10 +21,13 @@ import ChoiceCards from "@/app/components/crep/register/ChoiceCards"
 import DateInput from "@/app/components/crep/register/DateInput"
 import FormSection from "@/app/components/crep/register/FormSection"
 import { getAllExamTypes, getAllServices } from "@/app/lib/database"
+import {
+  examSubscriptionSchema,
+  type ExamSubscription,
+} from "@/app/lib/exam-subscription/schema"
 import { subscribeExams } from "@/app/lib/exam-subscription/subscribe-exams"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { type ExamType } from "@/types/examType"
-import { type Inputs } from "@/types/inputs"
 import { type Service } from "@/types/service"
 
 import ReactSelect from "./ReactSelect"
@@ -53,105 +57,31 @@ export default function App({ user }: RegisterProps) {
     })()
   }, [])
 
-  const { control, register, handleSubmit, reset } = useForm<Inputs>({
-    defaultValues: {
-      contact: user.sciper,
-      examType: [],
-    },
-  })
+  const { control, register, handleSubmit, reset, setValue } =
+    useForm<ExamSubscription>({
+      resolver: zodResolver(examSubscriptionSchema),
+      defaultValues: {
+        semester: "1",
+        contact: user.sciper,
+        examTypes: [],
+        remark: "",
+      },
+    })
 
-  useEffect(() => {
-    if (!examTypes.length) return
-
-    reset((prev) => ({
-      ...prev,
-      examType: examTypes.map((examType) => ({
-        id: examType.id,
-        code: examType.code,
-        name: examType.name,
-        checked: false,
-        date: "",
-        dontKnowYet: false,
-      })),
-    }))
-  }, [examTypes, reset])
-
-  const { fields } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
-    name: "examType",
+    name: "examTypes",
   })
-  const watchedExamTypes = useWatch({ control, name: "examType" })
+  const watchedExamTypes = useWatch({ control, name: "examTypes" })
 
   const showError = (title: string, message: string) =>
     toast.error(title, { description: message })
 
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+  const onSubmit: SubmitHandler<ExamSubscription> = async (data) => {
     setIsSubmitting(true)
-    if (!data.course) {
-      showError("Course Selection Error", "Please select a course.")
-      setIsSubmitting(false)
-      return
-    }
-
-    if (!data.examType.some((examType) => examType.checked)) {
-      showError(
-        "Exam type selection Error",
-        "Please select at least one exam type.",
-      )
-      setIsSubmitting(false)
-      return
-    }
-
-    for (let index = 0; index < data.examType.length; index++) {
-      const examType = data.examType[index]
-      if (!examType.checked) continue
-
-      if (!examType.dontKnowYet && !examType.date) {
-        showError(
-          "Exam type selection Error",
-          `Please select a date for your exam type "${examType.name}". If you are not sure about the date, please check the "I don't know yet" box.`,
-        )
-        setIsSubmitting(false)
-        return
-      }
-
-      if (examType.date && examType.dontKnowYet) {
-        showError(
-          "Exam type selection Error",
-          `You have checked the "I don't know yet" box for your "${examType.name}" exam type, but a date is also selected. Please either only check the "I don't know yet" box, or only select a date for the exam.`,
-        )
-        setIsSubmitting(false)
-        return
-      }
-    }
-
-    if (!data.service) {
-      showError("Service Selection Error", "Please select a service.")
-      setIsSubmitting(false)
-      return
-    }
-
-    if (!data.contact) {
-      showError("Contact Selection Error", "Please select a contact.")
-      setIsSubmitting(false)
-      return
-    }
 
     try {
-      const result = await subscribeExams({
-        semester: data.examSemester,
-        course: data.course,
-        examTypes: data.examType
-          .filter((examType) => examType.checked)
-          .map((examType) => ({
-            examTypeId: examType.id,
-            date: examType.dontKnowYet ? null : examType.date,
-          })),
-        serviceId: Number(data.service),
-        contact: data.contact,
-        remark: data.remark,
-      })
-
+      const result = await subscribeExams(data)
       if (!result.success) {
         showError("Registration Error", result.error)
         return
@@ -183,7 +113,9 @@ export default function App({ user }: RegisterProps) {
     <div className="flex flex-col items-center m-24">
       <form
         className="flex flex-col gap-4 w-full max-w-3xl"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmit, () =>
+          showError("Form error", "Please check the form for errors."),
+        )}
         onKeyDown={preventEnterSubmit}
         encType="multipart/form-data"
       >
@@ -216,8 +148,7 @@ export default function App({ user }: RegisterProps) {
         <FormSection number={1} title="Exam">
           <Controller
             control={control}
-            name="examSemester"
-            defaultValue="1"
+            name="semester"
             render={({ field }) => (
               <ChoiceCards
                 legend="Exam semester *"
@@ -249,54 +180,59 @@ export default function App({ user }: RegisterProps) {
           <p>
             Exam type <RedAsterisk />
           </p>
-          {fields.map((field, index) => (
-            <div key={field.id} className="flex flex-col gap-3">
-              <Controller
-                control={control}
-                name={`examType.${index}.checked`}
-                render={({ field: checkbox }) => (
-                  <Checkbox
-                    label={field.name}
-                    checked={Boolean(checkbox.value)}
-                    onChange={checkbox.onChange}
-                  />
+          {examTypes.map((examType) => {
+            const index = fields.findIndex(
+              (field) => field.examTypeId === examType.id,
+            )
+            const selected = index !== -1
+            return (
+              <div key={examType.id} className="flex flex-col gap-3">
+                <Checkbox
+                  label={examType.name}
+                  checked={selected}
+                  onChange={(checked) =>
+                    checked
+                      ? append({ examTypeId: examType.id, date: "" })
+                      : remove(index)
+                  }
+                />
+                {selected && (
+                  <div className="grid grid-cols-1 gap-4 items-end ml-8 pl-4 border-l-2 border-red-200 sm:grid-cols-2">
+                    <DateInput
+                      label="Exam Date"
+                      registration={register(`examTypes.${index}.date`)}
+                    />
+                    {/* mb-2 matches the bottom margin of the date input */}
+                    <div className="mb-2">
+                      <Checkbox
+                        label="I don't know yet"
+                        // null = "I don't know yet"
+                        checked={watchedExamTypes?.[index]?.date === null}
+                        onChange={(checked) =>
+                          setValue(
+                            `examTypes.${index}.date`,
+                            checked ? null : "",
+                            { shouldValidate: true },
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
                 )}
-              />
-              {watchedExamTypes?.[index]?.checked && (
-                <div className="grid grid-cols-1 gap-4 items-end ml-8 pl-4 border-l-2 border-red-200 sm:grid-cols-2">
-                  <DateInput
-                    label="Exam Date"
-                    registration={register(`examType.${index}.date`)}
-                  />
-                  <Controller
-                    control={control}
-                    name={`examType.${index}.dontKnowYet`}
-                    render={({ field: checkbox }) => (
-                      // mb-2 matches the bottom margin of the date input
-                      <div className="mb-2">
-                        <Checkbox
-                          label="I don't know yet"
-                          checked={Boolean(checkbox.value)}
-                          onChange={checkbox.onChange}
-                        />
-                      </div>
-                    )}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </FormSection>
 
         <FormSection number={3} title="Service">
           <Controller
             control={control}
-            name="service"
+            name="serviceId"
             render={({ field }) => (
               <ChoiceCards
                 legend="Service *"
-                value={field.value ?? ""}
-                onChange={field.onChange}
+                value={field.value ? String(field.value) : ""}
+                onChange={(value) => field.onChange(Number(value))}
                 options={services.map((service) => ({
                   value: String(service.id),
                   label: service.description,
