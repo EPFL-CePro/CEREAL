@@ -38,10 +38,14 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
 
   // Enrich and insert
   const academicYear = getCurrentAcademicYear()
+  const courseCode = data.course.exam.code
+  const courseName = data.course.exam.title
+  const contactSciper = String(data.contact)
+
   let contact: Exam["contact"]
   let exams: SubscribedExam[]
   try {
-    const person = await fetchPersonBySciper(data.contact)
+    const person = await fetchPersonBySciper(contactSciper)
     contact = {
       firstname: person.firstname ?? "",
       lastname: person.lastname ?? "",
@@ -51,8 +55,8 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
 
     exams = await createSubscribedExams(
       data.examTypes.map((examType): NewSubscribedExam => ({
-        code: data.courseCode,
-        name: data.courseName,
+        code: courseCode,
+        name: courseName,
         service_level_id: DEFAULT_SERVICE_LEVEL_ID,
         service_id: data.serviceId,
         exam_type_id: examType.examTypeId,
@@ -76,14 +80,14 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
   // Email: the exams are already saved, so a failure is only a warning
   try {
     const teacherEmails = await fetchCourseTeacherEmails(
-      data.courseCode,
-      data.courseName,
+      courseCode,
+      courseName,
       academicYear,
     )
     // All the exams share the same service and service level
     const [firstExam] = exams
     await sendExamSubscriptionConfirmation({
-      courseCode: data.courseCode,
+      courseCode,
       teacherEmails,
       contactEmail: contact.email,
       registrantEmail: user.email ?? "",

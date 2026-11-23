@@ -140,8 +140,7 @@ export default function App({ user }: RegisterProps) {
     try {
       const result = await subscribeExams({
         semester: data.examSemester,
-        courseCode: data.course.exam.code,
-        courseName: data.course.exam.title,
+        course: data.course,
         examTypes: data.examType
           .filter((examType) => examType.checked)
           .map((examType) => ({
@@ -149,7 +148,7 @@ export default function App({ user }: RegisterProps) {
             date: examType.dontKnowYet ? null : examType.date,
           })),
         serviceId: Number(data.service),
-        contact: String(data.contact),
+        contact: data.contact,
         remark: data.remark,
       })
 
