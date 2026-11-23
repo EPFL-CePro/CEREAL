@@ -14,7 +14,7 @@ import {
   type NewDeferredSession,
 } from "@/types/deferredSession"
 import { type EmailTemplate } from "@/types/emailTemplate"
-import { type Exam, type NewExam } from "@/types/exam"
+import { type Exam } from "@/types/exam"
 import { type ExamStatus } from "@/types/examStatus"
 import { type ExamType } from "@/types/examType"
 import { type Service } from "@/types/service"
@@ -79,30 +79,6 @@ export async function deleteExamStatus(examStatus: ExamStatus): Promise<void> {
 // No permission check on purpose: reference data used by the teachers form too (every logged-in user).
 export async function getAllExamTypes(): Promise<ExamType[]> {
   return (await prisma.exam_type.findMany()) as ExamType[]
-}
-
-// No permission check on purpose: used by the teachers form (every logged-in user).
-export async function insertExam(exam: NewExam): Promise<number> {
-  const created = await prisma.exam.create({
-    data: {
-      code: exam.code,
-      name: exam.name,
-      service_level_id: exam.service_level_id,
-      service_id: exam.service_id,
-      exam_type_id: exam.exam_type_id,
-      exam_status_id: exam.exam_status_id,
-      exam_date: exam.exam_date ? new Date(exam.exam_date) : null,
-      academic_year_id: exam.academic_year_id,
-      exam_semester: String(exam.exam_semester),
-      nb_students: exam.nb_students || null,
-      nb_pages: exam.nb_pages || null,
-      total_pages: exam.total_pages || null,
-      remark: exam.remark || null,
-      responsible_id: exam.responsible_id,
-      contact: JSON.parse(exam.contact),
-    },
-  })
-  return created.id
 }
 
 export async function getAcademicYearsFromExams(): Promise<string[]> {
