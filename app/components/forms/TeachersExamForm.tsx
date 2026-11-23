@@ -26,7 +26,7 @@ import {
   examSubscriptionSchema,
   type ExamSubscription,
 } from "@/app/lib/exam-subscription/schema"
-import { actions } from "@/app/lib/exam-subscription/actions"
+import { subscribeExams } from "@/app/lib/exam-subscription/actions"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { type ExamType } from "@/types/examType"
 import { type Service } from "@/types/service"
@@ -88,7 +88,7 @@ export default function TeachersExamForm({ user }: RegisterProps) {
     setIsSubmitting(true)
 
     try {
-      const result = await actions(data)
+      const result = await subscribeExams(data)
       if (!result.success) {
         showError("Registration Error", result.error)
         return
