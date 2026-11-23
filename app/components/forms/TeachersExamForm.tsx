@@ -291,6 +291,7 @@ export default function TeachersExamForm({ user }: RegisterProps) {
             {...register("remark")}
             placeholder="Additional remarks (optional)"
           />
+          <FieldError message={errors.remark?.message} />
 
           <button
             className="btn btn-primary flex items-center justify-center gap-2 hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
