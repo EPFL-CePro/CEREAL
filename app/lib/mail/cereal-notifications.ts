@@ -97,63 +97,6 @@ export async function sendEmailAbsenceTreated(absenceId: number) {
       .join("\n"),
   })
 }
-// TODO - Delete queries and business logic, receive only
-export async function sendEmailExamServicesConfirmation(examIds: number[]) {
-  const user = await requireUser()
-  // TODO - Extract in a dedicated function in data layout
-  const exams = await prisma.exam.findMany({
-    where: { id: { in: examIds } },
-    include: { exam_type: true, service: true },
-    orderBy: { id: "asc" },
-  })
-  const firstExam = exams[0]
-
-  // One subscription = one course
-  if (
-    !firstExam?.code ||
-    exams.length !== examIds.length ||
-    exams.some((exam) => exam.code !== firstExam.code)
-  ) {
-    throw new Error("Invalid exams")
-  }
-
-  if (!isProdEnv) return
-
-  // Same teachers as the form
-  const courses = await fetchCourses(firstExam.academic_year_id ?? undefined)
-  const course = courses.find(
-    (c) => c.exam.code === firstExam.code && c.exam.title === firstExam.name,
-  )
-
-  const teachers = await Promise.all(
-    (course?.exam.teachers ?? [])
-      .filter((teacher) => teacher.sciper)
-      .map((teacher) => fetchPersonBySciper(String(teacher.sciper))),
-  )
-
-  const contact = (firstExam.contact ?? {}) as { email?: string }
-
-  await sendTemplatedMail("exam_services_confirmation", {
-    course: firstExam.code,
-    teachers: teachers
-      .filter((teacher) => teacher.email)
-      .map((teacher) => teacher.email)
-      .join(", "),
-    contactEmail: contact.email,
-    examTypes: exams.map((exam) => exam.exam_type?.name).join(", "),
-    service: firstExam.service?.description,
-    serviceLevel: "Silver",
-    examDates: exams
-      .map(
-        (exam) =>
-          `    - ${exam.exam_type?.name} : ${exam.exam_date ? formatDateOnlyValue(exam.exam_date) : `Don't know yet`}`,
-      )
-      .join("\n"),
-    remark: firstExam.remark,
-    "registrant.email": user.email || "",
-  })
-}
-// TODO - Get only the necessary data to send the email
 
 export async function sendEmailAbsenceConfirmation(absenceId: number) {
   const user = await requireUser()

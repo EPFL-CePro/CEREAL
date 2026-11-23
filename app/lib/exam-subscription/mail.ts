@@ -19,7 +19,7 @@ export type ExamSubscriptionEmail = {
   remark: string | null
 }
 
-export async function sendExamSubscriptionConfirmation(
+export async function sendExamsSubscriptionConfirmationEmail(
   email: ExamSubscriptionEmail,
 ) {
   if (!isMailEnabled) return

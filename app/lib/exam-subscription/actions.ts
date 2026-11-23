@@ -8,7 +8,7 @@ import {
   fetchCourseTeacherEmails,
   fetchPersonBySciper,
 } from "@/app/lib/epfl/epfl-api"
-import { sendExamSubscriptionConfirmation } from "@/app/lib/exam-subscription/mail"
+import { sendExamsSubscriptionConfirmationEmail } from "@/app/lib/exam-subscription/mail"
 import {
   createSubscribedExams,
   type NewSubscribedExam,
@@ -86,7 +86,7 @@ export async function actions(input: unknown): Promise<ActionResult> {
     )
     // All the exams share the same service and service level
     const [firstExam] = exams
-    await sendExamSubscriptionConfirmation({
+    await sendExamsSubscriptionConfirmationEmail({
       courseCode,
       teacherEmails,
       contactEmail: contact.email,

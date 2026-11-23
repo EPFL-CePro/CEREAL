@@ -23,5 +23,3 @@ export type Exam = {
     lastname: string
   }
 }
-
-export type NewExam = Omit<Exam, "id" | "contact"> & { contact: string }
