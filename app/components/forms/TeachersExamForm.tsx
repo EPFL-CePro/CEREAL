@@ -19,11 +19,9 @@ import Checkbox from "@/app/components/crep/register/Checkbox"
 import ChoiceCards from "@/app/components/crep/register/ChoiceCards"
 import DateInput from "@/app/components/crep/register/DateInput"
 import FormSection from "@/app/components/crep/register/FormSection"
-import { getAllExamTypes, getAllServices, insertExam } from "@/app/lib/database"
-import { getCurrentAcademicYear } from "@/app/lib/dates/academic-year"
-import { fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
+import { getAllExamTypes, getAllServices } from "@/app/lib/database"
+import { subscribeExams } from "@/app/lib/exam-subscription/subscribe-exams"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
-import { sendEmailExamServicesConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type ExamType } from "@/types/examType"
 import { type Inputs } from "@/types/inputs"
 import { type Service } from "@/types/service"
@@ -38,23 +36,6 @@ interface RegisterProps {
 interface AppUser extends User {
   isAdmin?: boolean
   sciper: string
-}
-
-function formatContactForDB(
-  contact: {
-    id?: string | number
-    firstname?: string
-    lastname?: string
-    email?: string
-  },
-  selectedSciper: string,
-) {
-  return JSON.stringify({
-    firstname: contact.firstname ?? "",
-    lastname: contact.lastname ?? "",
-    email: contact.email ?? "",
-    sciper: String(contact.id ?? selectedSciper),
-  })
 }
 
 export default function App({ user }: RegisterProps) {
@@ -157,48 +138,35 @@ export default function App({ user }: RegisterProps) {
     }
 
     try {
-      const contact = await fetchPersonBySciper(data.contact)
-
-      const insertedExamIds: number[] = []
-
-      for (let index = 0; index < data.examType.length; index++) {
-        const examType = data.examType[index]
-        if (!examType.checked) continue
-
-        const insertedExamId = await insertExam({
-          code: data.course.exam.code,
-          name: data.course.exam.title,
-          service_level_id: 2, // Silver by default for everyone, but this is a TODO
-          service_id: parseInt(data.service),
-          exam_type_id: examType.id,
-          exam_status_id: 2,
-          exam_date: examType.dontKnowYet ? null : examType.date,
-          academic_year_id: getCurrentAcademicYear(),
-          exam_semester: parseInt(data.examSemester),
-          nb_students: null,
-          nb_pages: null,
-          total_pages: null,
-          remark: data.remark,
-          responsible_id: null,
-          contact: formatContactForDB(contact, data.contact),
-        })
-        if (typeof insertedExamId !== "number") {
-          showError(
-            "Registration Error",
-            "An error occurred while registering your exam. Please try again later.",
-          )
-          setIsSubmitting(false)
-          return
-        }
-        insertedExamIds.push(insertedExamId)
-      }
-
-      await sendEmailExamServicesConfirmation(insertedExamIds)
-
-      toast.success("Registration Successful", {
-        description: `Your Exam ${data.course.exam.code} has been registered and a confirmation has been sent to your email.`,
+      const result = await subscribeExams({
+        semester: data.examSemester,
+        courseCode: data.course.exam.code,
+        courseName: data.course.exam.title,
+        examTypes: data.examType
+          .filter((examType) => examType.checked)
+          .map((examType) => ({
+            examTypeId: examType.id,
+            date: examType.dontKnowYet ? null : examType.date,
+          })),
+        serviceId: Number(data.service),
+        contact: String(data.contact),
+        remark: data.remark,
       })
-      setIsSubmitting(false)
+
+      if (!result.success) {
+        showError("Registration Error", result.error)
+        return
+      }
+      if (result.warning) {
+        toast.warning("Registration Successful", {
+          description: result.warning,
+          duration: 10000,
+        })
+      } else {
+        toast.success("Registration Successful", {
+          description: `Your Exam ${data.course.exam.code} has been registered and a confirmation has been sent to your email.`,
+        })
+      }
       reset()
     } catch (err) {
       console.error(err)
@@ -206,6 +174,7 @@ export default function App({ user }: RegisterProps) {
         "Unexpected Error",
         "An unexpected error occurred while registering the exam.",
       )
+    } finally {
       setIsSubmitting(false)
     }
   }
