@@ -1,5 +1,7 @@
 import { useId } from "react"
 
+import { RedAsterisk } from "@/app/components/RedAsterisk"
+
 interface ChoiceOption {
   value: string
   label: string
@@ -8,7 +10,8 @@ interface ChoiceOption {
 }
 
 interface ChoiceCardsProps {
-  legend: string
+  label: string
+  required?: boolean
   value: string
   options: ChoiceOption[]
   onChange: (value: string) => void
@@ -16,7 +19,8 @@ interface ChoiceCardsProps {
 }
 
 export default function ChoiceCards({
-  legend,
+  label,
+  required,
   value,
   options,
   onChange,
@@ -26,7 +30,9 @@ export default function ChoiceCards({
 
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="font-semibold mb-2">{legend}</legend>
+      <legend className="mb-2">
+        {label} {required && <RedAsterisk />}
+      </legend>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {options.map((option) => (
           <label
@@ -57,8 +63,8 @@ export default function ChoiceCards({
             )}
 
             <span className="flex flex-col">
-              <span className="font-semibold">{option.label}</span>
-              {option.description && option.description && (
+              <span>{option.label}</span>
+              {option.description && (
                 <span className="text-xs text-slate-600">
                   {option.description}
                 </span>

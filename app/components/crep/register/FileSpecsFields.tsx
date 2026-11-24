@@ -86,7 +86,7 @@ export function FileSpecsFields({
       />
       <div className="col-span-full">
         <ChoiceCards
-          legend="Print"
+          label="Print"
           disabled={disabled}
           value={value.print}
           options={printSides.map((side) => ({
@@ -98,7 +98,7 @@ export function FileSpecsFields({
       </div>
       <div className="col-span-full">
         <ChoiceCards
-          legend="Bindings"
+          label="Bindings"
           disabled={disabled}
           value={value.paper_format}
           options={paperFormats.map((format) => ({
@@ -110,7 +110,7 @@ export function FileSpecsFields({
       </div>
       <div className="col-span-full">
         <ChoiceCards
-          legend="Paper color"
+          label="Paper color"
           disabled={disabled}
           value={value.paper_color}
           options={paperColors.map((color) => ({

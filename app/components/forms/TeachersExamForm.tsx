@@ -22,11 +22,11 @@ import DateInput from "@/app/components/crep/register/DateInput"
 import FormSection from "@/app/components/crep/register/FormSection"
 import { FieldError } from "@/app/components/FieldError"
 import { getAllExamTypes, getAllServices } from "@/app/lib/database"
+import { subscribeExams } from "@/app/lib/exam-subscription/actions"
 import {
   examSubscriptionSchema,
   type ExamSubscription,
 } from "@/app/lib/exam-subscription/schema"
-import { subscribeExams } from "@/app/lib/exam-subscription/actions"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { type ExamType } from "@/types/examType"
 import { type Service } from "@/types/service"
@@ -158,7 +158,8 @@ export default function TeachersExamForm({ user }: RegisterProps) {
             name="semester"
             render={({ field }) => (
               <ChoiceCards
-                legend="Exam semester *"
+                required
+                label="Exam semester"
                 value={field.value}
                 onChange={field.onChange}
                 options={[
@@ -169,10 +170,10 @@ export default function TeachersExamForm({ user }: RegisterProps) {
             )}
           />
           <FieldError message={errors.semester?.message} />
-          <div>
-            <h3>
+          <div className="flex flex-col gap-2">
+            <p>
               Select your exam <RedAsterisk />
-            </h3>
+            </p>
             <ReactSelect
               control={control}
               label={"course"}
@@ -251,7 +252,8 @@ export default function TeachersExamForm({ user }: RegisterProps) {
             name="serviceId"
             render={({ field }) => (
               <ChoiceCards
-                legend="Service *"
+                required
+                label="Service"
                 value={field.value ? String(field.value) : ""}
                 onChange={(value) => field.onChange(Number(value))}
                 options={services.map((service) => ({
@@ -265,9 +267,9 @@ export default function TeachersExamForm({ user }: RegisterProps) {
         </FormSection>
 
         <FormSection number={4} title="Contact and remarks">
-          <label>
+          <p>
             Contact <RedAsterisk />
-          </label>
+          </p>
           <Callout type="warning">
             Please select here the person <u>from your course</u> who will be in
             contact with CePro for preparation. This is the person who will
@@ -287,7 +289,7 @@ export default function TeachersExamForm({ user }: RegisterProps) {
           <label htmlFor="remark">Additional remarks</label>
           <textarea
             id="remark"
-            className="mb-2 p-2 border rounded-md accent-red-500 border-slate-300"
+            className="mb-2 rounded-md border border-slate-300 bg-white p-2 focus:outline-none focus:ring-2 focus:ring-red-500"
             {...register("remark")}
             placeholder="Additional remarks (optional)"
           />
