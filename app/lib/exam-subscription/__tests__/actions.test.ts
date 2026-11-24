@@ -116,6 +116,7 @@ describe("subscribeExams", () => {
 
     expect(sendExamsSubscriptionConfirmationEmail).toHaveBeenCalledWith({
       courseCode: "CS-101",
+      academicYear: "2026-2027",
       teacherEmails: ["teacher@epfl.ch"],
       contactEmail: "ada@epfl.ch",
       registrantEmail: "registrant@epfl.ch",
