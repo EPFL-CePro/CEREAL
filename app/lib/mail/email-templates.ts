@@ -29,6 +29,7 @@ export const EMAIL_TEMPLATES = {
     name: "Exam services subscription confirmation",
     placeholders: [
       { token: "course", desc: "Course code" },
+      { token: "academicYear", desc: "Academic Year (e.g. 2026-2027)" },
       { token: "teachers", desc: "Teachers list" },
       { token: "contactEmail", desc: "Contact email" },
       { token: "examTypes", desc: "Selected exam types" },
@@ -39,7 +40,7 @@ export const EMAIL_TEMPLATES = {
       { token: "registrant.email", desc: "Registrant email (recipient)" },
     ],
     defaults: {
-      subject: "CePro - exam services subscription confirmation",
+      subject: "[CePro] {{course}} - Exam services subscription ({{academicYear}})",
       body: `
 Hello,
 Your subscription to our exam services has been successfully registered:

@@ -88,6 +88,7 @@ export async function subscribeExams(input: unknown): Promise<ActionResult> {
     const [firstExam] = exams
     await sendExamsSubscriptionConfirmationEmail({
       courseCode,
+      academicYear,
       teacherEmails,
       contactEmail: contact.email,
       registrantEmail: user.email ?? "",

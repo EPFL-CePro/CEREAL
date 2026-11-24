@@ -10,6 +10,7 @@ const isMailEnabled =
 // DTO: everything the email needs, already resolved
 export type ExamSubscriptionEmail = {
   courseCode: string
+  academicYear: string
   teacherEmails: string[]
   contactEmail: string
   registrantEmail: string
@@ -26,6 +27,7 @@ export async function sendExamsSubscriptionConfirmationEmail(
 
   await sendTemplatedMail("exam_services_confirmation", {
     course: email.courseCode,
+    academicYear: email.academicYear,
     teachers: email.teacherEmails.join(", "),
     contactEmail: email.contactEmail,
     examTypes: email.exams.map((exam) => exam.examType).join(", "),
