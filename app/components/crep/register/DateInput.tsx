@@ -28,7 +28,7 @@ export default function DateInput({
         id={id}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={`text-right mb-2 p-2 border rounded-md accent-red-500 ${error ? "border-red-500" : "border-slate-300"}`}
+        className="mb-2 rounded-md border border-slate-300 bg-white p-2 focus:outline-none focus:ring-2 focus:ring-red-500 text-right accent-red-500 aria-invalid:border-red-500"
         type="date"
         {...registration}
       />

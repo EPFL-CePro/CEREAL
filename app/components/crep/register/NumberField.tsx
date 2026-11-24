@@ -8,9 +8,6 @@ interface NumberFieldProps {
   disabled?: boolean
 }
 
-const fieldClassName =
-  "rounded-md border border-slate-300 bg-white p-2 disabled:bg-slate-100 disabled:text-slate-700"
-
 export default function NumberField({
   label,
   value,
@@ -22,12 +19,10 @@ export default function NumberField({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="font-semibold" htmlFor={id}>
-        {label}
-      </label>
+      <label htmlFor={id}>{label}</label>
       <input
         id={id}
-        className={`${fieldClassName} text-right`}
+        className="rounded-md border border-slate-300 bg-white p-2 focus:outline-none focus:ring-2 focus:ring-red-500 text-right disabled:bg-slate-100 disabled:text-slate-700"
         type="number"
         min={min}
         disabled={disabled}
