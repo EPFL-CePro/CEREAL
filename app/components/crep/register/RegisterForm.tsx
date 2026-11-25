@@ -506,7 +506,7 @@ export default function RegisterForm({ user }: RegisterProps) {
       await sendEmailCrepPrintingConfirmation(String(insertedExamId))
 
       if (status === "registered-warning") {
-        // Modal with warning that there is less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date.
+        // CrepExamModal with warning that there is less than `MIN_BUSINESS_DAYS_BEFORE_DELIVERY` business days between today and the desired delivery date.
         openModal(
           "REQUIRES ATTENTION - Registration Successful",
           `
@@ -516,7 +516,7 @@ export default function RegisterForm({ user }: RegisterProps) {
                 `,
         )
       } else if (status === "registered-error") {
-        // Modal with error message that a printing session could not be calculated and that the CePro team will contact the user as soon as possible.
+        // CrepExamModal with error message that a printing session could not be calculated and that the CePro team will contact the user as soon as possible.
         openModal(
           "REQUIRES ATTENTION - REGISTRATION ERROR",
           `

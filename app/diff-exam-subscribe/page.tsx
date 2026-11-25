@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 
-import DiffRegisterForm from "../components/forms/DiffExamForm"
+import DiffRegisterForm from "../components/diff-exam-subscribe/DiffExamForm"
 
 export const metadata = {
   title: "Register for diff exam",

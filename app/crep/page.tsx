@@ -1,7 +1,7 @@
 import { auth } from "../../auth"
-import Calendar from "../components/crep/calendar/FullCalendar"
-import { Footer } from "../components/Footer"
-import { NavBar } from "../components/NavBar"
+import Calendar from "../components/crep/calendar/CrepCalendar"
+import { Footer } from "../components/layout/Footer"
+import { CrepNavBar } from "../components/crep/CrepNavBar"
 
 export const metadata = {
   title: "CREP - Calendar",
@@ -14,7 +14,7 @@ export default async function Home() {
     <>
       <div className="font-sans grid grid-rows items-center justify-items-center px-6 sm:px-12 gap-8 pt-8 sm:pb-0">
         <div className="header w-full">
-          <NavBar user={session?.user} />
+          <CrepNavBar user={session?.user} />
         </div>
         <div className="calendar w-full">
           <Calendar user={session?.user} />

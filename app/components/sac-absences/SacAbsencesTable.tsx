@@ -267,7 +267,7 @@ export function SacAbsencesTable() {
             disabled={isExporting}
             className="h-10 rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isExporting ? "Exporting..." : "Export"}
+            {isExporting ? "Exporting..." : "ExportButton"}
           </button>
         </div>
       </div>
