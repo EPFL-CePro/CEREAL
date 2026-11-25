@@ -2,7 +2,7 @@ import { type CrepExam } from "@/types/crepExam"
 
 import { auth } from "../../../auth"
 import { ExamsManageFilesTable } from "../../components/crep/exams/ExamsManageFilesTable"
-import { Footer } from "../../components/Footer"
+import { Footer } from "../../components/layout/Footer"
 import {
   getAllCrepExams,
   getAllCrepExamsForRepro,

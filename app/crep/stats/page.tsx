@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 
-import AcademicYearSelect from "@/app/components/AcademicYearSelect"
+import AcademicYearSelect from "@/app/components/crep/stats/AcademicYearSelect"
 import DeliveryDelayHistogram, {
   type DeliveryDelayBucket,
 } from "@/app/components/crep/stats/DeliveryDelayHistogram"

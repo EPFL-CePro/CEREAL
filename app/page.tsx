@@ -3,7 +3,7 @@ import Link from "next/link"
 
 import { auth } from "@/auth"
 
-import { Footer } from "./components/Footer"
+import { Footer } from "./components/layout/Footer"
 
 export const metadata = {
   title: "CEREAL",

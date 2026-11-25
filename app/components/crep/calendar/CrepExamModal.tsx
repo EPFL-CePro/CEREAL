@@ -23,9 +23,9 @@ import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor"
-import { useConfirm } from "./ui/ConfirmProvider"
-import { FileSpecsFields } from "./crep/register/FileSpecsFields"
-import { PrintButton } from "./ui/PrintButton"
+import { useConfirm } from "../../ui/ConfirmProvider"
+import { FileSpecsFields } from "../register/FileSpecsFields"
+import { PrintButton } from "../../ui/PrintButton"
 import {
   updateExamRemarkById,
   updateExamStatusById,
@@ -36,10 +36,10 @@ import {
   updateCrepPriceTotal,
   updateCrepExamFields,
   updateCrepFileSpecs,
-} from "../lib/crep/database"
-import { examNotAdminStatus, registeredStatus } from "../lib/crep/exam-status"
-import { getBindingLabel, validateFilesSpecs } from "../lib/crep/file-specs"
-import { limitTextToLines } from "../lib/crep/remark-lines"
+} from "../../../lib/crep/database"
+import { examNotAdminStatus, registeredStatus } from "../../../lib/crep/exam-status"
+import { getBindingLabel, validateFilesSpecs } from "../../../lib/crep/file-specs"
+import { limitTextToLines } from "../../../lib/crep/remark-lines"
 import {
   formatDateInputValue,
   formatDateOnlyValue,
@@ -47,7 +47,7 @@ import {
   formatTimeInputValue,
   getDatePartFromDateTimeString,
   getTimePartFromDateTimeString,
-} from "../lib/dates/date-time"
+} from "../../../lib/dates/date-time"
 
 interface AppUser extends User {
   isAdmin?: boolean
@@ -117,7 +117,7 @@ function AuthorizedPersonsAndFiles({
   )
 }
 
-export function Modal({
+export function CrepExamModal({
   event,
   user,
   examStatus,

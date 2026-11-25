@@ -6,8 +6,8 @@ import { CustomProvider } from "rsuite"
 import { Toaster } from "sonner"
 
 import { ConfirmProvider } from "./components/ui/ConfirmProvider"
-import { ImpersonationBanner } from "./components/ImpersonationBanner"
-import { MainNavBar } from "./components/navigation/MainNavBar"
+import { ImpersonationBanner } from "./components/layout/ImpersonationBanner"
+import { MainNavBar } from "./components/layout/MainNavBar"
 
 import type { Metadata } from "next"
 

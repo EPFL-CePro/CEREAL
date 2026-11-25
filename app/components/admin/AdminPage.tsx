@@ -32,7 +32,7 @@ import { type ExamStatus } from "@/types/examStatus"
 import { type Service } from "@/types/service"
 import { type ServiceLevel } from "@/types/serviceLevel"
 
-import DeferredSessionManager from "./DeferredSessionManager"
+import DeferredSessionManager from "./deferred-sessions/DeferredSessionManager"
 
 type Tab =
   "service" | "serviceLevel" | "examStatus" | "emailTemplate" | "defferedExams"

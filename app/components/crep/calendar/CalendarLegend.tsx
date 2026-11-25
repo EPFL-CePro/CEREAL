@@ -4,7 +4,7 @@ interface LegendProps {
   isAdmin: boolean
 }
 
-export function Legend({ isAdmin }: LegendProps) {
+export function CalendarLegend({ isAdmin }: LegendProps) {
   return (
     <>
       {getAllowedExamStatus(isAdmin).map((status) => {

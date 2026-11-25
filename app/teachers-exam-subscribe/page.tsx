@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 
-import RegisterForm from "../components/forms/TeachersExamForm"
+import RegisterForm from "../components/teachers-exam-subscribe/TeachersExamForm"
 
 export const metadata = {
   title: "Register your exam",

@@ -1,9 +1,9 @@
 "use client"
 import { type User } from "next-auth"
 
-import { SignIn } from "./auth/SignInButton"
-import { SignOut } from "./auth/SignOutButton"
-import { Export } from "./crep/exportData/Export"
+import { SignIn } from "../auth/SignInButton"
+import { SignOut } from "../auth/SignOutButton"
+import { ExportButton } from "@/app/components/crep/export/ExportButton"
 
 interface NavBarProps {
   user: AppUser
@@ -14,7 +14,7 @@ interface AppUser extends User {
   sciper: string
 }
 
-export function NavBar({ user }: NavBarProps) {
+export function CrepNavBar({ user }: NavBarProps) {
   const isDevMode = process.env.NODE_ENV === "development"
   return (
     <nav className="navbar">
@@ -35,7 +35,7 @@ export function NavBar({ user }: NavBarProps) {
               <span className="mr-4">Welcome, {user.name} !</span>
               <div className="flex gap-2">
                 <SignOut />
-                <Export user={user} />
+                <ExportButton user={user} />
               </div>
             </>
           ) : (

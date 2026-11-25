@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 
-import DigitalForm from "../components/forms/DigitalForm"
+import DigitalForm from "../components/digital-archiving/DigitalArchivingForm"
 
 export const metadata = {
   title: "Register your exam",

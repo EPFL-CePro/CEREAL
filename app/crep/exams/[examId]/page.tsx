@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { ExamFilesManager } from "@/app/components/crep/exams/ExamFilesManager"
-import { Footer } from "@/app/components/Footer"
+import { Footer } from "@/app/components/layout/Footer"
 import {
   getAllCrepExamsForRepro,
   getCrepExamById,

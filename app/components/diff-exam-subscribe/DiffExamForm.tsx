@@ -36,7 +36,7 @@ function parseDateInputValue(value: string) {
   return new Date(year, month - 1, day)
 }
 
-export default function App({ user }: DiffExamFormProps) {
+export default function DiffExamForm({ user }: DiffExamFormProps) {
   const [boFileForUser, setBoFileForUser] = React.useState<
     BoFileForUser[] | null
   >(null)

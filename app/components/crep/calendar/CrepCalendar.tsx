@@ -31,9 +31,9 @@ import {
 } from "@/app/lib/dates/date-time"
 
 import { ExamSearch } from "./ExamSearch"
-import { Filters } from "../../Filters"
-import { Legend } from "../../Legend"
-import { Modal } from "../../Modal"
+import { CalendarFilters } from "./CalendarFilters"
+import { CalendarLegend } from "./CalendarLegend"
+import { CrepExamModal } from "./CrepExamModal"
 
 interface CalendarProps {
   user: AppUser
@@ -414,7 +414,7 @@ export default function Calendar({ user }: CalendarProps) {
       <div className=" w-full flex flex-row justify-between gap-4 flex-wrap md:flex-nowrap">
         <div className="flex flex-grow-8 flex-row">
           <div className="flex-col ml-4 gap-4 grid grid-cols-4">
-            <Legend isAdmin={!!user?.isAdmin} />
+            <CalendarLegend isAdmin={!!user?.isAdmin} />
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full md:w-auto md:flex-row md:items-start">
@@ -431,7 +431,7 @@ export default function Calendar({ user }: CalendarProps) {
             />
           </div>
           <div className="flex-min-2 md:min-w-80 w-full md:w-auto">
-            <Filters
+            <CalendarFilters
               examStatus={availableStatus}
               user={user}
               setFilters={setFilters as Dispatch<unknown>}
@@ -564,7 +564,7 @@ export default function Calendar({ user }: CalendarProps) {
       >
         {modalOpen && (
           <>
-            <Modal
+            <CrepExamModal
               event={selectedEvent}
               user={user}
               exams={exams}

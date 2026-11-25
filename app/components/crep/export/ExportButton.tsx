@@ -12,7 +12,7 @@ interface ExportProps {
   user: AppUser
 }
 
-export function Export({ user }: ExportProps) {
+export function ExportButton({ user }: ExportProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
   return (

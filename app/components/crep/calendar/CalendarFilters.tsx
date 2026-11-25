@@ -86,7 +86,7 @@ const colourStyles: StylesConfig<StatusOption, true> = {
   }),
 }
 
-export function Filters({ examStatus, setFilters }: FiltersProps) {
+export function CalendarFilters({ examStatus, setFilters }: FiltersProps) {
   return (
     <Select
       isMulti
@@ -94,7 +94,7 @@ export function Filters({ examStatus, setFilters }: FiltersProps) {
       options={examStatus}
       className="basic-multi-select z-10"
       classNamePrefix="select"
-      placeholder="Filters..."
+      placeholder="CalendarFilters..."
       theme={(theme) => ({
         ...theme,
         borderRadius: 9,

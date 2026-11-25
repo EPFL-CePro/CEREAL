@@ -31,8 +31,8 @@ import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { type ExamType } from "@/types/examType"
 import { type Service } from "@/types/service"
 
-import ReactSelect from "./ReactSelect"
-import { RedAsterisk } from "./RedAsterisk"
+import ReactSelect from "../forms/ReactSelect"
+import { RedAsterisk } from "../forms/RedAsterisk"
 
 interface RegisterProps {
   user: AppUser
