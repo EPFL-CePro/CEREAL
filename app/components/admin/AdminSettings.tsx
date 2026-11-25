@@ -98,7 +98,7 @@ const templateFieldLabels: {
   { key: "reply_to", label: "Reply-To" },
 ]
 
-export default function AdminPage() {
+export default function AdminSettings() {
   const confirm = useConfirm()
   const [activeTab, setActiveTab] = React.useState<Tab>("service")
   const [services, setServices] = React.useState<Service[]>([])

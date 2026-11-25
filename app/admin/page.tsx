@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 
-import AdminPage from "../components/admin/AdminPage"
+import AdminSettings from "../components/admin/AdminSettings"
 
 export const metadata = {
   title: "CEREAL - Admin",
@@ -9,5 +9,5 @@ export const metadata = {
 export default async function Page() {
   const session = await auth()
   if (!session?.user) return
-  return <AdminPage />
+  return <AdminSettings />
 }
