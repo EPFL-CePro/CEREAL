@@ -30,10 +30,10 @@ import {
   formatDateInputValue,
 } from "@/app/lib/dates/date-time"
 
-import { ExamSearch } from "./ExamSearch"
 import { CalendarFilters } from "./CalendarFilters"
 import { CalendarLegend } from "./CalendarLegend"
 import { CrepExamModal } from "./CrepExamModal"
+import { ExamSearch } from "./ExamSearch"
 
 interface CalendarProps {
   user: AppUser

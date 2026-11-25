@@ -38,7 +38,11 @@ export const examSubscriptionSchema = z.object({
     ],
     "Please select a contact.",
   ),
-  remark: z.string().trim().max(1000, "The remark can't be longer than 1000 characters").optional(),
+  remark: z
+    .string()
+    .trim()
+    .max(1000, "The remark can't be longer than 1000 characters")
+    .optional(),
 })
 
 export type ExamSubscription = z.infer<typeof examSubscriptionSchema>

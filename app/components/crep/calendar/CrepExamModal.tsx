@@ -23,9 +23,6 @@ import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor"
-import { useConfirm } from "../../ui/ConfirmProvider"
-import { FileSpecsFields } from "../register/FileSpecsFields"
-import { PrintButton } from "../../ui/PrintButton"
 import {
   updateExamRemarkById,
   updateExamStatusById,
@@ -37,8 +34,14 @@ import {
   updateCrepExamFields,
   updateCrepFileSpecs,
 } from "../../../lib/crep/database"
-import { examNotAdminStatus, registeredStatus } from "../../../lib/crep/exam-status"
-import { getBindingLabel, validateFilesSpecs } from "../../../lib/crep/file-specs"
+import {
+  examNotAdminStatus,
+  registeredStatus,
+} from "../../../lib/crep/exam-status"
+import {
+  getBindingLabel,
+  validateFilesSpecs,
+} from "../../../lib/crep/file-specs"
 import { limitTextToLines } from "../../../lib/crep/remark-lines"
 import {
   formatDateInputValue,
@@ -48,6 +51,9 @@ import {
   getDatePartFromDateTimeString,
   getTimePartFromDateTimeString,
 } from "../../../lib/dates/date-time"
+import { useConfirm } from "../../ui/ConfirmProvider"
+import { PrintButton } from "../../ui/PrintButton"
+import { FileSpecsFields } from "../register/FileSpecsFields"
 
 interface AppUser extends User {
   isAdmin?: boolean

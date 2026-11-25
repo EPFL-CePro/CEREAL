@@ -5,10 +5,10 @@ import { useState } from "react"
 import { type User } from "next-auth"
 import { useForm, type SubmitHandler } from "react-hook-form"
 
-import Callout from "@/app/components/ui/Callout"
+import FilesAndPrintSettings from "@/app/components/crep/register/FilesAndPrintSettings"
 import Checkbox from "@/app/components/forms/Checkbox"
 import DateInput from "@/app/components/forms/DateInput"
-import FilesAndPrintSettings from "@/app/components/crep/register/FilesAndPrintSettings"
+import Callout from "@/app/components/ui/Callout"
 import {
   getAllExamsBetweenDates,
   getBlockingExamsForDate,
@@ -45,8 +45,8 @@ import { type AuthorizedPersons } from "@/types/user"
 
 import FormSection from "../../forms/FormSection"
 import ReactSelect from "../../forms/ReactSelect"
-import { MessageModal } from "../../ui/MessageModal"
 import { RedAsterisk } from "../../forms/RedAsterisk"
+import { MessageModal } from "../../ui/MessageModal"
 
 interface RegisterProps {
   user: AppUser
