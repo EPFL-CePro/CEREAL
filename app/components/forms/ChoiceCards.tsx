@@ -16,6 +16,7 @@ interface ChoiceCardsProps {
   options: ChoiceOption[]
   onChange: (value: string) => void
   disabled?: boolean
+  stacked?: boolean // one option per line
 }
 
 export default function ChoiceCards({
@@ -25,6 +26,7 @@ export default function ChoiceCards({
   options,
   onChange,
   disabled,
+  stacked,
 }: ChoiceCardsProps) {
   const name = useId()
 
@@ -33,7 +35,9 @@ export default function ChoiceCards({
       <legend className="mb-2">
         {label} {required && <RedAsterisk />}
       </legend>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div
+        className={`grid grid-cols-1 gap-3 ${stacked ? "" : "sm:grid-cols-2"}`}
+      >
         {options.map((option) => (
           <label
             key={option.value}
