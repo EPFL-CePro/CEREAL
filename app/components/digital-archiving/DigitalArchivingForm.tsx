@@ -165,7 +165,7 @@ export default function DigitalArchivingForm({ user }: RegisterProps) {
       >
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold text-center">
-            Digital archiving of exam papers
+            CePro - Digital archiving of exam papers
           </h1>
           <p>
             Archive the scanned copies of an exam. All fields marked with{" "}

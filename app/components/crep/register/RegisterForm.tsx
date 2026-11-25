@@ -583,7 +583,7 @@ export default function RegisterForm({ user }: RegisterProps) {
         {/* register your input into the hook by invoking the "register" function */}
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold text-center">
-            Exam Printing Order
+            CePro - Exam Printing Order
           </h1>
           <p>
             Order printed copies of an exam for your class. All fields marked

@@ -243,7 +243,7 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
       >
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold text-center">
-            Absence submission & Deferred exams subscription
+            CePro - Absence submission & Deferred exams subscription
           </h1>
           <p>
             Submit your absence certificate and, if needed, subscribe to the

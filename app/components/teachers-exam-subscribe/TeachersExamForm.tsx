@@ -129,7 +129,7 @@ export default function TeachersExamForm({ user }: RegisterProps) {
         {/* register your input into the hook by invoking the "register" function */}
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-semibold text-center">
-            CePro — Exam service subscription
+            CePro - Exam service subscription
           </h1>
           <p>
             Please provide us all the necessary information about your exam (end
