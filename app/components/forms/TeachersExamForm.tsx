@@ -15,12 +15,12 @@ import {
 } from "react-hook-form"
 import { toast } from "sonner"
 
-import Callout from "@/app/components/Callout"
-import Checkbox from "@/app/components/crep/register/Checkbox"
-import ChoiceCards from "@/app/components/crep/register/ChoiceCards"
-import DateInput from "@/app/components/crep/register/DateInput"
-import FormSection from "@/app/components/crep/register/FormSection"
-import { FieldError } from "@/app/components/FieldError"
+import Callout from "@/app/components/ui/Callout"
+import Checkbox from "@/app/components/forms/Checkbox"
+import ChoiceCards from "@/app/components/forms/ChoiceCards"
+import DateInput from "@/app/components/forms/DateInput"
+import FormSection from "@/app/components/forms/FormSection"
+import { FieldError } from "@/app/components/forms/FieldError"
 import { getAllExamTypes, getAllServices } from "@/app/lib/database"
 import { subscribeExams } from "@/app/lib/exam-subscription/actions"
 import {
@@ -32,7 +32,7 @@ import { type ExamType } from "@/types/examType"
 import { type Service } from "@/types/service"
 
 import ReactSelect from "./ReactSelect"
-import { RedAsterisk } from "../RedAsterisk"
+import { RedAsterisk } from "./RedAsterisk"
 
 interface RegisterProps {
   user: AppUser

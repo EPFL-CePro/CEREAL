@@ -12,7 +12,7 @@ interface RegisterModalProps {
   onResult?: (confirmed: boolean) => void
 }
 
-export function RegisterModal({
+export function MessageModal({
   setModalOpen,
   title,
   message,

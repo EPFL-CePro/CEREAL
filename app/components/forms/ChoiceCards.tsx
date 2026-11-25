@@ -1,6 +1,6 @@
 import { useId } from "react"
 
-import { RedAsterisk } from "@/app/components/RedAsterisk"
+import { RedAsterisk } from "@/app/components/forms/RedAsterisk"
 
 interface ChoiceOption {
   value: string

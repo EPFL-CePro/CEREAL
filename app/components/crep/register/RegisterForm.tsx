@@ -5,9 +5,9 @@ import { useState } from "react"
 import { type User } from "next-auth"
 import { useForm, type SubmitHandler } from "react-hook-form"
 
-import Callout from "@/app/components/Callout"
-import Checkbox from "@/app/components/crep/register/Checkbox"
-import DateInput from "@/app/components/crep/register/DateInput"
+import Callout from "@/app/components/ui/Callout"
+import Checkbox from "@/app/components/forms/Checkbox"
+import DateInput from "@/app/components/forms/DateInput"
 import FilesAndPrintSettings from "@/app/components/crep/register/FilesAndPrintSettings"
 import {
   getAllExamsBetweenDates,
@@ -43,10 +43,10 @@ import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
 import { type Inputs } from "@/types/inputs"
 import { type AuthorizedPersons } from "@/types/user"
 
-import FormSection from "./FormSection"
+import FormSection from "../../forms/FormSection"
 import ReactSelect from "../../forms/ReactSelect"
-import { RegisterModal } from "../../forms/RegisterModal"
-import { RedAsterisk } from "../../RedAsterisk"
+import { MessageModal } from "../../ui/MessageModal"
+import { RedAsterisk } from "../../forms/RedAsterisk"
 
 interface RegisterProps {
   user: AppUser
@@ -565,7 +565,7 @@ export default function RegisterForm({ user }: RegisterProps) {
         }}
       >
         {modalOpen && (
-          <RegisterModal
+          <MessageModal
             setModalOpen={setModalOpen}
             title={modalTitle}
             message={modalMessage}

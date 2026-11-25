@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { TrashIcon, PencilIcon } from "@heroicons/react/24/outline"
 import { type User } from "next-auth"
 
-import { useConfirm } from "@/app/components/ConfirmProvider"
+import { useConfirm } from "@/app/components/ui/ConfirmProvider"
 import { deleteComment, insertComment, updateComment } from "@/app/lib/database"
 import { type Comment } from "@/types/comment"
 import { type Exam } from "@/types/exam"

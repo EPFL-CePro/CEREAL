@@ -6,7 +6,7 @@ import { ArrowUpTrayIcon, DocumentTextIcon } from "@heroicons/react/24/outline"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
 
-import { useConfirm } from "@/app/components/ConfirmProvider"
+import { useConfirm } from "@/app/components/ui/ConfirmProvider"
 import { startImpersonation } from "@/app/lib/auth/impersonation"
 import {
   deleteExamStatus,

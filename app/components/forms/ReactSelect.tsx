@@ -20,7 +20,7 @@ import Select from "react-select"
 import AsyncSelect from "react-select/async"
 import { toast } from "sonner"
 
-import { RedAsterisk } from "@/app/components/RedAsterisk"
+import { RedAsterisk } from "@/app/components/forms/RedAsterisk"
 import {
   fetchCourses,
   fetchGroupPersons,
