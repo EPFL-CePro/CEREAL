@@ -52,12 +52,22 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
   const [isSubscribeToDiffChecked, setIsSubscribeToDiffChecked] =
     React.useState(false)
 
-  const [beginAbsenceDate, setBeginAbsenceDate] = React.useState<Date | null>(
-    null,
-  )
-  const [endAbsenceDate, setEndAbsenceDate] = React.useState<Date | null>(null)
-
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const defaultValues: DiffExamFormInputs = {
+    startingAbsenceDate: "",
+    endingAbsenceDate: "",
+    absenceFile: [],
+    comment: "",
+    diffExams: [],
+  }
+
+  const { control, handleSubmit, register, setValue, watch, reset } =
+    useForm<DiffExamFormInputs>({ defaultValues })
+
+  const beginAbsenceDate = parseDateInputValue(watch("startingAbsenceDate"))
+  const endAbsenceDate = parseDateInputValue(watch("endingAbsenceDate"))
+  const selectedDiffExams = watch("diffExams") ?? []
 
   const filteredBoFileForUser = React.useMemo(() => {
     if (!boFileForUser) return null
@@ -76,16 +86,6 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
       return examDay >= minDate && examDay <= maxDate
     })
   }, [beginAbsenceDate, boFileForUser, endAbsenceDate])
-
-  const { control, handleSubmit, register, setValue, watch } =
-    useForm<DiffExamFormInputs>({
-      defaultValues: {
-        absenceFile: [],
-        diffExams: [],
-      },
-    })
-
-  const selectedDiffExams = watch("diffExams") ?? []
 
   function getExamKey(exam: BoFileForUser) {
     return `${exam["codification matière (indépendant du plan)"]}-${exam["date séance"]}`
@@ -175,7 +175,8 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
         description:
           "Your absence has been successfully submitted. An email should have been sent to you.",
       })
-      // TODO : CLEAN FORM
+      reset()
+      setIsSubscribeToDiffChecked(false)
     } catch (err) {
       console.error(err)
       showError(
@@ -256,18 +257,12 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
             <DateInput
               label="Beginning of the absence"
               required
-              registration={register("startingAbsenceDate", {
-                onChange: (e) =>
-                  setBeginAbsenceDate(parseDateInputValue(e.target.value)),
-              })}
+              registration={register("startingAbsenceDate")}
             />
             <DateInput
               label="End of the absence"
               required
-              registration={register("endingAbsenceDate", {
-                onChange: (e) =>
-                  setEndAbsenceDate(parseDateInputValue(e.target.value)),
-              })}
+              registration={register("endingAbsenceDate")}
             />
           </div>
 
@@ -333,7 +328,10 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
           <Checkbox
             label="I also want to subscribe to deferred exams"
             checked={isSubscribeToDiffChecked}
-            onChange={setIsSubscribeToDiffChecked}
+            onChange={(checked) => {
+              setIsSubscribeToDiffChecked(checked)
+              if (!checked) setValue("diffExams", []) // clean diffExams if unchecked
+            }}
           />
 
           {isSubscribeToDiffChecked &&
