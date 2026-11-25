@@ -2,17 +2,23 @@
 // This form allows users to register their exams into the system.
 import React from "react"
 
+import { DocumentTextIcon, TrashIcon } from "@heroicons/react/24/outline"
 import { type User } from "next-auth"
-import { useForm, type SubmitHandler } from "react-hook-form"
+import { Controller, useForm, type SubmitHandler } from "react-hook-form"
+import { toast } from "sonner"
 
+import Checkbox from "@/app/components/forms/Checkbox"
+import DateInput from "@/app/components/forms/DateInput"
+import FileDropzone from "@/app/components/forms/FileDropZone"
+import FormSection from "@/app/components/forms/FormSection"
+import { RedAsterisk } from "@/app/components/forms/RedAsterisk"
+import Callout from "@/app/components/ui/Callout"
 import { insertAbsence, insertDiffExamSubscription } from "@/app/lib/database"
 import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { sendEmailAbsenceConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type BoFileForUser } from "@/types/boFile"
 import { type DiffExamFormInputs } from "@/types/diffExamForm"
-
-import { MessageModal } from "../ui/MessageModal"
 
 interface DiffExamFormProps {
   user: AppUser
@@ -53,16 +59,6 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
 
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const [modalOpen, setModalOpen] = React.useState(false)
-  const [modalTitle, setModalTitle] = React.useState("Registration Successful")
-  const [modalMessage, setModalMessage] = React.useState(
-    "Your exam has been successfully registered.",
-  )
-  const [modalResolver, setModalResolver] = React.useState<
-    ((confirmed: boolean) => void) | null
-  >(null)
-  const [isConfirmModal, setIsConfirmModal] = React.useState(false)
-
   const filteredBoFileForUser = React.useMemo(() => {
     if (!boFileForUser) return null
     if (!beginAbsenceDate || !endAbsenceDate) return boFileForUser
@@ -81,9 +77,10 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
     })
   }, [beginAbsenceDate, boFileForUser, endAbsenceDate])
 
-  const { handleSubmit, register, setValue, watch } =
+  const { control, handleSubmit, register, setValue, watch } =
     useForm<DiffExamFormInputs>({
       defaultValues: {
+        absenceFile: [],
         diffExams: [],
       },
     })
@@ -108,96 +105,86 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
     })
   }
 
-  const openModal = (title: string, message: string) => {
-    setIsConfirmModal(false)
-    setModalResolver(null)
-    setModalTitle(title)
-    setModalMessage(message)
-    setModalOpen(true)
-    const dialog = document.getElementById(
-      "register-modal",
-    ) as HTMLDialogElement | null
-    dialog?.showModal?.()
-  }
-  const handleModalResult = (confirmed: boolean) => {
-    if (modalResolver) {
-      modalResolver(confirmed)
-      setModalResolver(null)
-    }
-    setModalOpen(false)
-  }
+  const showError = (title: string, message: string) =>
+    toast.error(title, { description: message })
 
   React.useEffect(() => {
     register("diffExams")
   }, [register])
 
   const onSubmit: SubmitHandler<DiffExamFormInputs> = async (data) => {
-    setIsSubmitting(true)
     if (!beginAbsenceDate || !endAbsenceDate) {
-      openModal(
+      showError(
         "Date Selection Error",
         "Please select a beginning and ending absence date.",
       )
-      setIsSubmitting(false)
       return
     }
 
     if (data.absenceFile.length === 0) {
-      openModal("File Error", "Please upload a valid absence file.")
-      setIsSubmitting(false)
+      showError("File Error", "Please upload a valid absence file.")
       return
     }
 
-    const formData = new FormData()
-    formData.append("file", data.absenceFile[0])
+    setIsSubmitting(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", data.absenceFile[0])
 
-    const res = await fetch("/api/cereal/diff-exams/upload-absence", {
-      method: "POST",
-      body: formData,
-    })
-    if (!res.ok) {
-      const error = await res.json().catch(() => null)
-      console.error(error)
-      openModal(
-        "File Error",
-        error?.error ??
-          "An error occurred while uploading your absence file. Please try again.",
-      )
-      setIsSubmitting(false)
-      return
-    }
-    const { fileName } = (await res.json()) as { fileName: string }
-
-    const absenceId = await insertAbsence({
-      sciper: Number(user.sciper),
-      first_name: user.first_name || "",
-      last_name: user.last_name || "",
-      certificate_date_from: new Date(data.startingAbsenceDate),
-      certificate_date_to: new Date(data.endingAbsenceDate),
-      certificate_file_name: fileName,
-      comment: data.comment,
-    })
-    for (let index = 0; index < data.diffExams.length; index++) {
-      const exam = data.diffExams[index]
-      await insertDiffExamSubscription({
-        exam_student_absence_id: absenceId,
-        exam_code: exam["codification matière (indépendant du plan)"],
-        exam_name: exam["matière (libellé fr)"],
-        exam_date: new Date(exam["date séance"]),
-        exam_start_time: exam["heure séance"] || null,
-        exam_end_time: exam["heure fin séance"] || null,
-        isa_has_grade: false,
+      const res = await fetch("/api/cereal/diff-exams/upload-absence", {
+        method: "POST",
+        body: formData,
       })
+      if (!res.ok) {
+        const error = await res.json().catch(() => null)
+        console.error(error)
+        showError(
+          "File Error",
+          error?.error ??
+            "An error occurred while uploading your absence file. Please try again.",
+        )
+        return
+      }
+      const { fileName } = (await res.json()) as { fileName: string }
+
+      const absenceId = await insertAbsence({
+        sciper: Number(user.sciper),
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        certificate_date_from: new Date(data.startingAbsenceDate),
+        certificate_date_to: new Date(data.endingAbsenceDate),
+        certificate_file_name: fileName,
+        comment: data.comment,
+      })
+      for (let index = 0; index < data.diffExams.length; index++) {
+        const exam = data.diffExams[index]
+        await insertDiffExamSubscription({
+          exam_student_absence_id: absenceId,
+          exam_code: exam["codification matière (indépendant du plan)"],
+          exam_name: exam["matière (libellé fr)"],
+          exam_date: new Date(exam["date séance"]),
+          exam_start_time: exam["heure séance"] || null,
+          exam_end_time: exam["heure fin séance"] || null,
+          isa_has_grade: false,
+        })
+      }
+
+      await sendEmailAbsenceConfirmation(absenceId)
+
+      toast.success("Success", {
+        description:
+          "Your absence has been successfully submitted. An email should have been sent to you.",
+      })
+      // TODO : CLEAN FORM
+    } catch (err) {
+      console.error(err)
+      showError(
+        "Unexpected Error",
+        "An unexpected error occurred while submitting your absence.",
+      )
+    } finally {
+      setIsSubmitting(false)
     }
-
-    await sendEmailAbsenceConfirmation(absenceId)
-
-    openModal(
-      "Success",
-      "Your absence has been successfully submitted. An email should have been sent to you.",
-    )
-
-    setIsSubmitting(false)
   }
 
   async function getBoFile() {
@@ -247,83 +234,121 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
   return (
     /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
     <div className="flex flex-col items-center m-24">
-      <dialog
-        id="register-modal"
-        className="modal fixed top-3/8 left-1/8 w-3/4 md:left-1/4 md:w-2/4 rounded-xl flex items-center justify-center z-50 drop-shadow-2xl backdrop:backdrop-blur-xs opacity-98"
-        onClose={() => {
-          setModalOpen(false)
-          if (modalResolver) {
-            modalResolver(false)
-            setModalResolver(null)
-          }
-        }}
-      >
-        {modalOpen && (
-          <MessageModal
-            setModalOpen={setModalOpen}
-            title={modalTitle}
-            message={modalMessage}
-            isConfirm={isConfirmModal}
-            onResult={handleModalResult}
-          />
-        )}
-      </dialog>
-      <h1 className="text-3xl font-semibold mb-8 text-center">
-        CePro — Absence submission & Deferred exams subscription
-      </h1>
       <form
-        className="max-w-[1000px] [&>label]:text-lg [&>*]:accent-red-500 p-4 rounded-md flex flex-col gap-3 mt-2 [&>select]:mb-2 [&>input,&>*>*>input]:mb-2 [&>input,&>textarea,&>*>*>input]:border [&>input,&>textarea,&>*>*>input]:border-slate-300 [&>input,&>textarea,&>*>*>input]:rounded-md [&>input,&>*>*>input]:p-2 [&>textarea]:p-2 "
+        className="flex flex-col gap-4 w-full max-w-3xl"
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={preventEnterSubmit}
         encType="multipart/form-data"
       >
-        <label>Beginning of the absence (according to absence file)</label>
-        <input
-          type="date"
-          {...register("startingAbsenceDate", {
-            onChange: (e) =>
-              setBeginAbsenceDate(parseDateInputValue(e.target.value)),
-          })}
-        />
-
-        <label>End of the absence (according to absence file)</label>
-        <input
-          type="date"
-          {...register("endingAbsenceDate", {
-            onChange: (e) =>
-              setEndAbsenceDate(parseDateInputValue(e.target.value)),
-          })}
-        />
-
-        <label>Absence file</label>
-        <input type="file" {...register("absenceFile")} />
-
-        <label>Remark</label>
-        <textarea rows={5} {...register("comment")} />
-
-        <div className="flex gap-2 mt-8">
-          <input
-            type="checkbox"
-            id="also-diffs"
-            onChange={(e) => setIsSubscribeToDiffChecked(e.target.checked)}
-          />
-          <label htmlFor="also-diffs">
-            I also want to subscribe to deferred exams
-          </label>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-semibold text-center">
+            Absence submission & Deferred exams subscription
+          </h1>
+          <p>
+            Submit your absence certificate and, if needed, subscribe to the
+            deferred exams. All fields marked with <RedAsterisk /> are required.
+          </p>
         </div>
 
-        {isSubscribeToDiffChecked && (
-          <div>
-            {!beginAbsenceDate || !endAbsenceDate ? (
-              <>Please select a beginning and ending absence date first.</>
+        <FormSection number={1} title="Absence">
+          <Callout>Fill the dates according to the absence file</Callout>
+          <div className="grid grid-cols-2 gap-4">
+            <DateInput
+              label="Beginning of the absence"
+              required
+              registration={register("startingAbsenceDate", {
+                onChange: (e) =>
+                  setBeginAbsenceDate(parseDateInputValue(e.target.value)),
+              })}
+            />
+            <DateInput
+              label="End of the absence"
+              required
+              registration={register("endingAbsenceDate", {
+                onChange: (e) =>
+                  setEndAbsenceDate(parseDateInputValue(e.target.value)),
+              })}
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <h2>
+              Absence file <RedAsterisk />
+            </h2>
+            <Controller
+              name="absenceFile"
+              control={control}
+              render={({ field }) => {
+                const [file] = field.value
+                return file ? (
+                  <div className="flex items-center justify-between gap-3 rounded-md border border-slate-300 bg-white p-3 shadow-sm">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <DocumentTextIcon
+                        className="size-6 shrink-0 text-red-500"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0 text-sm">
+                        <div className="truncate font-medium">{file.name}</div>
+                        <div className="text-slate-500">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${file.name}`}
+                      className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      disabled={isSubmitting}
+                      onClick={() => field.onChange([])}
+                    >
+                      <TrashIcon className="size-4" aria-hidden="true" />
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <FileDropzone
+                    multiple={false}
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    disabled={isSubmitting}
+                    onFiles={field.onChange}
+                  />
+                )
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="absence-comment">Remark</label>
+            <textarea
+              id="absence-comment"
+              rows={5}
+              className="p-2 border rounded-md accent-red-500 border-slate-300"
+              placeholder="Additional remarks (optional)"
+              {...register("comment")}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection number={2} title="Deferred exams">
+          <Checkbox
+            label="I also want to subscribe to deferred exams"
+            checked={isSubscribeToDiffChecked}
+            onChange={setIsSubscribeToDiffChecked}
+          />
+
+          {isSubscribeToDiffChecked &&
+            (!beginAbsenceDate || !endAbsenceDate ? (
+              <Callout type="info">
+                Please select a beginning and ending absence date first.
+              </Callout>
             ) : isBoFileLoading ? (
-              <>Loading your exams...</>
+              <Callout type="info">Loading your exams...</Callout>
             ) : boFileError ? (
-              <>{boFileError}</>
+              <Callout type="error">{boFileError}</Callout>
             ) : filteredBoFileForUser ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-md border border-slate-300">
                 <table className="w-full border-collapse text-left text-sm">
-                  <thead>
+                  <thead className="bg-slate-50">
                     <tr className="border-b border-slate-300">
                       <th className="p-2 font-semibold">Code</th>
                       <th className="p-2 font-semibold">Course name</th>
@@ -346,7 +371,7 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
 
                       return (
                         <tr
-                          className="border-b border-slate-200"
+                          className="border-b border-slate-200 last:border-b-0"
                           key={`${examKey}-${index}`}
                         >
                           <td className="p-2">
@@ -362,16 +387,17 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
                             {new Date(exam["date séance"]).toLocaleDateString()}
                           </td>
                           <td className="p-2 text-center">
-                            <input
-                              type="checkbox"
-                              checked={isExamSelected}
-                              disabled={!isRegistrationOpen}
-                              className={`${!isRegistrationOpen && "hidden"}`}
-                              onChange={(e) =>
-                                handleDiffExamChange(exam, e.target.checked)
-                              }
-                            />
-                            {!isRegistrationOpen && (
+                            {isRegistrationOpen ? (
+                              <input
+                                type="checkbox"
+                                aria-label={`Subscribe to the deferred exam of ${exam["matière (libellé fr)"]}`}
+                                className="size-5 cursor-pointer accent-red-500"
+                                checked={isExamSelected}
+                                onChange={(e) =>
+                                  handleDiffExamChange(exam, e.target.checked)
+                                }
+                              />
+                            ) : (
                               <span className="block text-xs text-slate-500">
                                 Registration closed
                               </span>
@@ -384,24 +410,25 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
                 </table>
               </div>
             ) : (
-              <>No BO file uploaded for the moment. Please come back later.</>
-            )}
-          </div>
-        )}
+              <Callout type="info">
+                No BO file uploaded for the moment. Please come back later.
+              </Callout>
+            ))}
 
-        <button
-          className="btn btn-primary hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
-          type="submit"
-          disabled={isSubmitting}
-        >
-          {isSubmitting && (
-            <span
-              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-              aria-hidden="true"
-            />
-          )}
-          <span>{isSubmitting ? "Submitting..." : "Submit absence"}</span>
-        </button>
+          <button
+            className="btn btn-primary flex items-center justify-center gap-2 hover:cursor-pointer disabled:cursor-wait disabled:opacity-80"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting && (
+              <span
+                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                aria-hidden="true"
+              />
+            )}
+            <span>{isSubmitting ? "Submitting..." : "Submit absence"}</span>
+          </button>
+        </FormSection>
       </form>
     </div>
   )
