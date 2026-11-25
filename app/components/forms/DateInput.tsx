@@ -2,7 +2,7 @@ import { useId } from "react"
 
 import { type UseFormRegisterReturn } from "react-hook-form"
 
-import { RedAsterisk } from "@/app/components/RedAsterisk"
+import { RedAsterisk } from "@/app/components/forms/RedAsterisk"
 
 interface DateInputProps {
   label: string

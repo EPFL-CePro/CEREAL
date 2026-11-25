@@ -8,7 +8,7 @@ interface NumberFieldProps {
   disabled?: boolean
 }
 
-export default function NumberField({
+export default function NumberInput({
   label,
   value,
   onChange,

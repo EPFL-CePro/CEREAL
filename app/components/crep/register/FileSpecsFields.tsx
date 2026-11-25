@@ -15,9 +15,9 @@ import {
 } from "@/app/lib/crep/file-specs"
 import { type CrepFileSpecs } from "@/types/crepExam"
 
-import Checkbox from "./Checkbox"
-import ChoiceCards from "./ChoiceCards"
-import NumberField from "./NumberField"
+import Checkbox from "../../forms/Checkbox"
+import ChoiceCards from "../../forms/ChoiceCards"
+import NumberInput from "../../forms/NumberInput"
 
 const printSideUi: Record<
   string,
@@ -70,14 +70,14 @@ export function FileSpecsFields({
   return (
     <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 accent-red-500 p-4 bg-gray-50 rounded-xl border border-gray-200">
       <h3 className="col-span-full font-semibold">Print settings</h3>
-      <NumberField
+      <NumberInput
         label="Number of copies"
         min={1}
         disabled={disabled}
         value={value.exam_students || ""}
         onChange={(copies) => update("exam_students", copies)}
       />
-      <NumberField
+      <NumberInput
         label="Pages per document"
         min={1}
         disabled={disabled}

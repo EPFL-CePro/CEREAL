@@ -13,7 +13,7 @@ import {
 import { sendEmailArchivingConfirmation } from "@/app/lib/mail/cereal-notifications"
 import { type DigitalArchiveInputs } from "@/types/digitalArchiveInputs"
 
-import { RedAsterisk } from "../RedAsterisk"
+import { RedAsterisk } from "./RedAsterisk"
 import ReactSelect from "./ReactSelect"
 
 interface RegisterProps {

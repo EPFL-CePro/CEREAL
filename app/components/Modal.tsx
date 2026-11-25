@@ -23,9 +23,9 @@ import { type CrepFile } from "@/types/crepExam"
 import { type AuthorizedPersons } from "@/types/user"
 
 import { AuthorizedPersonsEditor } from "./AuthorizedPersonsEditor"
-import { useConfirm } from "./ConfirmProvider"
+import { useConfirm } from "./ui/ConfirmProvider"
 import { FileSpecsFields } from "./crep/register/FileSpecsFields"
-import { PrintButton } from "./print/ReactToPrint"
+import { PrintButton } from "./ui/PrintButton"
 import {
   updateExamRemarkById,
   updateExamStatusById,

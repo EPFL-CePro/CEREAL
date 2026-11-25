@@ -12,7 +12,7 @@ import { sendEmailAbsenceConfirmation } from "@/app/lib/mail/cereal-notification
 import { type BoFileForUser } from "@/types/boFile"
 import { type DiffExamFormInputs } from "@/types/diffExamForm"
 
-import { RegisterModal } from "./RegisterModal"
+import { MessageModal } from "../ui/MessageModal"
 
 interface DiffExamFormProps {
   user: AppUser
@@ -259,7 +259,7 @@ export default function App({ user }: DiffExamFormProps) {
         }}
       >
         {modalOpen && (
-          <RegisterModal
+          <MessageModal
             setModalOpen={setModalOpen}
             title={modalTitle}
             message={modalMessage}

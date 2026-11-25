@@ -5,7 +5,7 @@ import "./globals.css"
 import { CustomProvider } from "rsuite"
 import { Toaster } from "sonner"
 
-import { ConfirmProvider } from "./components/ConfirmProvider"
+import { ConfirmProvider } from "./components/ui/ConfirmProvider"
 import { ImpersonationBanner } from "./components/ImpersonationBanner"
 import { MainNavBar } from "./components/navigation/MainNavBar"
 

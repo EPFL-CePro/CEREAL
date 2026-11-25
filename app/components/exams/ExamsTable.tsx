@@ -24,7 +24,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table"
 
-import { useConfirm } from "@/app/components/ConfirmProvider"
+import { useConfirm } from "@/app/components/ui/ConfirmProvider"
 import {
   deleteExam,
   getAcademicYearsFromExams,
