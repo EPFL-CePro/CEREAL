@@ -11,7 +11,7 @@ import {
 import { Permission } from "@/app/lib/auth/route-access"
 import { getAbsenceByUser } from "@/app/lib/database"
 import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
-import { fetchCourses, fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
+import { fetchPersonBySciper } from "@/app/lib/epfl/epfl-api"
 import { type EmailTemplateKey } from "@/app/lib/mail/email-templates"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { prisma } from "@/app/lib/prisma"

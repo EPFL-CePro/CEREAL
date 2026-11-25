@@ -3,8 +3,8 @@ import { DocumentTextIcon, TrashIcon } from "@heroicons/react/24/outline"
 import { RedAsterisk } from "@/app/components/forms/RedAsterisk"
 import { type CrepFileSpecs } from "@/types/crepExam"
 
-import FileDropzone from "../../forms/FileDropZone"
 import { FileSpecsFields } from "./FileSpecsFields"
+import FileDropzone from "../../forms/FileDropZone"
 
 interface FilesAndPrintSettingsProps {
   hideFiles: boolean

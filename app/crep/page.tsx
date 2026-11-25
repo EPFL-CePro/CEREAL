@@ -1,7 +1,7 @@
 import { auth } from "../../auth"
 import Calendar from "../components/crep/calendar/CrepCalendar"
-import { Footer } from "../components/layout/Footer"
 import { CrepNavBar } from "../components/crep/CrepNavBar"
+import { Footer } from "../components/layout/Footer"
 
 export const metadata = {
   title: "CREP - Calendar",

@@ -24,9 +24,8 @@ function makeFile(
 // after the env var is set, and reloaded for every test.
 async function loadUploadAbsenceFile() {
   vi.resetModules()
-  const { uploadAbsenceFile } = await import(
-    "@/app/lib/files/deferred-exams-files"
-  )
+  const { uploadAbsenceFile } =
+    await import("@/app/lib/files/deferred-exams-files")
   return uploadAbsenceFile
 }
 
@@ -100,11 +99,7 @@ describe("uploadAbsenceFile", () => {
 
       await expect(
         uploadAbsenceFile(
-          makeFile(
-            "big.pdf",
-            "application/pdf",
-            new Uint8Array(MAX_FILE_SIZE),
-          ),
+          makeFile("big.pdf", "application/pdf", new Uint8Array(MAX_FILE_SIZE)),
         ),
       ).resolves.toMatch(UUID_FILE_NAME)
     })

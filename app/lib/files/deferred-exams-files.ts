@@ -255,7 +255,8 @@ export async function getBOFileRowsForSciper(
 }
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const getAbsencesDir = () => safeJoinPath(getDeferredExamsDir(), "certificates")
-const ALLOWED_FILE_TYPES: Record<string, string> = { // Extension, MIME type
+const ALLOWED_FILE_TYPES: Record<string, string> = {
+  // Extension, MIME type
   ".pdf": "application/pdf",
   ".png": "image/png",
   ".jpg": "image/jpeg",

@@ -366,7 +366,7 @@ export default function DiffExamForm({ user }: DiffExamFormProps) {
                               type="checkbox"
                               checked={isExamSelected}
                               disabled={!isRegistrationOpen}
-                              className={`${!isRegistrationOpen && 'hidden'}`}
+                              className={`${!isRegistrationOpen && "hidden"}`}
                               onChange={(e) =>
                                 handleDiffExamChange(exam, e.target.checked)
                               }
