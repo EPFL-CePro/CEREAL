@@ -171,12 +171,11 @@ export default function TeachersExamForm({ user }: RegisterProps) {
           />
           <FieldError message={errors.semester?.message} />
           <div className="flex flex-col gap-2">
-            <p>
-              Select your exam <RedAsterisk />
-            </p>
             <ReactSelect
+              required
               control={control}
-              label={"course"}
+              label="Select your exam"
+              placeholder="Select course..."
               name={"course"}
               isMultiChoice={false}
               containCourses={true}
@@ -187,63 +186,65 @@ export default function TeachersExamForm({ user }: RegisterProps) {
         </FormSection>
 
         <FormSection number={2} title="Exam types and dates">
-          <p>
-            Exam type <RedAsterisk />
-          </p>
-          <FieldError
-            message={
-              errors.examTypes?.message ?? errors.examTypes?.root?.message
-            }
-          />
-          {examTypes.map((examType) => {
-            const index = fields.findIndex(
-              (field) => field.examTypeId === examType.id,
-            )
-            const selected = index !== -1
-            return (
-              <div key={examType.id} className="flex flex-col gap-3">
-                <Checkbox
-                  label={examType.name}
-                  checked={selected}
-                  onChange={(checked) =>
-                    checked
-                      ? append({ examTypeId: examType.id, date: "" })
-                      : remove(index)
-                  }
-                />
-                {selected && (
-                  <div className="grid grid-cols-1 gap-4 items-end ml-8 pl-4 border-l-2 border-red-200 sm:grid-cols-2">
-                    <DateInput
-                      label="Exam Date"
-                      registration={register(`examTypes.${index}.date`)}
-                    />
-                    {/* mb-2 matches the bottom margin of the date input */}
-                    <div className="mb-2">
-                      <Checkbox
-                        label="I don't know yet"
-                        // null = "I don't know yet"
-                        checked={watchedExamTypes?.[index]?.date === null}
-                        onChange={(checked) =>
-                          setValue(
-                            `examTypes.${index}.date`,
-                            checked ? null : "",
-                            { shouldValidate: true },
-                          )
-                        }
+          <fieldset className="flex flex-col gap-4">
+            <legend className="mb-2">
+              Exam type <RedAsterisk />
+            </legend>
+            {examTypes.map((examType) => {
+              const index = fields.findIndex(
+                (field) => field.examTypeId === examType.id,
+              )
+              const selected = index !== -1
+              return (
+                <div key={examType.id} className="flex flex-col gap-3">
+                  <Checkbox
+                    label={examType.name}
+                    checked={selected}
+                    onChange={(checked) =>
+                      checked
+                        ? append({ examTypeId: examType.id, date: "" })
+                        : remove(index)
+                    }
+                  />
+                  {selected && (
+                    <div className="grid grid-cols-1 gap-4 items-end ml-8 pl-4 border-l-2 border-red-200 sm:grid-cols-2">
+                      <DateInput
+                        label="Exam Date"
+                        registration={register(`examTypes.${index}.date`)}
                       />
-                    </div>
-                    {errors.examTypes?.[index]?.date && (
-                      <div className="sm:col-span-2">
-                        <FieldError
-                          message={errors.examTypes[index].date.message}
+                      {/* mb-2 matches the bottom margin of the date input */}
+                      <div className="mb-2">
+                        <Checkbox
+                          label="I don't know yet"
+                          // null = "I don't know yet"
+                          checked={watchedExamTypes?.[index]?.date === null}
+                          onChange={(checked) =>
+                            setValue(
+                              `examTypes.${index}.date`,
+                              checked ? null : "",
+                              { shouldValidate: true },
+                            )
+                          }
                         />
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                      {errors.examTypes?.[index]?.date && (
+                        <div className="sm:col-span-2">
+                          <FieldError
+                            message={errors.examTypes[index].date.message}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            <FieldError
+              message={
+                errors.examTypes?.message ?? errors.examTypes?.root?.message
+              }
+            />
+          </fieldset>
         </FormSection>
 
         <FormSection number={3} title="Service">
@@ -267,9 +268,6 @@ export default function TeachersExamForm({ user }: RegisterProps) {
         </FormSection>
 
         <FormSection number={4} title="Contact and remarks">
-          <p>
-            Contact <RedAsterisk />
-          </p>
           <Callout type="warning">
             Please select here the person <u>from your course</u> who will be in
             contact with CePro for preparation. This is the person who will
@@ -279,8 +277,10 @@ export default function TeachersExamForm({ user }: RegisterProps) {
             prefer to have just one contact person for organisational reasons.
           </Callout>
           <ReactSelect
+            required
             control={control}
-            label={"contact"}
+            label="Contact"
+            placeholder="Select contact..."
             name={"contact"}
             isMultiChoice={false}
             instanceId={2}

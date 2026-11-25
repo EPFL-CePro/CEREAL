@@ -2,6 +2,7 @@
 import React, {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -19,6 +20,7 @@ import Select from "react-select"
 import AsyncSelect from "react-select/async"
 import { toast } from "sonner"
 
+import { RedAsterisk } from "@/app/components/RedAsterisk"
 import {
   fetchCourses,
   fetchGroupPersons,
@@ -47,7 +49,9 @@ function isSelectOption(value: unknown): value is SelectOption {
 
 export interface SelectProps<T extends FieldValues = Inputs> {
   control: Control<T>
-  label: string
+  label?: string
+  placeholder: string
+  required?: boolean
   name: Path<T>
   isMultiChoice: boolean
   containCourses?: boolean
@@ -65,7 +69,8 @@ async function fetchOasisCourses(
 
 type SelectFieldProps<T extends FieldValues> = {
   field: ControllerRenderProps<T>
-  label: string
+  placeholder: string
+  inputId: string
   name: Path<T>
   isMultiChoice: boolean
   containCourses?: boolean
@@ -76,7 +81,8 @@ type SelectFieldProps<T extends FieldValues> = {
 
 function SelectField<T extends FieldValues>({
   field,
-  label,
+  placeholder,
+  inputId,
   name,
   isMultiChoice,
   containCourses,
@@ -353,7 +359,8 @@ function SelectField<T extends FieldValues>({
             OptionProps<SelectOption, boolean, GroupBase<SelectOption>>
           >,
         }}
-        placeholder={`Select ${label}...`}
+        placeholder={placeholder}
+        inputId={inputId}
         onChange={async (selectedOption) => {
           if (isMultiChoice) {
             const opts = Array.isArray(selectedOption) ? selectedOption : []
@@ -403,7 +410,8 @@ function SelectField<T extends FieldValues>({
           OptionProps<SelectOption, boolean, GroupBase<SelectOption>>
         >,
       }}
-      placeholder={`Select ${label}...`}
+      placeholder={placeholder}
+      inputId={inputId}
       onChange={async (selectedOption) => {
         if (isMultiChoice) {
           const opts = Array.isArray(selectedOption)
@@ -458,6 +466,8 @@ function SelectField<T extends FieldValues>({
 export default function SelectController<T extends FieldValues = Inputs>({
   control,
   label,
+  placeholder,
+  required,
   name,
   isMultiChoice,
   containCourses,
@@ -465,22 +475,32 @@ export default function SelectController<T extends FieldValues = Inputs>({
   disabled,
   academicYear,
 }: SelectProps<T>) {
+  const inputId = useId()
+
   return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <SelectField
-          field={field}
-          label={label}
-          name={name}
-          isMultiChoice={isMultiChoice}
-          containCourses={containCourses}
-          instanceId={instanceId}
-          disabled={disabled}
-          academicYear={academicYear}
-        />
+    <div className="flex flex-col gap-2">
+      {label && (
+        <label htmlFor={inputId}>
+          {label} {required && <RedAsterisk />}
+        </label>
       )}
-    />
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <SelectField
+            field={field}
+            placeholder={placeholder}
+            inputId={inputId}
+            name={name}
+            isMultiChoice={isMultiChoice}
+            containCourses={containCourses}
+            instanceId={instanceId}
+            disabled={disabled}
+            academicYear={academicYear}
+          />
+        )}
+      />
+    </div>
   )
 }

@@ -592,19 +592,16 @@ export default function RegisterForm({ user }: RegisterProps) {
         </div>
 
         <FormSection number={1} title="Exam and dates">
-          <div>
-            <h3>
-              Select your exam <RedAsterisk />
-            </h3>
-            <ReactSelect
-              control={control}
-              label={"course"}
-              name={"course"}
-              isMultiChoice={false}
-              containCourses={true}
-              instanceId={1}
-            />
-          </div>
+          <ReactSelect
+            required
+            control={control}
+            label="Select your exam"
+            placeholder="Select course..."
+            name={"course"}
+            isMultiChoice={false}
+            containCourses={true}
+            instanceId={1}
+          />
           <div className="grid grid-cols-2 gap-4">
             <DateInput
               label="Exam Date"
@@ -669,17 +666,15 @@ export default function RegisterForm({ user }: RegisterProps) {
           {errors.financialCenter && (
             <span className="text-red-600">This field is required</span>
           )}
-          <label>
-            Contact <RedAsterisk />
-          </label>
           <ReactSelect
+            required
             control={control}
-            label={"contact"}
+            label="Contact"
+            placeholder="Select contact..."
             name={"contact"}
             isMultiChoice={false}
             instanceId={2}
           />
-          <label>Authorized persons</label>
           <Callout type="warning">
             Only the persons that will be selected here will be authorized to
             come pick up the exam at the Repro.
@@ -692,7 +687,8 @@ export default function RegisterForm({ user }: RegisterProps) {
           </Callout>
           <ReactSelect
             control={control}
-            label={"authorized persons"}
+            label="Authorized persons"
+            placeholder="Select authorized persons..."
             name={"authorizedPersons"}
             isMultiChoice={true}
             instanceId={3}

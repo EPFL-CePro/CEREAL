@@ -208,20 +208,17 @@ export default function App({ user }: RegisterProps) {
             ))}
           </select>
         </div>
-        <div>
-          <label>
-            Select your exam <RedAsterisk />
-          </label>
-          <ReactSelect
-            control={control}
-            label={"course"}
-            name={"course"}
-            isMultiChoice={false}
-            containCourses={true}
-            instanceId={1}
-            academicYear={selectedAcademicYear}
-          />
-        </div>
+        <ReactSelect
+          required
+          control={control}
+          label="Select your exam"
+          placeholder="Select course..."
+          name={"course"}
+          isMultiChoice={false}
+          containCourses={true}
+          instanceId={1}
+          academicYear={selectedAcademicYear}
+        />
 
         <div className="flex flex-col">
           <label>

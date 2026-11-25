@@ -1,7 +1,10 @@
 import { useId } from "react"
 
+import { RedAsterisk } from "@/app/components/RedAsterisk"
+
 interface CheckboxProps {
   label: string
+  required?: boolean
   description?: string
   checked: boolean
   onChange: (checked: boolean) => void
@@ -9,6 +12,7 @@ interface CheckboxProps {
 
 export default function Checkbox({
   label,
+  required,
   description,
   checked,
   onChange,
@@ -28,7 +32,9 @@ export default function Checkbox({
         onChange={(e) => onChange(e.target.checked)}
       />
       <span className="flex flex-col">
-        <span>{label}</span>
+        <span>
+          {label} {required && <RedAsterisk />}
+        </span>
         {description && (
           <span className="text-sm text-slate-600">{description}</span>
         )}
