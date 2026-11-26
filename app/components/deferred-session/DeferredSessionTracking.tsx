@@ -1,5 +1,6 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
 
+import { DayExportButton } from "@/app/components/deferred-session/DayExportButton"
 import { TeacherEmailButton } from "@/app/components/deferred-session/TeacherEmailButton"
 import { SacStatusBadge } from "@/app/components/sac-absences/SacStatusBadge"
 import Callout from "@/app/components/ui/Callout"
@@ -174,6 +175,7 @@ export function DeferredSessionTracking({ tracking }: { tracking: Tracking }) {
             <span className="ml-auto text-sm text-slate-500">
               {formatCounts(day.counts)}
             </span>
+            <DayExportButton dayId={day.id} dayLabel={formatDay(day.date)} />
           </summary>
 
           <div className="grid gap-2 border-t border-slate-200 p-3">
