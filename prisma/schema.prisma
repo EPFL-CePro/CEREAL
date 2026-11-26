@@ -211,7 +211,23 @@ model deferred_session_exam {
   teachers   Json // option.exam.teachers : Teacher[]
   slot       deferred_exam_slot
   day        deferred_session_day @relation(fields: [day_id, session_id], references: [id, session_id], onDelete: Cascade)
+  teacher_email deferred_exam_teacher_email?
 }
+
+model deferred_exam_teacher_email {
+  id                       Int                    @id @default(autoincrement())
+  deferred_session_exam_id Int?                   @unique // un seul envoi par examen planifié
+  sent_at                  DateTime               @default(now()) @db.DateTime(0)
+  sent_by                  Int // sciper de l'admin qui a envoyé
+  recipients_to            Json // string[]
+  recipients_cc            Json // string[]
+  subject                  String                 @db.VarChar(256)
+  body                     String                 @db.MediumText
+  exam_code                String                 @db.VarChar(30) // copie de deferred_session_exam.exam_code
+  exam_name                String                 @db.VarChar(256) // copie de deferred_session_exam.exam_name
+  exam                     deferred_session_exam? @relation(fields: [deferred_session_exam_id], references: [id], onDelete: SetNull)
+}
+
 
 enum deferred_exam_slot {
   morning
