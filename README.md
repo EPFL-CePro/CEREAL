@@ -93,8 +93,13 @@ In development, emails are not sent by default (`MAIL_ENABLED=false`). To test t
    MAIL_AUTH_USER=dev
    MAIL_AUTH_PASS=dev
    MAIL_FROM_EMAIL=noreply@example.com
+   MAIL_DEFERRED_AUTH_USER=deferred
+   MAIL_DEFERRED_AUTH_PASS=deferred
+   MAIL_DEFERRED_FROM_EMAIL=noreply-deferred@example.com
    MAIL_ENABLED=true
    ```
+
+   The `MAIL_DEFERRED_*` variables are the second SMTP account, used for the emails about deferred exams (each template declares its account in `app/lib/mail/email-templates.ts`). Mailpit accepts any credentials: use a different sender address to check which account sent an email.
 
 2. Restart the containers: `make up`
 3. Trigger an action that sends an email (e.g. register an exam for printing)

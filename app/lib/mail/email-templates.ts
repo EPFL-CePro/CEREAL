@@ -1,3 +1,5 @@
+import { type MailAccount } from "@/app/lib/mail/mail-accounts"
+
 export type Placeholder = {
   token: string
   desc: string
@@ -6,6 +8,8 @@ export type Placeholder = {
 export type TemplateDefinition = {
   section: string
   name: string
+  // SMTP account the email is sent from (see mail-accounts.ts), "default" if omitted
+  account?: MailAccount
   placeholders: Placeholder[]
   defaults: {
     subject: string
