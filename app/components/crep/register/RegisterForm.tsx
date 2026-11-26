@@ -379,7 +379,7 @@ export default function RegisterForm({ user }: RegisterProps) {
             }))
             const gaps = computePrintGaps(normalizedExamsForDate)
             const enoughGap = gaps.find(
-              (gap) => gap.gapMinutes >= necessaryPrintingDurationInMinutes,
+              (gap) => gap.minutes >= necessaryPrintingDurationInMinutes,
             )
 
             if (enoughGap) {
