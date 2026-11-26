@@ -1,7 +1,9 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
 
-import Callout from "@/app/components/ui/Callout"
+import { TeacherEmailButton } from "@/app/components/deferred-session/TeacherEmailButton"
 import { SacStatusBadge } from "@/app/components/sac-absences/SacStatusBadge"
+import Callout from "@/app/components/ui/Callout"
+import { getTeacherEmailEligibility } from "@/app/lib/deferred-session/teacher-email-eligibility"
 import {
   type DeferredSessionTracking as Tracking,
   type RegistrationCounts,
@@ -116,6 +118,17 @@ function ExamBlock({ exam }: { exam: TrackedExam }) {
           {formatCounts(exam.counts)}
         </span>
         <RegistrationStatusBadge isOpen={exam.isRegistrationOpen} />
+        <TeacherEmailButton
+          acceptedCount={exam.counts.accepted}
+          eligibility={getTeacherEmailEligibility(
+            exam,
+            exam.teacherEmail !== null,
+          )}
+          examCode={exam.exam_code}
+          examId={exam.id}
+          sent={exam.teacherEmail}
+          teachers={exam.teachers}
+        />
       </summary>
 
       {exam.registrations.length > 0 && (
