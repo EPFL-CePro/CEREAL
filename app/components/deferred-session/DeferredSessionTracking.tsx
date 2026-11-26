@@ -1,6 +1,6 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline"
 
-import Callout from "@/app/components/Callout"
+import Callout from "@/app/components/ui/Callout"
 import { SacStatusBadge } from "@/app/components/sac-absences/SacStatusBadge"
 import {
   type DeferredSessionTracking as Tracking,
