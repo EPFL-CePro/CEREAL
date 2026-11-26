@@ -20,7 +20,11 @@ import {
   validateFilesSpecs,
 } from "@/app/lib/crep/file-specs"
 import { countPdfPages } from "@/app/lib/crep/pdf-pages"
-import { getPrintingDurationInMinutes } from "@/app/lib/crep/print-duration"
+import {
+  computeGapsBetweenExams,
+  getEndDateOfPrinting,
+  getPrintingDurationInMinutes,
+} from "@/app/lib/crep/print-duration"
 import { limitTextToLines } from "@/app/lib/crep/remark-lines"
 import {
   businessDaysBetween,
@@ -39,7 +43,7 @@ import {
 } from "@/app/lib/epfl/epfl-api"
 import { preventEnterSubmit } from "@/app/lib/forms/prevent-enter-submit"
 import { sendEmailCrepPrintingConfirmation } from "@/app/lib/mail/crep-notifications"
-import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
+import { type CrepFileSpecs } from "@/types/crepExam"
 import { type Inputs } from "@/types/inputs"
 import { type AuthorizedPersons } from "@/types/user"
 
@@ -55,11 +59,6 @@ interface RegisterProps {
 interface AppUser extends User {
   isAdmin?: boolean
   sciper: string
-}
-
-interface Gap {
-  between: [CrepExam, CrepExam] // before exam, end exam
-  gapMinutes: number // gap between the two exams in minutes
 }
 
 export default function RegisterForm({ user }: RegisterProps) {
@@ -183,7 +182,6 @@ export default function RegisterForm({ user }: RegisterProps) {
       ),
     )
   }
-
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     // validate that desiredDate is not later than examDate
     const { examDate, desiredDate } = data
@@ -307,37 +305,6 @@ export default function RegisterForm({ user }: RegisterProps) {
 
       const examName = `${data.course.exam.title} (${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}`).join(", ")})`
       const examCode = data.course.exam.code
-
-      function getEndDateOfPrinting(exam: CrepExam): Date {
-        return new Date(exam.print_date.getTime() + exam.print_duration * 60000)
-      }
-
-      function computeGapsBetweenExams(exams: CrepExam[]): Gap[] {
-        const sorted = [...exams].sort(
-          (a, b) => a.print_date.getTime() - b.print_date.getTime(),
-        )
-
-        const gaps: Gap[] = []
-
-        for (let i = 0; i < sorted.length - 1; i++) {
-          const current = sorted[i]
-          const next = sorted[i + 1]
-
-          const currentEnd = getEndDateOfPrinting(current)
-
-          const nextStart = next.print_date
-
-          const gapMs = nextStart.getTime() - currentEnd.getTime()
-          const gapMinutes = gapMs / (1000 * 60)
-
-          gaps.push({
-            between: [current, next],
-            gapMinutes,
-          })
-        }
-
-        return gaps
-      }
 
       let printingDate
 
