@@ -1,13 +1,31 @@
 import "server-only"
 
 import { prisma } from "@/app/lib/prisma"
+import { type TeacherEmailSent } from "@/types/deferredSessionTracking"
 
-export async function isTeacherEmailSent(examId: number): Promise<boolean> {
-  const email = await prisma.deferred_exam_teacher_email.findUnique({
-    where: { deferred_session_exam_id: examId },
-    select: { id: true },
+// The email sent to the teachers of each of these scheduled exams, by exam id
+export async function getTeacherEmailsByExam(
+  examIds: number[],
+): Promise<Map<number, TeacherEmailSent>> {
+  const rows = await prisma.deferred_exam_teacher_email.findMany({
+    where: { deferred_session_exam_id: { in: examIds } },
+    select: {
+      deferred_session_exam_id: true,
+      sent_at: true,
+      recipients_to: true,
+    },
   })
-  return email !== null
+
+  const emails = new Map<number, TeacherEmailSent>()
+  for (const row of rows) {
+    if (row.deferred_session_exam_id === null) continue
+    emails.set(row.deferred_session_exam_id, {
+      sentAt: row.sent_at,
+      // Saved by saveTeacherEmail: always an array of emails
+      recipients: row.recipients_to as string[],
+    })
+  }
+  return emails
 }
 
 // DTO of an email sent to the teachers of a scheduled deferred exam

@@ -3,10 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { requirePermission } from "@/app/lib/auth/require-permission"
 import { getActiveDeferredSessionTracking } from "@/app/lib/database"
 import { sendDeferredExamTeacherEmail } from "@/app/lib/deferred-session/teacher-email-actions"
-import {
-  isTeacherEmailSent,
-  saveTeacherEmail,
-} from "@/app/lib/deferred-session/teacher-email-queries"
+import { saveTeacherEmail } from "@/app/lib/deferred-session/teacher-email-queries"
 import { fetchMultiplePersonsBySciper } from "@/app/lib/epfl/epfl-api"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import {
@@ -22,7 +19,6 @@ vi.mock("@/app/lib/database", () => ({
   getActiveDeferredSessionTracking: vi.fn(),
 }))
 vi.mock("@/app/lib/deferred-session/teacher-email-queries", () => ({
-  isTeacherEmailSent: vi.fn(),
   saveTeacherEmail: vi.fn(),
 }))
 vi.mock("@/app/lib/epfl/epfl-api", () => ({
@@ -61,6 +57,7 @@ function exam(overrides: Partial<TrackedExam> = {}): TrackedExam {
     ],
     counts: { accepted: 1, notTreated: 0 },
     isRegistrationOpen: false,
+    teacherEmail: null,
     ...overrides,
   }
 }
@@ -95,7 +92,6 @@ beforeEach(() => {
   vi.mocked(getActiveDeferredSessionTracking).mockResolvedValue(
     tracking(exam()),
   )
-  vi.mocked(isTeacherEmailSent).mockResolvedValue(false)
   vi.mocked(fetchMultiplePersonsBySciper).mockResolvedValue([
     { id: "111111", email: "ada@epfl.ch" },
     { id: "222222", email: "alan@epfl.ch" },
@@ -182,7 +178,16 @@ describe("sendDeferredExamTeacherEmail", () => {
   })
 
   it("refuses an email already sent", async () => {
-    vi.mocked(isTeacherEmailSent).mockResolvedValue(true)
+    vi.mocked(getActiveDeferredSessionTracking).mockResolvedValue(
+      tracking(
+        exam({
+          teacherEmail: {
+            sentAt: new Date("2026-06-26T09:00:00Z"),
+            recipients: ["ada@epfl.ch"],
+          },
+        }),
+      ),
+    )
 
     const result = await sendDeferredExamTeacherEmail(7)
 

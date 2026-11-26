@@ -6,7 +6,10 @@ import {
   type DeferredSession,
   type DeferredSessionExam,
 } from "@/types/deferredSession"
-import { type TrackedRegistration } from "@/types/deferredSessionTracking"
+import {
+  type TeacherEmailSent,
+  type TrackedRegistration,
+} from "@/types/deferredSessionTracking"
 import { type SacStatus } from "@/types/sacStatus"
 
 function exam(
@@ -66,11 +69,13 @@ function group(
   registrations: TrackedRegistration[],
   ordinaryExamDates = new Map<string, string>(),
   now = new Date("2026-06-25T10:00:00Z"),
+  teacherEmails = new Map<number, TeacherEmailSent>(),
 ) {
   return groupRegistrationsBySession(
     deferredSession,
     registrations,
     ordinaryExamDates,
+    teacherEmails,
     now,
   )
 }
@@ -218,6 +223,29 @@ describe("groupRegistrationsBySession", () => {
     expect(result.days[0].exams.map((e) => e.isRegistrationOpen)).toEqual([
       true,
       false,
+      null,
+    ])
+  })
+
+  it("tells for each exam whether the email was sent to the teachers", () => {
+    const sent = {
+      sentAt: new Date("2026-06-26T09:00:00Z"),
+      recipients: ["ada@epfl.ch"],
+    }
+    const result = group(
+      session([
+        // The same exam planned twice: each occurrence has its own email
+        { id: 1, date: "2027-01-14", exams: [exam(1, "CS-101")] },
+        { id: 2, date: "2027-01-15", exams: [exam(2, "CS-101")] },
+      ]),
+      [],
+      undefined,
+      undefined,
+      new Map([[1, sent]]),
+    )
+
+    expect(result.days.map((day) => day.exams[0].teacherEmail)).toEqual([
+      sent,
       null,
     ])
   })

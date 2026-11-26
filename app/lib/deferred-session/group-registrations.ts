@@ -3,6 +3,7 @@ import { type DeferredSession } from "@/types/deferredSession"
 import {
   type DeferredSessionTracking,
   type RegistrationCounts,
+  type TeacherEmailSent,
   type TrackedRegistration,
 } from "@/types/deferredSessionTracking"
 import { type SacStatus } from "@/types/sacStatus"
@@ -38,10 +39,12 @@ function sumCounts(counts: RegistrationCounts[]): RegistrationCounts {
 // Puts each registration under every exam of the session with the same code
 // (an exam can be planned several times: its students are shown each time)
 // `ordinaryExamDates` gives the ordinary exam date of each exam code (from the BO file)
+// `teacherEmails` gives the email sent to the teachers of each scheduled exam (by exam id)
 export function groupRegistrationsBySession(
   session: DeferredSession,
   registrations: TrackedRegistration[],
   ordinaryExamDates: Map<string, string>,
+  teacherEmails: Map<number, TeacherEmailSent>,
   now = new Date(),
 ): DeferredSessionTracking {
   const visible = registrations
@@ -75,6 +78,7 @@ export function groupRegistrationsBySession(
             isRegistrationOpen: ordinaryExamDate
               ? isDeferredExamRegistrationOpen(ordinaryExamDate, now)
               : null,
+            teacherEmail: teacherEmails.get(exam.id) ?? null,
           }
         })
 

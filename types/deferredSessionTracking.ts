@@ -19,11 +19,19 @@ export type RegistrationCounts = {
   notTreated: number
 }
 
+// The email sending the registered students to the teachers of an exam
+export type TeacherEmailSent = {
+  sentAt: Date
+  recipients: string[] // "to" recipients (the teachers)
+}
+
 export type TrackedExam = DeferredSessionExam & {
   registrations: TrackedRegistration[]
   counts: RegistrationCounts
   // null when the exam is not in the BO file: its ordinary date is unknown
   isRegistrationOpen: boolean | null
+  // null while the email has not been sent to the teachers
+  teacherEmail: TeacherEmailSent | null
 }
 
 export type TrackedDay = {

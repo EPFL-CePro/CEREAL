@@ -7,6 +7,7 @@ import {
 import { Permission } from "@/app/lib/auth/route-access"
 import { isDeferredExamRegistrationOpen } from "@/app/lib/dates/business-days"
 import { groupRegistrationsBySession } from "@/app/lib/deferred-session/group-registrations"
+import { getTeacherEmailsByExam } from "@/app/lib/deferred-session/teacher-email-queries"
 import { getBOFileOrdinaryExamDates } from "@/app/lib/files/deferred-exams-files"
 import { EMAIL_TEMPLATES } from "@/app/lib/mail/email-templates"
 import { prisma } from "@/app/lib/prisma"
@@ -630,9 +631,13 @@ export async function getActiveDeferredSessionTracking(): Promise<DeferredSessio
     },
   )
 
+  const examIds = session.days.flatMap((day) => day.exams.map((e) => e.id))
+  const teacherEmails = await getTeacherEmailsByExam(examIds)
+
   return groupRegistrationsBySession(
     toDeferredSession(session),
     registrations,
     ordinaryExamDates,
+    teacherEmails,
   )
 }

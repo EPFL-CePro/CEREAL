@@ -11,10 +11,7 @@ import {
   TEACHER_EMAIL_BLOCK_MESSAGES,
   getTeacherEmailEligibility,
 } from "@/app/lib/deferred-session/teacher-email-eligibility"
-import {
-  isTeacherEmailSent,
-  saveTeacherEmail,
-} from "@/app/lib/deferred-session/teacher-email-queries"
+import { saveTeacherEmail } from "@/app/lib/deferred-session/teacher-email-queries"
 import { fetchMultiplePersonsBySciper } from "@/app/lib/epfl/epfl-api"
 import { sendTemplatedMail } from "@/app/lib/mail/send-templated-mail"
 import { type ActionResult } from "@/types/actionResult"
@@ -84,7 +81,7 @@ export async function sendDeferredExamTeacherEmail(
 
   const eligibility = getTeacherEmailEligibility(
     exam,
-    await isTeacherEmailSent(examId),
+    exam.teacherEmail !== null,
   )
   if (!eligibility.canSend) {
     return {
