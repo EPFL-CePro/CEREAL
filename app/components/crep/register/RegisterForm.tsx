@@ -21,9 +21,9 @@ import {
 } from "@/app/lib/crep/file-specs"
 import { countPdfPages } from "@/app/lib/crep/pdf-pages"
 import {
-  computeGapsBetweenExams,
-  getEndDateOfPrinting,
-  getPrintingDurationInMinutes,
+  computePrintGaps,
+  getPrintEndDate,
+  getPrintDurationMinutes,
 } from "@/app/lib/crep/print-duration"
 import { limitTextToLines } from "@/app/lib/crep/remark-lines"
 import {
@@ -339,7 +339,7 @@ export default function RegisterForm({ user }: RegisterProps) {
         firstDayDate.setHours(8, 0, 0, 0)
         printingDate = formatDateTimeForDatabase(firstDayDate)
       } else {
-        const necessaryPrintingDurationInMinutes = getPrintingDurationInMinutes(
+        const necessaryPrintingDurationInMinutes = getPrintDurationMinutes(
           getTotalCopies(printFiles),
         )
 
@@ -362,7 +362,7 @@ export default function RegisterForm({ user }: RegisterProps) {
               print_date: fromDatabaseDateTime(allExamsForDate[0].print_date),
             }
 
-            const endPrintExam = getEndDateOfPrinting(examForDate)
+            const endPrintExam = getPrintEndDate(examForDate)
             const endPrintOfWantedExam = new Date(
               endPrintExam.getTime() +
                 necessaryPrintingDurationInMinutes * 60000,
@@ -377,13 +377,13 @@ export default function RegisterForm({ user }: RegisterProps) {
               ...exam,
               print_date: fromDatabaseDateTime(exam.print_date),
             }))
-            const gaps = computeGapsBetweenExams(normalizedExamsForDate)
+            const gaps = computePrintGaps(normalizedExamsForDate)
             const enoughGap = gaps.find(
               (gap) => gap.gapMinutes >= necessaryPrintingDurationInMinutes,
             )
 
             if (enoughGap) {
-              const endPrintFirstExam = getEndDateOfPrinting(
+              const endPrintFirstExam = getPrintEndDate(
                 enoughGap.between[0],
               )
               printingDate = formatDateTimeForDatabase(endPrintFirstExam)
@@ -391,7 +391,7 @@ export default function RegisterForm({ user }: RegisterProps) {
             } else {
               const latestGapOfDay = gaps[gaps.length - 1]
               const latestExam = latestGapOfDay.between[1]
-              const endPrintingLatestExam = getEndDateOfPrinting(latestExam)
+              const endPrintingLatestExam = getPrintEndDate(latestExam)
               const endPrintingWantedExam = new Date(
                 endPrintingLatestExam.getTime() +
                   necessaryPrintingDurationInMinutes * 60000,

@@ -9,7 +9,7 @@ import { type CrepExam, type CrepFileSpecs } from "@/types/crepExam"
 
 import { examBlockingPrintStatus, examNotAdminStatus } from "./exam-status"
 import { getTotalCopies, pickFileSpecs, validateFilesSpecs } from "./file-specs"
-import { getPrintingDurationInMinutes } from "./print-duration"
+import { getPrintDurationMinutes } from "./print-duration"
 
 type NewCrepFile = CrepFileSpecs & { file_name: string | null }
 
@@ -55,7 +55,7 @@ async function refreshPrintDuration(
     where: { crep_id: crepId },
     _sum: { exam_students: true },
   })
-  const printDuration = getPrintingDurationInMinutes(_sum.exam_students ?? 0)
+  const printDuration = getPrintDurationMinutes(_sum.exam_students ?? 0)
   await tx.crep.update({
     where: { id: crepId },
     data: { print_duration: printDuration },
@@ -201,7 +201,7 @@ export async function insertExamForPrint(
         exam_name: exam.exam_name,
         // `print_date` is a wall-clock "YYYY-MM-DD HH:mm:ss", read as UTC like every DATETIME by Prisma
         print_date: new Date(`${exam.print_date.replace(" ", "T")}Z`),
-        print_duration: getPrintingDurationInMinutes(getTotalCopies(files)),
+        print_duration: getPrintDurationMinutes(getTotalCopies(files)),
         contact: exam.contact,
         authorized_persons: exam.authorized_persons,
         remark: exam.remark || null,

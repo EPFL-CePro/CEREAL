@@ -1,45 +1,53 @@
 import type { CrepExam } from "@/types/crepExam"
 
-const examsPrintedPerHour = 100
-// If this is set to `30`, that means that we round to upper 30min (1h15 → 1h30, 15min → 30min, ...)
-const roungindMinutes = 30
+const EXAMS_PRINTED_PER_HOUR = 100
+// Durations are rounded up to the next multiple of this value
+// (e.g. with 30: 15min → 30min, 1h15 → 1h30)
+const ROUNDING_STEP_MINUTES = 30
 
-export function getPrintingDurationInMinutes(nbExams: number): number {
-  const durationInMinutes = (nbExams / examsPrintedPerHour) * 60
+const MINUTES_PER_HOUR = 60
+const MS_PER_MINUTE = 60_000
 
-  return Math.ceil(durationInMinutes / roungindMinutes) * roungindMinutes
+export function getPrintDurationMinutes(examCount: number): number {
+  const durationMinutes =
+    (examCount / EXAMS_PRINTED_PER_HOUR) * MINUTES_PER_HOUR
+
+  return (
+    Math.ceil(durationMinutes / ROUNDING_STEP_MINUTES) * ROUNDING_STEP_MINUTES
+  )
 }
 
-export interface Gap {
-  between: [CrepExam, CrepExam] // before exam, end exam
-  gapMinutes: number // gap between the two exams in minutes
+export interface PrintGap {
+  between: [CrepExam, CrepExam] // [earlier printing, later printing]
+  minutes: number // time between the end of the earlier printing and the start of the later one
 }
 
-export function getEndDateOfPrinting(exam: CrepExam): Date {
-  return new Date(exam.print_date.getTime() + exam.print_duration * 60000)
+export function getPrintEndDate(exam: CrepExam): Date {
+  return new Date(
+    exam.print_date.getTime() + exam.print_duration * MS_PER_MINUTE,
+  )
 }
 
-export function computeGapsBetweenExams(exams: CrepExam[]): Gap[] {
-  const sorted = [...exams].sort(
+export function computePrintGaps(exams: CrepExam[]): PrintGap[] {
+  const examsByPrintStart = [...exams].sort(
     (a, b) => a.print_date.getTime() - b.print_date.getTime(),
   )
 
-  const gaps: Gap[] = []
+  const gaps: PrintGap[] = []
 
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const current = sorted[i]
-    const next = sorted[i + 1]
+  for (let i = 0; i < examsByPrintStart.length - 1; i++) {
+    const currentExam = examsByPrintStart[i]
+    const nextExam = examsByPrintStart[i + 1]
 
-    const currentEnd = getEndDateOfPrinting(current)
+    const currentPrintEnd = getPrintEndDate(currentExam)
+    const nextPrintStart = nextExam.print_date
 
-    const nextStart = next.print_date
-
-    const gapMs = nextStart.getTime() - currentEnd.getTime()
-    const gapMinutes = gapMs / (1000 * 60)
+    const gapMs = nextPrintStart.getTime() - currentPrintEnd.getTime()
+    const gapMinutes = gapMs / MS_PER_MINUTE
 
     gaps.push({
-      between: [current, next],
-      gapMinutes,
+      between: [currentExam, nextExam],
+      minutes: gapMinutes,
     })
   }
 
