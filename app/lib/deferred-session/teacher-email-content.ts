@@ -1,4 +1,5 @@
 import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
+import { toCsv } from "@/app/lib/files/csv"
 import { type TemplateContext } from "@/app/lib/mail/email-templates"
 import { type MailAttachment } from "@/app/lib/mail/send-mail"
 import { type DeferredExamSlot } from "@/types/deferredSession"
@@ -6,9 +7,6 @@ import { type TrackedRegistration } from "@/types/deferredSessionTracking"
 
 export const NO_STUDENT_MESSAGE =
   "No student is registered to this deferred exam."
-
-// Makes Excel read the file as UTF-8 (accented names)
-const UTF8_BOM = "\uFEFF"
 
 type StudentRegistration = Pick<
   TrackedRegistration,
@@ -26,25 +24,17 @@ function getAcceptedStudents(registrations: StudentRegistration[]) {
     )
 }
 
-// Quote a CSV field when it contains a separator, a quote or a line break (RFC 4180)
-function escapeCsvField(value: string | number): string {
-  const text = String(value)
-  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
-}
-
 /* CSV file of the accepted students (SCIPER, FIRSTNAME, LASTNAME). Starts with
 a UTF-8 BOM so that Excel shows the accented names correctly. */
 export function buildStudentsCsv(registrations: StudentRegistration[]): string {
-  const rows = [
+  return toCsv([
     ["SCIPER", "FIRSTNAME", "LASTNAME"],
     ...getAcceptedStudents(registrations).map((student) => [
       student.sciper,
       student.first_name,
       student.last_name,
     ]),
-  ]
-  const lines = rows.map((row) => row.map(escapeCsvField).join(","))
-  return `${UTF8_BOM}${lines.join("\r\n")}\r\n`
+  ])
 }
 
 // Name of the attached file, e.g. "CS-101_2026-07-06_students.csv"
