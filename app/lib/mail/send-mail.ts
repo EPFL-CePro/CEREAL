@@ -1,6 +1,11 @@
 import "server-only"
 import nodemailer from "nodemailer"
 
+import {
+  type MailAccount,
+  getMailAccountConfig,
+} from "@/app/lib/mail/mail-accounts"
+
 function getMailSubjectPrefix() {
   return process.env.CEREAL_ENV === "test" ? "TEST - " : ""
 }
@@ -11,19 +16,22 @@ export async function sendMail(
   content: string,
   cc: string,
   replyTo?: string,
+  account: MailAccount = "default",
 ) {
+  const config = getMailAccountConfig(account)
+
   const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_SMTP_HOST,
+    host: config.host,
     port: 587,
     secure: false,
     auth: {
-      user: process.env.MAIL_AUTH_USER,
-      pass: process.env.MAIL_AUTH_PASS,
+      user: config.user,
+      pass: config.pass,
     },
   })
 
   return transporter.sendMail({
-    from: process.env.MAIL_FROM_EMAIL,
+    from: config.from,
     to,
     subject: `${getMailSubjectPrefix()}${subject}`,
     text: content,
