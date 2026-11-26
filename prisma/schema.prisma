@@ -223,6 +223,7 @@ model deferred_exam_teacher_email {
   recipients_cc            Json // string[]
   subject                  String                 @db.VarChar(256)
   body                     String                 @db.MediumText
+  attachment_csv           String?                @db.MediumText
   exam_code                String                 @db.VarChar(30) // copie de deferred_session_exam.exam_code
   exam_name                String                 @db.VarChar(256) // copie de deferred_session_exam.exam_name
   exam                     deferred_session_exam? @relation(fields: [deferred_session_exam_id], references: [id], onDelete: SetNull)
