@@ -18,8 +18,8 @@ const numericId = (digits: number, message: string) =>
       z
         .string()
         .trim()
-        .regex(new RegExp(`^\\d{${digits}}$`)),
-      z.number().int().positive(),
+        .regex(new RegExp(`^\\d{${digits}}$`), message),
+      z.number().int().positive(message),
     ],
     message,
   )
