@@ -30,7 +30,7 @@ export async function sendTemplatedMail(
   const cc = renderString(template?.recipients_cc ?? defaults.cc, context)
   const replyTo = renderString(template?.reply_to ?? defaults.replyTo, context)
 
-  return sendMail({
+  await sendMail({
     to,
     subject,
     content: body,
@@ -39,4 +39,7 @@ export async function sendTemplatedMail(
     account: definition.account ?? "default",
     attachments,
   })
+
+  // What was actually sent, so that the caller can keep a trace of it
+  return { to, cc, subject, body }
 }
