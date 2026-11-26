@@ -6,18 +6,33 @@ import {
   getMailAccountConfig,
 } from "@/app/lib/mail/mail-accounts"
 
+export type MailAttachment = {
+  filename: string
+  content: string
+  contentType: string
+}
+
 function getMailSubjectPrefix() {
   return process.env.CEREAL_ENV === "test" ? "TEST - " : ""
 }
 
-export async function sendMail(
-  to: string,
-  subject: string,
-  content: string,
-  cc: string,
-  replyTo?: string,
-  account: MailAccount = "default",
-) {
+export async function sendMail({
+  to,
+  subject,
+  content,
+  cc,
+  replyTo,
+  account = "default",
+  attachments = [],
+}: {
+  to: string
+  subject: string
+  content: string
+  cc: string
+  replyTo?: string
+  account?: MailAccount
+  attachments?: MailAttachment[]
+}) {
   const config = getMailAccountConfig(account)
 
   const transporter = nodemailer.createTransport({
@@ -37,5 +52,6 @@ export async function sendMail(
     text: content,
     cc,
     replyTo,
+    attachments,
   })
 }

@@ -44,7 +44,8 @@ export const EMAIL_TEMPLATES = {
       { token: "registrant.email", desc: "Registrant email (recipient)" },
     ],
     defaults: {
-      subject: "[CePro] {{course}} - Exam services subscription ({{academicYear}})",
+      subject:
+        "[CePro] {{course}} - Exam services subscription ({{academicYear}})",
       body: `
 Hello,
 Your subscription to our exam services has been successfully registered:
@@ -385,7 +386,44 @@ CePro
       replyTo: "",
     },
   },
-}
+
+  deferred_exam_teacher_list: {
+    section: "CEREAL",
+    name: "Deferred exam: registered students sent to the teachers",
+    account: "deferred_exams",
+    placeholders: [
+      { token: "teachers.email", desc: "Teachers of the exam (emails)" },
+      { token: "examCode", desc: "Exam code" },
+      { token: "examName", desc: "Exam name" },
+      { token: "examDate", desc: "Date of the deferred exam" },
+      { token: "slot", desc: "Morning or afternoon" },
+      {
+        token: "students",
+        desc: "Number of accepted students (their list is the attached CSV file), or a sentence saying that nobody is registered",
+      },
+    ],
+    defaults: {
+      subject: "[CePro] {{examCode}} - Deferred exam on {{examDate}}",
+      body: `
+Hello,
+
+Here is the final registration status for your deferred exam:
+
+- Exam : {{examCode}} - {{examName}}
+- Date : {{examDate}} ({{slot}})
+
+{{students}}
+
+Best
+
+CePro
+`,
+      to: "{{teachers.email}}",
+      cc: "cepro-exams@epfl.ch",
+      replyTo: "",
+    },
+  },
+} satisfies Record<string, TemplateDefinition>
 
 // Keys are derived from the registry, so adding or removing a template is a
 // single edit to EMAIL_TEMPLATES above (no separate union to keep in sync).
