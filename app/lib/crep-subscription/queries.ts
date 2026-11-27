@@ -3,7 +3,7 @@ import { examBlockingPrintStatus } from "@/app/lib/crep/exam-status"
 import { prisma } from "@/app/lib/prisma"
 import { type CrepExam } from "@/types/crepExam"
 
-export type PrintSlot = Pick<CrepExam, "print_date" | "print_duration">
+export type CrepExamPrintTiming = Pick<CrepExam, "print_date" | "print_duration">
 
 /**
  * Printings that occupy the printer between @from and @until (excluded)
@@ -13,7 +13,7 @@ export type PrintSlot = Pick<CrepExam, "print_date" | "print_duration">
 export async function getBlockingExamsBetweenDates(
   from: Date,
   until: Date,
-): Promise<PrintSlot[]> {
+): Promise<CrepExamPrintTiming[]> {
   return await prisma.crep.findMany({
     where: {
       print_date: { gte: from, lt: until },
