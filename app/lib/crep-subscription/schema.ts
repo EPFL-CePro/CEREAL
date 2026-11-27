@@ -42,6 +42,9 @@ export const crepSubscriptionSchema = z
         exam: z.object({
           code: z.string().trim().min(1),
           title: z.string().trim().min(1),
+          teachers: z.array(
+            z.object({ firstname: z.string(), name: z.string() }),
+          ),
         }),
       },
       "Please select a course.",
