@@ -176,37 +176,37 @@ describe("getRegistrationStatus", () => {
     {
       isReserved: false,
       hasPrintSlot: true,
-      isShortNotice: false,
+      isDeliveryTooSoon: false,
       expected: "registered",
     },
     {
       isReserved: false,
       hasPrintSlot: true,
-      isShortNotice: true,
+      isDeliveryTooSoon: true,
       expected: "registered-warning",
     },
     {
       isReserved: false,
       hasPrintSlot: false,
-      isShortNotice: false,
+      isDeliveryTooSoon: false,
       expected: "registered-error",
     },
-    // No slot is more serious than short notice
+    // No slot is more serious than a delivery too soon
     {
       isReserved: false,
       hasPrintSlot: false,
-      isShortNotice: true,
+      isDeliveryTooSoon: true,
       expected: "registered-error",
     },
     // A reserved exam always stays "reserved"
     {
       isReserved: true,
       hasPrintSlot: false,
-      isShortNotice: true,
+      isDeliveryTooSoon: true,
       expected: "reserved",
     },
   ])(
-    "returns $expected (reserved: $isReserved, slot: $hasPrintSlot, short notice: $isShortNotice)",
+    "returns $expected (reserved: $isReserved, slot: $hasPrintSlot, delivery too soon: $isDeliveryTooSoon)",
     ({ expected, ...input }) => {
       expect(getRegistrationStatus(input)).toBe(expected)
     },

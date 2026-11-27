@@ -16,25 +16,15 @@ import {
   validateFilesSpecs,
 } from "@/app/lib/crep/file-specs"
 import { countPdfPages } from "@/app/lib/crep/pdf-pages"
-import { getPrintDurationMinutes } from "@/app/lib/crep/print-duration"
 import {
-  findPrintingDate,
-  getRegistrationStatus,
+  isDeliveryTooSoon,
+  schedulePrint,
 } from "@/app/lib/crep/print-schedule"
 import { limitTextToLines } from "@/app/lib/crep/remark-lines"
-import { getBlockingExamsBetweenDates } from "@/app/lib/crep-subscription/queries"
 import {
-  countBusinessDaysBetween,
-  getBusinessDaysBetween,
   getPreviousBusinessDay,
   MIN_BUSINESS_DAYS_BEFORE_DELIVERY,
 } from "@/app/lib/dates/business-days"
-import {
-  formatDateTimeForDatabase,
-  formatDateInputValue,
-  fromDatabaseDateTime,
-  dayAtHour,
-} from "@/app/lib/dates/date-time"
 import {
   validateFinancialCenter,
   fetchMultiplePersonsBySciper,
@@ -186,7 +176,6 @@ export default function RegisterForm({ user }: RegisterProps) {
     const { examDate, desiredDate } = data
 
     const today = new Date()
-    let isShortNotice = false
     if (!data.course) {
       openModal("Course Selection Error", "Please select a course.")
       return
@@ -253,10 +242,7 @@ export default function RegisterForm({ user }: RegisterProps) {
           "The exam date or the desired delivery date can not be before today's date.",
         )
         return
-      } else if (
-        countBusinessDaysBetween(formatDateInputValue(today), desiredDate) <
-        MIN_BUSINESS_DAYS_BEFORE_DELIVERY
-      ) {
+      } else if (isDeliveryTooSoon(desired)) {
         const confirmed = await openConfirmationModal(
           "Date Validation Warning",
           `There must be at least ${MIN_BUSINESS_DAYS_BEFORE_DELIVERY} business days between today and the desired delivery date.\n\nDo you still want to submit your exam?`,
@@ -264,7 +250,6 @@ export default function RegisterForm({ user }: RegisterProps) {
         if (!confirmed) {
           return
         }
-        isShortNotice = true
       } else {
         // clear any previous date error
         clearErrors("desiredDate")
@@ -303,39 +288,10 @@ export default function RegisterForm({ user }: RegisterProps) {
       const examName = `${data.course.exam.title} (${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}`).join(", ")})`
       const examCode = data.course.exam.code
 
-      // TODO - PRINTSCHEDULE.ts
-      const desiredDay = dayAtHour(new Date(data.desiredDate), 0)
-      const requiredMinutes = getPrintDurationMinutes(
-        getTotalCopies(printFiles),
-      )
-
-      const candidateDays = getBusinessDaysBetween(today, desiredDay)
-      // print_date is a wall-clock time stored as UTC: query with UTC midnights
-      // and convert the results back to local time (fromDatabaseDateTime)
-      const blockingExams = (
-        await getBlockingExamsBetweenDates(
-          new Date(`${formatDateInputValue(today)}T00:00:00Z`),
-          new Date(`${data.desiredDate}T00:00:00Z`),
-        )
-      ).map((exam) => ({
-        ...exam,
-        print_date: fromDatabaseDateTime(exam.print_date),
-      }))
-      const printStart = findPrintingDate(
-        candidateDays,
-        blockingExams,
-        requiredMinutes,
-      )
-      /* If no slot fits (planning too full, delays too short), register the exam
-         at 08:00 on the desired delivery date with the status `registered-error`. */
-      const printingDate = formatDateTimeForDatabase(
-        printStart ?? dayAtHour(desiredDay, 8),
-      )
-
-      const status = getRegistrationStatus({
+      const { printDate, status } = await schedulePrint({
+        desiredDeliveryDate: data.desiredDate,
+        totalCopies: getTotalCopies(printFiles),
         isReserved: hideFiles,
-        hasPrintSlot: printStart !== null,
-        isShortNotice,
       })
 
       const insertedExamId = await insertExamForPrint(
@@ -343,7 +299,7 @@ export default function RegisterForm({ user }: RegisterProps) {
           exam_name: examName,
           exam_code: examCode,
           exam_date: data.examDate,
-          print_date: printingDate,
+          print_date: printDate,
           contact: JSON.stringify(formattedContact),
           // contact: data.contact, //if we want the id only
           authorized_persons: JSON.stringify(authorizedPersons),
