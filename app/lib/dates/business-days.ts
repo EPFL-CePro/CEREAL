@@ -1,53 +1,49 @@
+import { dayAtHour, formatDateInputValue } from "@/app/lib/dates/date-time"
+
 // Minimum number of business days required between the registration date and the desired delivery date.
 // Below this delay, an exam is registered with a warning and counted as "late" in the stats.
-import { formatDateInputValue } from "@/app/lib/dates/date-time"
-
 export const MIN_BUSINESS_DAYS_BEFORE_DELIVERY = 7
+// Deferred exam registration stays open during the full business days following the ordinary exam day.
+const DEFERRED_EXAM_REGISTRATION_BUSINESS_DAYS = 3
+
+export function isWeekend(date: Date): boolean {
+  const weekday = date.getDay()
+  return weekday === 0 || weekday === 6 // 0 = sunday, 6 = saturday
+}
+
+export function getBusinessDaysBefore(from: Date, until: Date): Date[] {
+  const days: Date[] = []
+  const current = dayAtHour(from, 0)
+  const end = dayAtHour(until, 0)
+
+  while (current < end) {
+    if (!isWeekend(current)) days.push(new Date(current))
+    current.setDate(current.getDate() + 1)
+  }
+  return days
+}
 
 export function businessDaysBetween(
   startDate: string | Date,
   endDate: string | Date,
 ) {
-  let start = new Date(startDate)
-  let end = new Date(endDate)
-  let count = 0
+  const [start, end] = [new Date(startDate), new Date(endDate)].sort(
+    (a, b) => a.getTime() - b.getTime(),
+  )
 
-  if (start > end) {
-    ;[start, end] = [end, start]
-  }
-
-  while (start < end) {
-    const day = start.getDay()
-    // 0 = sunday, 6 = saturday
-    if (day !== 0 && day !== 6) {
-      count++
-    }
-    start.setDate(start.getDate() + 1)
-  }
-
-  return count
+  return getBusinessDaysBefore(start, end).length
 }
 
 export function getPreviousBusinessDay(dateString: string): string {
   if (!dateString) return ""
 
-  const selectedDate = new Date(dateString)
-  const selectedDay = selectedDate.getDay()
+  const date = new Date(dateString)
+  do {
+    date.setDate(date.getDate() - 1)
+  } while (isWeekend(date))
 
-  // 0 = Sunday; 1 = Monday - By default : go back 1 day
-  let daysToSubstract = 1
-  // If it's sunday go back 2 days
-  if (selectedDay === 0) daysToSubstract = 2
-  // If it's monday go back 3 days
-  else if (selectedDay === 1) daysToSubstract = 3
-
-  selectedDate.setDate(selectedDate.getDate() - daysToSubstract)
-
-  return formatDateInputValue(selectedDate)
+  return formatDateInputValue(date)
 }
-
-// Deferred exam registration stays open during the full business days following the ordinary exam day.
-const DEFERRED_EXAM_REGISTRATION_BUSINESS_DAYS = 3
 
 // `examDate` is expected at UTC midnight, as produced from the BO file.
 export function isDeferredExamRegistrationOpen(
