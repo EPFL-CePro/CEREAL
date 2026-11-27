@@ -19,7 +19,7 @@ import {
   isSelectableAcademicYear,
 } from "@/app/lib/dates/academic-year"
 import {
-  businessDaysBetween,
+  countBusinessDaysBetween,
   MIN_BUSINESS_DAYS_BEFORE_DELIVERY,
 } from "@/app/lib/dates/business-days"
 import { formatDateOnlyValue } from "@/app/lib/dates/date-time"
@@ -134,7 +134,7 @@ export default async function Page({
         return stats
       }
 
-      const businessDays = businessDaysBetween(registeredDate, desiredDate)
+      const businessDays = countBusinessDaysBetween(registeredDate, desiredDate)
       stats.delayCounts.set(
         businessDays,
         (stats.delayCounts.get(businessDays) ?? 0) + 1,

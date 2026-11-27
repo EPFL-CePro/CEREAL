@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  businessDaysBetween,
-  getBusinessDaysBefore,
+  countBusinessDaysBetween,
+  getBusinessDaysBetween,
   getPreviousBusinessDay,
   isDeferredExamRegistrationOpen,
 } from "@/app/lib/dates/business-days"
@@ -13,7 +13,7 @@ describe("getBusinessDaysBefore", () => {
   it("returns the business days from the start (included) to the end (excluded)", () => {
     // Monday 12 → Thursday 15: Mon, Tue, Wed
     expect(
-      getBusinessDaysBefore(new Date(2026, 9, 12), new Date(2026, 9, 15)),
+      getBusinessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 15)),
     ).toEqual([
       new Date(2026, 9, 12),
       new Date(2026, 9, 13),
@@ -24,13 +24,13 @@ describe("getBusinessDaysBefore", () => {
   it("skips weekends", () => {
     // Friday 16 → Tuesday 20: Fri, Mon
     expect(
-      getBusinessDaysBefore(new Date(2026, 9, 16), new Date(2026, 9, 20)),
+      getBusinessDaysBetween(new Date(2026, 9, 16), new Date(2026, 9, 20)),
     ).toEqual([new Date(2026, 9, 16), new Date(2026, 9, 19)])
   })
 
   it("returns the days at midnight, whatever the time of the inputs", () => {
     expect(
-      getBusinessDaysBefore(
+      getBusinessDaysBetween(
         new Date(2026, 9, 12, 15, 30),
         new Date(2026, 9, 13, 9, 0),
       ),
@@ -39,10 +39,10 @@ describe("getBusinessDaysBefore", () => {
 
   it("returns an empty list when the start is not before the end", () => {
     expect(
-      getBusinessDaysBefore(new Date(2026, 9, 12), new Date(2026, 9, 12)),
+      getBusinessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 12)),
     ).toEqual([])
     expect(
-      getBusinessDaysBefore(new Date(2026, 9, 15), new Date(2026, 9, 12)),
+      getBusinessDaysBetween(new Date(2026, 9, 15), new Date(2026, 9, 12)),
     ).toEqual([])
   })
 
@@ -50,7 +50,7 @@ describe("getBusinessDaysBefore", () => {
     const from = new Date(2026, 9, 12, 15, 30)
     const until = new Date(2026, 9, 15, 9, 0)
 
-    getBusinessDaysBefore(from, until)
+    getBusinessDaysBetween(from, until)
 
     expect(from).toEqual(new Date(2026, 9, 12, 15, 30))
     expect(until).toEqual(new Date(2026, 9, 15, 9, 0))
@@ -60,43 +60,43 @@ describe("getBusinessDaysBefore", () => {
 describe("businessDaysBetween", () => {
   it("counts Monday to Friday as 4 business days", () => {
     expect(
-      businessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 16)),
+      countBusinessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 16)),
     ).toBe(4)
   })
 
   it("does not count weekends", () => {
     // Friday -> next Monday: only the Friday counts
     expect(
-      businessDaysBetween(new Date(2026, 9, 16), new Date(2026, 9, 19)),
+      countBusinessDaysBetween(new Date(2026, 9, 16), new Date(2026, 9, 19)),
     ).toBe(1)
   })
 
   it("counts a full week as 5 business days", () => {
     expect(
-      businessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 19)),
+      countBusinessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 19)),
     ).toBe(5)
   })
 
   it("returns 0 for the same day", () => {
     expect(
-      businessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 12)),
+      countBusinessDaysBetween(new Date(2026, 9, 12), new Date(2026, 9, 12)),
     ).toBe(0)
   })
 
   it("gives the same result if the dates are swapped", () => {
     expect(
-      businessDaysBetween(new Date(2026, 9, 19), new Date(2026, 9, 12)),
+      countBusinessDaysBetween(new Date(2026, 9, 19), new Date(2026, 9, 12)),
     ).toBe(5)
   })
 
   it("accepts YYYY-MM-DD strings, as sent by the form", () => {
-    expect(businessDaysBetween("2026-10-12", "2026-10-19")).toBe(5)
+    expect(countBusinessDaysBetween("2026-10-12", "2026-10-19")).toBe(5)
   })
 
   it("counts whole days and ignores the time of day", () => {
     // Monday 10:00 → Tuesday 15:00: only the Monday counts
     expect(
-      businessDaysBetween(
+      countBusinessDaysBetween(
         new Date(2026, 9, 12, 10, 0),
         new Date(2026, 9, 13, 15, 0),
       ),
@@ -106,7 +106,7 @@ describe("businessDaysBetween", () => {
   it("does not count the end day when the range crosses the switch to summer time", () => {
     // Regression: clocks change on Sunday 29 March 2026.
     // Friday 27 → Monday 30: only the Friday counts (used to return 2)
-    expect(businessDaysBetween("2026-03-27", "2026-03-30")).toBe(1)
+    expect(countBusinessDaysBetween("2026-03-27", "2026-03-30")).toBe(1)
   })
 })
 

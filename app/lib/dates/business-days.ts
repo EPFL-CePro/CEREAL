@@ -13,7 +13,7 @@ export function isWeekend(date: Date): boolean {
 
 /* `<` so that we stop one day before the desired delivery date.
       Ex : If desired date is 24, we stop at 23. */
-export function getBusinessDaysBefore(from: Date, until: Date): Date[] {
+export function getBusinessDaysBetween(from: Date, until: Date): Date[] {
   const days: Date[] = []
   const current = dayAtHour(from, 0)
   const end = dayAtHour(until, 0)
@@ -25,15 +25,16 @@ export function getBusinessDaysBefore(from: Date, until: Date): Date[] {
   return days
 }
 
-export function businessDaysBetween(
+export function countBusinessDaysBetween(
   startDate: string | Date,
   endDate: string | Date,
 ) {
+  // Sort if caller pass dates in reverse
   const [start, end] = [new Date(startDate), new Date(endDate)].sort(
     (a, b) => a.getTime() - b.getTime(),
   )
 
-  return getBusinessDaysBefore(start, end).length
+  return getBusinessDaysBetween(start, end).length
 }
 
 export function getPreviousBusinessDay(dateString: string): string {

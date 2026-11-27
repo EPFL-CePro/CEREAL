@@ -9,35 +9,31 @@ import FilesAndPrintSettings from "@/app/components/crep/register/FilesAndPrintS
 import Checkbox from "@/app/components/forms/Checkbox"
 import DateInput from "@/app/components/forms/DateInput"
 import Callout from "@/app/components/ui/Callout"
-import {
-  getAllExamsBetweenDates,
-  getBlockingExamsForDate,
-  insertExamForPrint,
-} from "@/app/lib/crep/database"
+import { insertExamForPrint } from "@/app/lib/crep/database"
 import {
   defaultFileSpecs,
   getTotalCopies,
   validateFilesSpecs,
 } from "@/app/lib/crep/file-specs"
 import { countPdfPages } from "@/app/lib/crep/pdf-pages"
+import { getPrintDurationMinutes } from "@/app/lib/crep/print-duration"
 import {
-  computePrintGaps,
-  getPrintEndDate,
-  getPrintDurationMinutes,
-} from "@/app/lib/crep/print-duration"
+  findPrintingDate,
+  getRegistrationStatus,
+} from "@/app/lib/crep/print-schedule"
 import { limitTextToLines } from "@/app/lib/crep/remark-lines"
+import { getBlockingExamsBetweenDates } from "@/app/lib/crep-subscription/queries"
 import {
-  businessDaysBetween,
-  getBusinessDaysBefore,
+  countBusinessDaysBetween,
+  getBusinessDaysBetween,
   getPreviousBusinessDay,
   MIN_BUSINESS_DAYS_BEFORE_DELIVERY,
 } from "@/app/lib/dates/business-days"
 import {
-  fromDatabaseDateTime,
   formatDateTimeForDatabase,
   formatDateInputValue,
+  fromDatabaseDateTime,
   dayAtHour,
-  addMinutes,
 } from "@/app/lib/dates/date-time"
 import {
   validateFinancialCenter,
@@ -190,9 +186,7 @@ export default function RegisterForm({ user }: RegisterProps) {
     const { examDate, desiredDate } = data
 
     const today = new Date()
-
-    let status = "registered"
-
+    let isShortNotice = false
     if (!data.course) {
       openModal("Course Selection Error", "Please select a course.")
       return
@@ -260,7 +254,7 @@ export default function RegisterForm({ user }: RegisterProps) {
         )
         return
       } else if (
-        businessDaysBetween(formatDateInputValue(today), desiredDate) <
+        countBusinessDaysBetween(formatDateInputValue(today), desiredDate) <
         MIN_BUSINESS_DAYS_BEFORE_DELIVERY
       ) {
         const confirmed = await openConfirmationModal(
@@ -270,7 +264,7 @@ export default function RegisterForm({ user }: RegisterProps) {
         if (!confirmed) {
           return
         }
-        status = "registered-warning"
+        isShortNotice = true
       } else {
         // clear any previous date error
         clearErrors("desiredDate")
@@ -310,91 +304,39 @@ export default function RegisterForm({ user }: RegisterProps) {
       const examCode = data.course.exam.code
 
       // TODO - PRINTSCHEDULE.ts
-      let printingDate
-
-      const desiredDate = new Date(data.desiredDate)
-      const daysArray = getBusinessDaysBefore(today, desiredDate)
-      const allExamsFromNowToDesired = await getAllExamsBetweenDates(
-        new Date(),
-        new Date(data.desiredDate),
+      const desiredDay = dayAtHour(new Date(data.desiredDate), 0)
+      const requiredMinutes = getPrintDurationMinutes(
+        getTotalCopies(printFiles),
       )
 
-      if (!allExamsFromNowToDesired) {
-        printingDate = formatDateTimeForDatabase(dayAtHour(daysArray[0], 8))
-      } else {
-        const necessaryPrintingDurationInMinutes = getPrintDurationMinutes(
-          getTotalCopies(printFiles),
+      const candidateDays = getBusinessDaysBetween(today, desiredDay)
+      // print_date is a wall-clock time stored as UTC: query with UTC midnights
+      // and convert the results back to local time (fromDatabaseDateTime)
+      const blockingExams = (
+        await getBlockingExamsBetweenDates(
+          new Date(`${formatDateInputValue(today)}T00:00:00Z`),
+          new Date(`${data.desiredDate}T00:00:00Z`),
         )
+      ).map((exam) => ({
+        ...exam,
+        print_date: fromDatabaseDateTime(exam.print_date),
+      }))
+      const printStart = findPrintingDate(
+        candidateDays,
+        blockingExams,
+        requiredMinutes,
+      )
+      /* If no slot fits (planning too full, delays too short), register the exam
+         at 08:00 on the desired delivery date with the status `registered-error`. */
+      const printingDate = formatDateTimeForDatabase(
+        printStart ?? dayAtHour(desiredDay, 8),
+      )
 
-        for (const date of daysArray.reverse()) {
-          const allExamsForDate = await getBlockingExamsForDate(
-            formatDateInputValue(date),
-          )
-
-          if (allExamsForDate.length === 0) {
-            printingDate = formatDateTimeForDatabase(dayAtHour(date, 8)) // TODO - Create const for magic number
-            break
-          } else if (allExamsForDate.length === 1) {
-            const examForDate = {
-              ...allExamsForDate[0],
-              print_date: fromDatabaseDateTime(allExamsForDate[0].print_date),
-            }
-
-            const endPrintExam = getPrintEndDate(examForDate)
-            const endPrintOfWantedExam = addMinutes(
-              endPrintExam,
-              necessaryPrintingDurationInMinutes,
-            )
-
-            // TODO - Create const for magic number
-            if (endPrintOfWantedExam.getHours() < 18) {
-              printingDate = formatDateTimeForDatabase(endPrintExam)
-              break
-            }
-          } else {
-            const normalizedExamsForDate = allExamsForDate.map((exam) => ({
-              ...exam,
-              print_date: fromDatabaseDateTime(exam.print_date),
-            }))
-            const gaps = computePrintGaps(normalizedExamsForDate)
-            const enoughGap = gaps.find(
-              (gap) => gap.minutes >= necessaryPrintingDurationInMinutes,
-            )
-
-            if (enoughGap) {
-              const endPrintFirstExam = getPrintEndDate(enoughGap.between[0])
-              printingDate = formatDateTimeForDatabase(endPrintFirstExam)
-              break
-            } else {
-              const latestGapOfDay = gaps[gaps.length - 1]
-              const latestExam = latestGapOfDay.between[1]
-              const endPrintingLatestExam = getPrintEndDate(latestExam)
-              const endPrintingWantedExam = addMinutes(
-                endPrintingLatestExam,
-                necessaryPrintingDurationInMinutes,
-              )
-
-              const printingLimit = dayAtHour(endPrintingLatestExam, 18) // TODO - Create const for magic number
-              if (endPrintingWantedExam <= printingLimit) {
-                printingDate = formatDateTimeForDatabase(endPrintingLatestExam)
-                break
-              }
-            }
-          }
-        }
-      }
-
-      /* If `printingDate` is undefined, that means that a printing schedule can not be defined.
-            (timings are too short, already existing planning is too full, ...)
-            So we should register it at 08:00 AM on the desired delivery date, with the status `registered-error`. */
-      if (!printingDate) {
-        printingDate = formatDateTimeForDatabase(dayAtHour(desiredDate, 8))
-        status = "registered-error"
-      }
-
-      if (hideFiles) {
-        status = "reserved"
-      }
+      const status = getRegistrationStatus({
+        isReserved: hideFiles,
+        hasPrintSlot: printStart !== null,
+        isShortNotice,
+      })
 
       const insertedExamId = await insertExamForPrint(
         {
