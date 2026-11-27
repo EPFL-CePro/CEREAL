@@ -28,6 +28,7 @@ import {
 import { limitTextToLines } from "@/app/lib/crep/remark-lines"
 import {
   businessDaysBetween,
+  getBusinessDaysBefore,
   getPreviousBusinessDay,
   MIN_BUSINESS_DAYS_BEFORE_DELIVERY,
 } from "@/app/lib/dates/business-days"
@@ -35,6 +36,8 @@ import {
   fromDatabaseDateTime,
   formatDateTimeForDatabase,
   formatDateInputValue,
+  dayAtHour,
+  addMinutes,
 } from "@/app/lib/dates/date-time"
 import {
   validateFinancialCenter,
@@ -306,55 +309,30 @@ export default function RegisterForm({ user }: RegisterProps) {
       const examName = `${data.course.exam.title} (${data.course.exam.teachers.map((t) => `${t.firstname} ${t.name}`).join(", ")})`
       const examCode = data.course.exam.code
 
+      // TODO - PRINTSCHEDULE.ts
       let printingDate
 
       const desiredDate = new Date(data.desiredDate)
-
-      // Making sure hours is not a problem
-      desiredDate.setHours(0, 0, 0, 0)
-      today.setHours(0, 0, 0, 0)
-
-      const daysArray = []
-      const currentDate = new Date(today) // The date that will be manipulated. This will change on every iteration.
-
-      /* `<` so that we stop one day before the desired delivery date.
-            Ex : If desired date is 24, we stop at 23. */
-      while (currentDate < desiredDate) {
-        const day = currentDate.getDay() // 0 = sunday, 6 = saturday
-
-        if (day !== 0 && day !== 6) {
-          // We push the date only if it's not a sunday or a saturday
-          daysArray.push(new Date(currentDate))
-        }
-
-        currentDate.setDate(currentDate.getDate() + 1)
-      }
-
+      const daysArray = getBusinessDaysBefore(today, desiredDate)
       const allExamsFromNowToDesired = await getAllExamsBetweenDates(
         new Date(),
         new Date(data.desiredDate),
       )
+
       if (!allExamsFromNowToDesired) {
-        const firstDayDate = daysArray[0]
-        firstDayDate.setHours(8, 0, 0, 0)
-        printingDate = formatDateTimeForDatabase(firstDayDate)
+        printingDate = formatDateTimeForDatabase(dayAtHour(daysArray[0], 8))
       } else {
         const necessaryPrintingDurationInMinutes = getPrintDurationMinutes(
           getTotalCopies(printFiles),
         )
 
         for (const date of daysArray.reverse()) {
-          const year = date.getFullYear()
-          const month = String(date.getMonth() + 1).padStart(2, "0")
-          const day = String(date.getDate()).padStart(2, "0")
-
           const allExamsForDate = await getBlockingExamsForDate(
-            `${year}-${month}-${day}`,
+            formatDateInputValue(date),
           )
 
           if (allExamsForDate.length === 0) {
-            date.setHours(8, 0, 0, 0)
-            printingDate = formatDateTimeForDatabase(date)
+            printingDate = formatDateTimeForDatabase(dayAtHour(date, 8)) // TODO - Create const for magic number
             break
           } else if (allExamsForDate.length === 1) {
             const examForDate = {
@@ -363,11 +341,12 @@ export default function RegisterForm({ user }: RegisterProps) {
             }
 
             const endPrintExam = getPrintEndDate(examForDate)
-            const endPrintOfWantedExam = new Date(
-              endPrintExam.getTime() +
-                necessaryPrintingDurationInMinutes * 60000,
+            const endPrintOfWantedExam = addMinutes(
+              endPrintExam,
+              necessaryPrintingDurationInMinutes,
             )
 
+            // TODO - Create const for magic number
             if (endPrintOfWantedExam.getHours() < 18) {
               printingDate = formatDateTimeForDatabase(endPrintExam)
               break
@@ -383,22 +362,19 @@ export default function RegisterForm({ user }: RegisterProps) {
             )
 
             if (enoughGap) {
-              const endPrintFirstExam = getPrintEndDate(
-                enoughGap.between[0],
-              )
+              const endPrintFirstExam = getPrintEndDate(enoughGap.between[0])
               printingDate = formatDateTimeForDatabase(endPrintFirstExam)
               break
             } else {
               const latestGapOfDay = gaps[gaps.length - 1]
               const latestExam = latestGapOfDay.between[1]
               const endPrintingLatestExam = getPrintEndDate(latestExam)
-              const endPrintingWantedExam = new Date(
-                endPrintingLatestExam.getTime() +
-                  necessaryPrintingDurationInMinutes * 60000,
+              const endPrintingWantedExam = addMinutes(
+                endPrintingLatestExam,
+                necessaryPrintingDurationInMinutes,
               )
 
-              const printingLimit = new Date(endPrintingLatestExam)
-              printingLimit.setHours(18, 0, 0, 0)
+              const printingLimit = dayAtHour(endPrintingLatestExam, 18) // TODO - Create const for magic number
               if (endPrintingWantedExam <= printingLimit) {
                 printingDate = formatDateTimeForDatabase(endPrintingLatestExam)
                 break
@@ -412,8 +388,7 @@ export default function RegisterForm({ user }: RegisterProps) {
             (timings are too short, already existing planning is too full, ...)
             So we should register it at 08:00 AM on the desired delivery date, with the status `registered-error`. */
       if (!printingDate) {
-        desiredDate.setHours(8)
-        printingDate = formatDateTimeForDatabase(desiredDate)
+        printingDate = formatDateTimeForDatabase(dayAtHour(desiredDate, 8))
         status = "registered-error"
       }
 
