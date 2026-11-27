@@ -1,3 +1,5 @@
+const MS_PER_MINUTE = 60_000
+
 const pad = (value: number) => String(value).padStart(2, "0")
 
 export function fromDatabaseDateTime(value: Date): Date {
@@ -70,4 +72,14 @@ export function getTimePartFromDateTimeString(
 
   const match = value.match(/[T ](\d{2}:\d{2})/)
   return match ? match[1] : ""
+}
+
+export function dayAtHour(day: Date, hour: number): Date {
+  const date = new Date(day)
+  date.setHours(hour, 0, 0, 0)
+  return date
+}
+
+export function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.getTime() + minutes * MS_PER_MINUTE)
 }
