@@ -11,6 +11,8 @@ export function isWeekend(date: Date): boolean {
   return weekday === 0 || weekday === 6 // 0 = sunday, 6 = saturday
 }
 
+/* `<` so that we stop one day before the desired delivery date.
+      Ex : If desired date is 24, we stop at 23. */
 export function getBusinessDaysBefore(from: Date, until: Date): Date[] {
   const days: Date[] = []
   const current = dayAtHour(from, 0)
