@@ -1,4 +1,4 @@
-import "server-only"
+"use server"
 import { examBlockingPrintStatus } from "@/app/lib/crep/exam-status"
 import { prisma } from "@/app/lib/prisma"
 import { type CrepExam } from "@/types/crepExam"
