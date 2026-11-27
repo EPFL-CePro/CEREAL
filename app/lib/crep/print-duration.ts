@@ -1,4 +1,4 @@
-import type { CrepExam } from "@/types/crepExam"
+import { type CrepExamPrintTiming } from "@/app/lib/crep-subscription/queries"
 
 const EXAMS_PRINTED_PER_HOUR = 100
 // Durations are rounded up to the next multiple of this value
@@ -18,17 +18,17 @@ export function getPrintDurationMinutes(examCount: number): number {
 }
 
 export interface PrintGap {
-  between: [CrepExam, CrepExam] // [earlier printing, later printing]
+  between: [CrepExamPrintTiming, CrepExamPrintTiming] // [earlier printing, later printing]
   minutes: number // time between the end of the earlier printing and the start of the later one
 }
 
-export function getPrintEndDate(exam: CrepExam): Date {
+export function getPrintEndDate(exam: CrepExamPrintTiming): Date {
   return new Date(
     exam.print_date.getTime() + exam.print_duration * MS_PER_MINUTE,
   )
 }
 
-export function computePrintGaps(exams: CrepExam[]): PrintGap[] {
+export function computePrintGaps(exams: CrepExamPrintTiming[]): PrintGap[] {
   const examsByPrintStart = [...exams].sort(
     (a, b) => a.print_date.getTime() - b.print_date.getTime(),
   )
